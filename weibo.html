@@ -587,9 +587,9 @@ body{display:grid;place-items:center;overflow:hidden}
             <div class="set-row"><label for="setApiTemp">Temperature</label><input type="number" id="setApiTemp" min="0" max="2" step="0.1" /></div>
             <div class="set-row"><label for="setApiMax">最大输出 Tokens</label><input type="number" id="setApiMax" min="256" max="65535" step="128" /></div>
           </div>
-          <div class="set-row"><label for="setApiToken">Token（输入后加密保存）</label><input type="password" id="setApiToken" autocomplete="new-password" placeholder="sk-…" /></div>
-          <div class="set-row"><label for="setApiPass">本地解锁口令（不保存）</label><input type="password" id="setApiPass" autocomplete="new-password" /></div>
-          <div class="settings-inline"><button type="button" class="mini-action primary" id="settingsSaveToken">加密保存</button><button type="button" class="mini-action" id="settingsUnlockToken">解锁</button><button type="button" class="mini-action" id="settingsTestApi">测试</button></div>
+          <div class="set-row"><label for="setApiToken">Token（保存后不回显）</label><input type="password" id="setApiToken" autocomplete="new-password" placeholder="粘贴 Token 后点保存" /></div>
+          <div class="section-note">Token 仅保存在酒馆本地设置中；重新打开设置时始终留空。</div>
+          <div class="settings-inline"><button type="button" class="mini-action primary" id="settingsSaveToken">保存 Token</button><button type="button" class="mini-action" id="settingsClearToken">清除 Token</button><button type="button" class="mini-action" id="settingsTestApi">测试连接</button></div>
         </div>
         <div class="api-status" id="apiStatus">当前：跟随酒馆主 API</div>
       </section>
@@ -3942,7 +3942,7 @@ body{display:grid;place-items:center;overflow:hidden}
     let apiState = {};
     try { apiState = WB_HOST?.getApiState?.() || {}; } catch (_) {}
     status.textContent = side
-      ? `当前：独立副 API · ${apiState.unlocked ? 'Token 已解锁' : apiState.hasToken ? '已有加密 Token，尚未解锁' : '尚未保存 Token'}`
+      ? `当前：独立副 API · ${apiState.hasToken ? 'Token 已保存（不回显）' : '尚未保存 Token'}`
       : '当前：跟随酒馆主 API（无需额外配置）';
   }
   function fillSettingsForm(){
@@ -3978,7 +3978,6 @@ body{display:grid;place-items:center;overflow:hidden}
     document.getElementById('setApiTemp').value = String(api.temperature ?? 0.8);
     document.getElementById('setApiMax').value = String(api.maxTokens || 4096);
     document.getElementById('setApiToken').value = '';
-    document.getElementById('setApiPass').value = '';
     updateApiVisibility();
     state.wbLore = String(chatBinding?.phoneBundle?.wbLore || slot?.wbLore || state.wbLore || '');
     fillWbLoreEditor(state.wbLore, { forceAccount: false });
@@ -4104,15 +4103,14 @@ body{display:grid;place-items:center;overflow:hidden}
     const status = document.getElementById('apiStatus');
     try {
       WB_HOST?.saveApiSettings?.(apiDraftFromForm());
-      await WB_HOST?.saveApiToken?.(document.getElementById('setApiToken').value.trim(), document.getElementById('setApiPass').value);
+      await WB_HOST?.saveApiToken?.(document.getElementById('setApiToken').value.trim());
       document.getElementById('setApiToken').value = '';
-      document.getElementById('setApiPass').value = '';
-      status.textContent = 'Token 已加密保存并在本次会话解锁。';
+      status.textContent = 'Token 已保存；下次打开设置也不会回显。';
     } catch (e) { status.textContent = String(e?.message || e); }
   };
-  document.getElementById('settingsUnlockToken').onclick = async ()=>{
+  document.getElementById('settingsClearToken').onclick = async ()=>{
     const status = document.getElementById('apiStatus');
-    try { await WB_HOST?.unlockApiToken?.(document.getElementById('setApiPass').value); document.getElementById('setApiPass').value=''; status.textContent='Token 已解锁。'; }
+    try { await WB_HOST?.clearApiToken?.(); document.getElementById('setApiToken').value=''; status.textContent='Token 已清除。'; }
     catch (e) { status.textContent = String(e?.message || e); }
   };
   document.getElementById('settingsTestApi').onclick = async ()=>{

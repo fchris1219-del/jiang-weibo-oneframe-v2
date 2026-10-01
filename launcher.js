@@ -17,7 +17,6 @@ let jwr2Root = null;
 let jwr2Frame = null;
 let jwr2RemotePromise = null;
 let jwr2ChatListener = null;
-let jwr2UnlockedToken = '';
 
 function jwr2ScriptId() {
   try { return typeof getScriptId === 'function' ? String(getScriptId() || '') : ''; }
@@ -96,7 +95,7 @@ function jwr2SafeContext() {
 function jwr2DefaultStore() {
   return {
     version: 2,
-    api: { mode: 'main', source: 'custom', url: '', model: '', temperature: 0.8, maxTokens: 4096, encryptedToken: '' },
+    api: { mode: 'main', source: 'custom', url: '', model: '', temperature: 0.8, maxTokens: 4096, token: '' },
     context: { recentMessages: 12, includeChar: true, includePersona: true, includeScenario: true, includeWorldInfo: true, injectMain: false },
     slots: [{ id: 'default', name: '默认档位', initPrompt: '', wbLore: '' }],
   };
@@ -187,43 +186,14 @@ function jwr2SetMainInjection(text, enabled) {
   return true;
 }
 
-function jwr2B64(bytes) {
-  let raw = '';
-  bytes.forEach((b) => { raw += String.fromCharCode(b); });
-  return btoa(raw);
-}
-function jwr2Bytes(text) {
-  const raw = atob(String(text || ''));
-  return Uint8Array.from(raw, (c) => c.charCodeAt(0));
-}
-async function jwr2DerivedKey(passphrase, salt, usage) {
-  const enc = new TextEncoder();
-  const material = await crypto.subtle.importKey('raw', enc.encode(passphrase), 'PBKDF2', false, ['deriveKey']);
-  return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: 210000, hash: 'SHA-256' }, material, { name: 'AES-GCM', length: 256 }, false, usage);
-}
-async function jwr2EncryptToken(token, passphrase) {
-  if (!token || !passphrase) throw new Error('请同时填写 Token 和解锁口令');
-  const enc = new TextEncoder();
-  const salt = crypto.getRandomValues(new Uint8Array(16));
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const key = await jwr2DerivedKey(passphrase, salt, ['encrypt']);
-  const data = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, enc.encode(token));
-  return JSON.stringify({ v: 1, salt: jwr2B64(salt), iv: jwr2B64(iv), data: jwr2B64(new Uint8Array(data)) });
-}
-async function jwr2DecryptToken(payload, passphrase) {
-  if (!payload) throw new Error('还没有保存加密 Token');
-  if (!passphrase) throw new Error('请输入解锁口令');
-  try {
-    const box = JSON.parse(payload);
-    const key = await jwr2DerivedKey(passphrase, jwr2Bytes(box.salt), ['decrypt']);
-    const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: jwr2Bytes(box.iv) }, key, jwr2Bytes(box.data));
-    return new TextDecoder().decode(plain);
-  } catch (_) { throw new Error('解锁失败：口令错误或密文损坏'); }
-}
-
 function jwr2ApiPublicState() {
   const api = jwr2ReadSettings().api;
-  return { ...api, encryptedToken: undefined, hasToken: !!api.encryptedToken, unlocked: !!jwr2UnlockedToken };
+  const { token, encryptedToken, ...publicApi } = api;
+  return { ...publicApi, hasToken: !!token };
+}
+function jwr2PublicSettings() {
+  const settings = jwr2ReadSettings();
+  return { ...settings, api: jwr2ApiPublicState() };
 }
 function jwr2NormalizeUrl(raw) {
   let url = String(raw || '').trim().replace(/\/+$/, '');
@@ -248,7 +218,7 @@ async function jwr2RequestSide(request, override = {}) {
   const api = jwr2ReadSettings().api;
   if (api.mode !== 'side') throw new Error('副 API 未启用');
   if (!api.url || !api.model) throw new Error('副 API 地址或模型为空');
-  if (!jwr2UnlockedToken) throw new Error('副 API Token 尚未解锁');
+  if (!api.token) throw new Error('尚未保存副 API Token');
   const ctx = jwr2Context();
   if (!ctx?.getRequestHeaders) throw new Error('酒馆请求头不可用');
   const common = {
@@ -263,8 +233,8 @@ async function jwr2RequestSide(request, override = {}) {
   };
   const base = jwr2NormalizeUrl(api.url);
   const body = api.source === 'custom'
-    ? { chat_completion_source: 'custom', custom_url: base, custom_include_headers: JSON.stringify({ Authorization: 'Bearer ' + jwr2UnlockedToken }), ...common }
-    : { chat_completion_source: api.source || 'openai', reverse_proxy: base, proxy_password: jwr2UnlockedToken, ...common };
+    ? { chat_completion_source: 'custom', custom_url: base, custom_include_headers: JSON.stringify({ Authorization: 'Bearer ' + api.token }), ...common }
+    : { chat_completion_source: api.source || 'openai', reverse_proxy: base, proxy_password: api.token, ...common };
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 180000);
   try {
@@ -290,14 +260,10 @@ async function jwr2GenerateRaw(request) {
   throw new Error('当前酒馆版本未提供 generateRaw');
 }
 
-async function jwr2SaveToken(token, passphrase) {
-  const encryptedToken = await jwr2EncryptToken(token, passphrase);
-  jwr2UnlockedToken = token;
-  jwr2WriteSettings({ api: { encryptedToken } });
-  return jwr2ApiPublicState();
-}
-async function jwr2UnlockToken(passphrase) {
-  jwr2UnlockedToken = await jwr2DecryptToken(jwr2ReadSettings().api.encryptedToken, passphrase);
+async function jwr2SaveToken(token) {
+  const value = String(token || '').trim();
+  if (!value) throw new Error('请输入 Token');
+  jwr2WriteSettings({ api: { token: value, encryptedToken: '' } });
   return jwr2ApiPublicState();
 }
 async function jwr2TestApi(draft) {
@@ -324,7 +290,7 @@ function jwr2InstallBridge() {
     getContext: () => jwr2SafeContext(),
     getCurrentChatId: () => jwr2ChatId(),
     getChatMessages: (...args) => typeof getChatMessages === 'function' ? getChatMessages(...args) : [],
-    getSettings: () => jwr2ReadSettings(),
+    getSettings: () => jwr2PublicSettings(),
     saveSettings: (value) => jwr2WriteSettings(value),
     getChatStore: () => jwr2ReadChatStore(),
     saveChatStore: (value) => jwr2WriteChatStore(value),
@@ -332,9 +298,8 @@ function jwr2InstallBridge() {
     setMainInjection: (text, enabled) => jwr2SetMainInjection(text, enabled),
     getApiState: () => jwr2ApiPublicState(),
     saveApiSettings: (value) => jwr2WriteSettings({ api: value }),
-    saveApiToken: (token, passphrase) => jwr2SaveToken(token, passphrase),
-    unlockApiToken: (passphrase) => jwr2UnlockToken(passphrase),
-    clearApiToken: () => { jwr2UnlockedToken = ''; jwr2WriteSettings({ api: { encryptedToken: '' } }); return jwr2ApiPublicState(); },
+    saveApiToken: (token) => jwr2SaveToken(token),
+    clearApiToken: () => { jwr2WriteSettings({ api: { token: '', encryptedToken: '' } }); return jwr2ApiPublicState(); },
     testApi: (draft) => jwr2TestApi(draft),
     generate: (request) => jwr2GenerateRaw(request),
     generateRaw: (request) => jwr2GenerateRaw(request),
@@ -439,7 +404,7 @@ function jwr2Cleanup() {
   try { jwr2ChatListener?.stop?.(); } catch (_) {}
   jwr2ChatListener = null;
   try { jwr2Root?.remove(); } catch (_) {}
-  jwr2Root = null; jwr2Frame = null; jwr2RemotePromise = null; jwr2UnlockedToken = '';
+  jwr2Root = null; jwr2Frame = null; jwr2RemotePromise = null;
   try {
     if (JWR2_HOST[JWR2_BRIDGE_KEY]?.owner === jwr2ScriptId()) delete JWR2_HOST[JWR2_BRIDGE_KEY];
     if (JWR2_HOST[JWR2_INSTANCE_KEY] === jwr2Cleanup) delete JWR2_HOST[JWR2_INSTANCE_KEY];
@@ -451,7 +416,6 @@ function jwr2Cleanup() {
     jwr2Mount();
     if (typeof eventOn === 'function' && typeof tavern_events !== 'undefined' && tavern_events.CHAT_CHANGED) {
       jwr2ChatListener = eventOn(tavern_events.CHAT_CHANGED, () => {
-        jwr2UnlockedToken = '';
         if (jwr2Frame) jwr2Frame.srcdoc = '';
         jwr2RemotePromise = null;
         jwr2Close();
