@@ -416,7 +416,7 @@ function jwr2Mount() {
   root.id = JWR2_ROOT_ID;
   if (jwr2ScriptId()) root.setAttribute('script_id', jwr2ScriptId());
   root.innerHTML = `<style>
-  #${JWR2_ROOT_ID}{all:initial;position:fixed;inset:0;z-index:2147483000;pointer-events:none;font-family:-apple-system,"PingFang SC",sans-serif}
+  #${JWR2_ROOT_ID}{all:initial;position:fixed;inset:auto;top:0;left:0;width:100vw;height:100vh;height:100dvh;z-index:2147483000;pointer-events:none;overflow:visible;isolation:isolate;font-family:-apple-system,"PingFang SC",sans-serif}
   #jwr2-fab{all:unset;box-sizing:border-box;position:absolute;right:18px;bottom:72px;width:54px;height:54px;border-radius:18px;display:grid;place-items:center;pointer-events:auto;cursor:pointer;color:#fff;background:linear-gradient(145deg,#ff9639,#e94738);border:1px solid #ffffff70;box-shadow:0 10px 28px #c7352f66;font:800 22px "Songti SC",serif}
   #jwr2-overlay{position:absolute;inset:0;display:none;place-items:center;pointer-events:auto;background:#07101bbd;backdrop-filter:blur(12px)}#jwr2-overlay.on{display:grid}
   #jwr2-backdrop{position:absolute;inset:0}
