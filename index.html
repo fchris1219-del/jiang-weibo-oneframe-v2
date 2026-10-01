@@ -171,11 +171,11 @@ body{display:grid;place-items:center;overflow:hidden}
 .me-card{background:var(--card);margin:8px 0 0;padding:14px;border-radius:0}
 .set-row{margin-top:12px}
 .set-row label{display:block;font-size:12px;color:#666;margin-bottom:4px}
-.set-row input[type=text],.set-row input[type=number],.set-row textarea{
+.set-row input[type=text],.set-row input[type=number],.set-row input[type=password],.set-row select,.set-row textarea{
   width:100%;border:1px solid #eee;border-radius:8px;padding:0 10px;
   font:inherit;font-size:14px;background:#fafafa;outline:none
 }
-.set-row input[type=text],.set-row input[type=number]{height:36px}
+.set-row input[type=text],.set-row input[type=number],.set-row input[type=password],.set-row select{height:36px}
 .set-row textarea{padding:8px 10px;min-height:72px;resize:vertical;line-height:1.45}
 .set-row.half{display:flex;gap:8px}
 .set-row.half > div{flex:1;min-width:0}
@@ -391,6 +391,11 @@ body{display:grid;place-items:center;overflow:hidden}
 .context-preview{max-height:210px;overflow:auto;white-space:pre-wrap;word-break:break-word;font-size:10px;line-height:1.55;
   padding:10px;border-radius:9px;background:#191c22;color:#dce3ed;margin-top:10px;display:none}
 .context-preview.show{display:block}
+.pull-bar{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.pull-bar #allPullBtn{background:var(--orange);border-color:var(--orange);color:#fff}
+.field-note{margin-top:5px;color:#9a9a9a;font-size:10px;line-height:1.5}
+.settings-subbox{margin-top:10px;padding:10px 11px;border-radius:10px;background:#fafafa;border:1px solid #eeeeee}
+.settings-subbox[hidden]{display:none}
 @media(max-width:520px){#app{border-radius:0;box-shadow:none}.settings-grid{grid-template-columns:1fr 1fr}}
 </style>
 </head>
@@ -412,6 +417,7 @@ body{display:grid;place-items:center;overflow:hidden}
       </div>
       <div class="pull-bar" id="pullBar">
         <button type="button" id="feedPullBtn">刷新推荐 · 拉取 5 条微博</button>
+        <button type="button" id="allPullBtn">全部拉取</button>
       </div>
     </div>
     <div class="scroll" id="feedScroll">
@@ -543,7 +549,7 @@ body{display:grid;place-items:center;overflow:hidden}
 
       <section class="settings-section" id="slotSection">
         <h3>档位</h3>
-        <div class="section-note">切入档位时会立刻保存，并把该档的初始化提示词与 wb_lore 写进首楼。</div>
+        <div class="section-note">每个档位拥有独立微博、评论、私信与上下文配置；切换后不显示其它档的记录。</div>
         <div class="settings-inline">
           <select id="setSlotSelect" aria-label="微博档位"></select>
           <button type="button" class="mini-action primary" id="settingsActivateSlot">切入</button>
@@ -551,6 +557,7 @@ body{display:grid;place-items:center;overflow:hidden}
         </div>
         <div class="set-row"><label for="setSlotName">档位名称</label><input type="text" id="setSlotName" placeholder="例如：主线 / 娱乐圈后期" /></div>
         <div class="set-row"><label for="setInitPrompt">初始化提示词（wblore）</label><textarea id="setInitPrompt" rows="5" placeholder="这一档微博生成时始终优先遵守的设定……"></textarea></div>
+        <label class="settings-switch"><input type="checkbox" id="setPullPrevLore"><span>本次切入时，先拉取当前聊天里上一份 wb_lore</span></label>
         <div class="slot-status" id="slotStatus">正在读取当前聊天档…</div>
       </section>
 
@@ -582,28 +589,33 @@ body{display:grid;place-items:center;overflow:hidden}
             <option value="custom">Custom (OpenAI-compatible)</option><option value="openai">OpenAI</option><option value="ai21">AI21</option><option value="aimlapi">AI/ML API</option><option value="azure_openai">Azure OpenAI</option><option value="chutes">Chutes</option><option value="claude">Claude</option><option value="workers_ai">Cloudflare Workers AI</option><option value="cohere">Cohere</option><option value="deepseek">DeepSeek</option><option value="electronhub">Electron Hub</option><option value="fireworks">Fireworks AI</option><option value="groq">Groq</option><option value="makersuite">Google AI Studio</option><option value="vertexai">Google Vertex AI</option><option value="mistralai">MistralAI</option><option value="minimax">MiniMax</option><option value="moonshot">Moonshot AI</option><option value="nanogpt">NanoGPT</option><option value="openrouter">OpenRouter</option><option value="perplexity">Perplexity</option><option value="pollinations">Pollinations</option><option value="siliconflow">SiliconFlow</option><option value="xai">xAI (Grok)</option><option value="zai">Z.AI (GLM)</option>
           </select></div>
           <div class="set-row"><label for="setApiUrl">API 基础地址</label><input type="text" id="setApiUrl" placeholder="https://api.example.com/v1" /></div>
-          <div class="set-row"><label for="setApiModel">模型名称</label><input type="text" id="setApiModel" placeholder="gpt-4.1-mini" /></div>
+          <div class="set-row"><label for="setApiModel">模型</label><select id="setApiModel"><option value="">保存 Token 后自动拉取</option></select></div>
           <div class="settings-grid">
             <div class="set-row"><label for="setApiTemp">Temperature</label><input type="number" id="setApiTemp" min="0" max="2" step="0.1" /></div>
             <div class="set-row"><label for="setApiMax">最大输出 Tokens</label><input type="number" id="setApiMax" min="256" max="65535" step="128" /></div>
           </div>
           <div class="set-row"><label for="setApiToken">Token（保存后不回显）</label><input type="password" id="setApiToken" autocomplete="new-password" placeholder="粘贴 Token 后点保存" /></div>
           <div class="section-note">Token 仅保存在酒馆本地设置中；重新打开设置时始终留空。</div>
-          <div class="settings-inline"><button type="button" class="mini-action primary" id="settingsSaveToken">保存 Token</button><button type="button" class="mini-action" id="settingsClearToken">清除 Token</button><button type="button" class="mini-action" id="settingsTestApi">测试连接</button></div>
+          <div class="settings-inline"><button type="button" class="mini-action primary" id="settingsSaveToken">保存 Token 并拉取模型</button><button type="button" class="mini-action" id="settingsRefreshModels">刷新模型</button></div>
+          <div class="settings-inline"><button type="button" class="mini-action" id="settingsClearToken">清除 Token</button><button type="button" class="mini-action" id="settingsTestApi">测试连接</button></div>
         </div>
         <div class="api-status" id="apiStatus">当前：跟随酒馆主 API</div>
       </section>
 
       <section class="settings-section">
         <h3>上下文注入</h3>
-        <div class="section-note">仅拼装给微博生成请求，不会污染酒馆正文。顺序：档位提示 → 人设/场景 → 世界书 → 最近聊天 → 微博快照 → 当前任务。</div>
-        <div class="set-row"><label for="setRecentMessages">最近聊天条数</label><input type="number" id="setRecentMessages" min="0" max="60" step="1" /></div>
+        <div class="section-note">只拼装给微博生成请求，微博记录不写入正文楼层。固定原生提示与信息隔离规则会自动加入。</div>
+        <div class="set-row"><label for="setNativePrompt">原生微博提示词</label><select id="setNativePrompt"><option value="detailed">详细原生版</option><option value="compact">简约格式版</option></select></div>
+        <div class="set-row"><label for="setContextMode">前文方式</label><select id="setContextMode"><option value="recent">注入最近聊天</option><option value="summary">使用手动总结</option><option value="none">不注入聊天前文</option></select></div>
+        <div class="settings-subbox" id="recentContextBox"><div class="set-row" style="margin-top:0"><label for="setRecentMessages">最近聊天条数（默认 3）</label><input type="number" id="setRecentMessages" min="0" max="60" step="1" /></div></div>
+        <div class="settings-subbox" id="summaryContextBox" hidden><div class="set-row" style="margin-top:0"><label for="setManualSummary">粘贴前文总结</label><textarea id="setManualSummary" rows="6" placeholder="只会用这段总结代替聊天前文……"></textarea></div></div>
         <label class="settings-switch"><input type="checkbox" id="setIncludeChar" checked><span>注入角色描述与性格</span></label>
         <label class="settings-switch"><input type="checkbox" id="setIncludePersona" checked><span>注入用户 Persona</span></label>
         <label class="settings-switch"><input type="checkbox" id="setIncludeScenario" checked><span>注入当前场景</span></label>
-        <label class="settings-switch"><input type="checkbox" id="setIncludeBg" checked><span>注入已激活世界书；手动勾选时优先使用勾选条目</span></label>
+        <label class="settings-switch"><input type="checkbox" id="setIncludeBg" checked><span>注入世界书勾选条目</span></label>
         <label class="settings-switch"><input type="checkbox" id="setInjectMain"><span>同时把当前档位 wb_lore 注入酒馆主对话（默认关闭）</span></label>
-        <div class="settings-inline"><button type="button" class="mini-action primary" id="settingsPreviewContext">查看本次注入预览</button><button type="button" class="mini-action" id="settingsRefreshLore">刷新世界书</button><button type="button" class="mini-action" id="settingsClearLorePick">清空勾选</button></div>
+        <div class="set-row"><label for="setLoreScanKeyword">世界书标题自动扫描词</label><input type="text" id="setLoreScanKeyword" value="🩶" placeholder="🩶" /><div class="field-note">只有标题含该字样的条目会在“自动扫描”时勾选；其它条目需手动勾选并保存才生效。</div></div>
+        <div class="settings-inline"><button type="button" class="mini-action primary" id="settingsPreviewContext">查看注入预览</button><button type="button" class="mini-action" id="settingsRefreshLore">刷新并自动扫描</button><button type="button" class="mini-action" id="settingsClearLorePick">清空勾选</button></div>
         <pre class="context-preview" id="contextPreview"></pre>
         <div id="lorePickList" class="lore-pick-list"><div class="lore-empty">打开设置时自动加载…</div></div>
       </section>
@@ -613,14 +625,14 @@ body{display:grid;place-items:center;overflow:hidden}
         <div class="section-note" id="wbLoreHint">切入档位后会自动写入首楼；这里可从旧楼层提取或手动编辑。</div>
         <div class="settings-inline"><button type="button" class="mini-action" id="settingsPullPrevLore">拉取旧楼</button><button type="button" class="mini-action" id="settingsFillPinnedLore">填入当前档</button><button type="button" class="mini-action" id="settingsHarvestLore">重新抓取</button></div>
         <div class="set-row"><label for="loreRawText">完整 wb_lore</label><textarea id="loreRawText" rows="8" placeholder="&lt;wb_lore&gt; 内部全文…"></textarea></div>
-        <details style="margin-top:10px"><summary style="font-size:12px;color:#777;cursor:pointer">分栏编辑</summary><div id="loreSecList" class="lore-sec-box"></div><div class="set-row"><label for="loreRestText">其它正文</label><textarea id="loreRestText" rows="4"></textarea></div></details>
+        <details style="margin-top:10px"><summary style="font-size:12px;color:#777;cursor:pointer">按章节拆分编辑（可选）</summary><div class="field-note">把账号行、【微博撰写要求】等分开改，保存时会重新合成完整 wb_lore。</div><div id="loreSecList" class="lore-sec-box"></div><div class="set-row"><label for="loreRestText">其它正文</label><textarea id="loreRestText" rows="4"></textarea></div></details>
         <div class="settings-inline"><button type="button" class="mini-action" id="settingsParseLoreRaw">从原文拆分</button><button type="button" class="mini-action primary" id="settingsWriteLoreFloor">写入首楼并保存档位</button><button type="button" class="mini-action" id="settingsClearLore">清空</button></div>
       </section>
 
       <section class="settings-section">
-        <h3>本聊天记录</h3>
-        <div class="section-note">主存为本聊天 chatMetadata；localStorage 只作离线镜像。切换聊天会自动绑定另一份微博记录。</div>
-        <div class="settings-inline"><button type="button" class="mini-action" id="settingsClearData">清空本聊天的微博/评论/私信</button></div>
+        <h3>本档位记录</h3>
+        <div class="section-note">主存为本聊天 chatMetadata 内的独立档位；localStorage 只作离线镜像，不写入正文楼层。</div>
+        <div class="settings-inline"><button type="button" class="mini-action" id="settingsClearData">清空本档位的微博/评论/私信</button></div>
       </section>
     </div>
     <div class="settings-footer"><button type="button" class="reset" id="settingsReset">恢复默认</button><button type="button" class="save" id="settingsSave">保存当前设置</button></div>
@@ -654,22 +666,25 @@ body{display:grid;place-items:center;overflow:hidden}
 
   function defaultGlobalConfig(){
     return {
-      version: 2,
-      api: { mode:'main', source:'custom', url:'', model:'', temperature:0.8, maxTokens:4096 },
-      context: { recentMessages:12, includeChar:true, includePersona:true, includeScenario:true, includeWorldInfo:true, injectMain:false },
+      version: 3,
+      api: { mode:'main', source:'custom', url:'', model:'', models:[], temperature:0.8, maxTokens:4096 },
+      context: { mode:'recent', recentMessages:3, manualSummary:'', includeChar:true, includePersona:true, includeScenario:true, includeWorldInfo:true, loreScanKeyword:'🩶', nativePrompt:'detailed', injectMain:false },
       slots: [{ id:'default', name:'默认档位', initPrompt:'', wbLore:'' }],
     };
   }
   function normalizeGlobalConfig(raw){
     const base = defaultGlobalConfig();
     const value = raw && typeof raw === 'object' ? raw : {};
-    return {
+    const out = {
       ...base,
       ...value,
       api: { ...base.api, ...(value.api || {}) },
       context: { ...base.context, ...(value.context || {}) },
       slots: Array.isArray(value.slots) && value.slots.length ? value.slots : base.slots,
     };
+    if (Number(value.version || 0) < 3 && Number(value.context?.recentMessages) === 12) out.context.recentMessages = 3;
+    out.version = 3;
+    return out;
   }
   function readGlobalConfig(){
     try { if (WB_HOST?.getSettings) return normalizeGlobalConfig(WB_HOST.getSettings()); } catch (_) {}
@@ -691,6 +706,10 @@ body{display:grid;place-items:center;overflow:hidden}
   function currentSlot(){
     return globalConfig.slots.find((s) => String(s.id) === String(activeSlotId)) || globalConfig.slots[0];
   }
+  function currentSlotContext(){
+    const base = globalConfig.context || {};
+    return { ...base, ...(currentSlot()?.context || {}) };
+  }
   async function saveChatBinding(patch){
     chatBinding = { ...chatBinding, ...(patch || {}), activeSlotId };
     try { await WB_HOST?.saveChatStore?.(chatBinding); } catch (_) {}
@@ -699,10 +718,10 @@ body{display:grid;place-items:center;overflow:hidden}
 
   const PHONE_SETTINGS_KEY = 'weibo_phone_settings_v1';
   function settingsBucketId(){
-    return (rawCharName || 'default') + '::' + (rawUserName || 'user');
+    return (rawCharName || 'default') + '::' + (rawUserName || 'user') + '::slot:' + activeSlotId;
   }
   function defaultPhoneSettings(){
-    const ctxSet = globalConfig?.context || {};
+    const ctxSet = currentSlotContext();
     const slot = currentSlot() || {};
     const account = slot.account || {};
     return {
@@ -717,7 +736,11 @@ body{display:grid;place-items:center;overflow:hidden}
       includeChar: ctxSet.includeChar !== false,
       includePersona: ctxSet.includePersona !== false,
       includeScenario: ctxSet.includeScenario !== false,
-      recentMessages: Math.max(0, Math.min(60, Number(ctxSet.recentMessages) || 12)),
+      contextMode: ['recent','summary','none'].includes(ctxSet.mode) ? ctxSet.mode : 'recent',
+      recentMessages: Math.max(0, Math.min(60, Number(ctxSet.recentMessages ?? 3))),
+      manualSummary: String(ctxSet.manualSummary || ''),
+      loreScanKeyword: String(ctxSet.loreScanKeyword || '🩶'),
+      nativePrompt: ctxSet.nativePrompt === 'compact' ? 'compact' : 'detailed',
       injectMain: !!ctxSet.injectMain,
       selectedLoreIds: [],
       userAliases: [],
@@ -752,9 +775,14 @@ body{display:grid;place-items:center;overflow:hidden}
         includeChar: cur.includeChar !== false,
         includePersona: cur.includePersona !== false,
         includeScenario: cur.includeScenario !== false,
-        recentMessages: Math.max(0, Math.min(60, Number(cur.recentMessages) || 12)),
+        mode: ['recent','summary','none'].includes(cur.contextMode) ? cur.contextMode : 'recent',
+        recentMessages: Math.max(0, Math.min(60, Number(cur.recentMessages ?? 3))),
+        manualSummary: String(cur.manualSummary || ''),
+        loreScanKeyword: String(cur.loreScanKeyword || '🩶'),
+        nativePrompt: cur.nativePrompt === 'compact' ? 'compact' : 'detailed',
         injectMain: !!cur.injectMain,
       };
+      slot.context = { ...globalConfig.context };
       writeGlobalConfig(globalConfig);
     }
     applyDisplayNames();
@@ -781,6 +809,7 @@ body{display:grid;place-items:center;overflow:hidden}
     wbLore: String(currentSlot()?.wbLore || ''), // 当前档位设定；切入时写首楼 + chatMetadata
     selectedLoreIds: [], // 用户勾选的世界书条目 id
     selectedLoreSnap: [], // 勾选时钉住的正文快照 {id,book,name,content}，现场读失败时兜底
+    loreAutoSuppressed: false,
     profileWho: 'char', // 主页 tab：char | user
     userFans: 0,
     charFans: 0,
@@ -858,7 +887,7 @@ body{display:grid;place-items:center;overflow:hidden}
     return 'unknown_chat';
   }
   function phoneDataBucketId(){
-    return currentChatId() + '::' + (rawCharName || 'char') + '::' + (rawUserName || 'user');
+    return currentChatId() + '::' + (rawCharName || 'char') + '::' + (rawUserName || 'user') + '::slot:' + activeSlotId;
   }
   function extractRawMessageText(entry){
     if (!entry) return '';
@@ -983,10 +1012,6 @@ body{display:grid;place-items:center;overflow:hidden}
     return book + '::' + (name || keys || ('i' + index));
   }
   function readSelectedLoreIds(){
-    try {
-      const meta = getSillyContextSafe()?.chatMetadata?.weibo_selected_lore;
-      if (Array.isArray(meta) && meta.length) return meta.map(String);
-    } catch (_) {}
     if (Array.isArray(state.selectedLoreIds) && state.selectedLoreIds.length) return state.selectedLoreIds.map(String);
     if (Array.isArray(phoneSettings.selectedLoreIds) && phoneSettings.selectedLoreIds.length) {
       return phoneSettings.selectedLoreIds.map(String);
@@ -1012,16 +1037,16 @@ body{display:grid;place-items:center;overflow:hidden}
       return false;
     }
   }
-  /**
-   * 本聊天真持久层：chatMetadata（跟聊天 json 走，不在楼层里）。
-   * 藏/删前 200 楼、后来再 QR 新开微博壳，仍能从这里灌回。
-   * 微博楼层只是「当前壳」的镜像，会被藏楼带走，不能当主存。
-   */
+  /** 本聊天内再按档位分区；旧 phoneBundle 只迁移到当前档一次。 */
   function readPhoneBundleFromMetadata(){
     try {
-      const hostBundle = WB_HOST?.getChatStore?.()?.phoneBundle;
+      const hostStore = WB_HOST?.getChatStore?.() || {};
+      const hostBundle = hostStore?.slotRecords?.[activeSlotId];
       if (hostBundle && typeof hostBundle === 'object') return hostBundle;
+      if (!hostStore.slotRecords && hostStore.phoneBundle && typeof hostStore.phoneBundle === 'object') return hostStore.phoneBundle;
       const cm = getSillyContextSafe()?.chatMetadata || {};
+      const slots = cm.weibo_slot_records;
+      if (slots?.[activeSlotId] && typeof slots[activeSlotId] === 'object') return slots[activeSlotId];
       const bundle = cm.weibo_phone_bundle;
       if (bundle && typeof bundle === 'object') return bundle;
       // 兼容旧字段
@@ -1032,11 +1057,12 @@ body{display:grid;place-items:center;overflow:hidden}
       return Object.keys(legacy).length ? legacy : null;
     } catch (_) { return null; }
   }
-  async function writePhoneBundleToMetadata(){
-    const bundle = {
+  function makePhoneBundle(){
+    return {
       wbLore: state.wbLore || '',
       selectedLoreIds: state.selectedLoreIds || [],
       selectedLoreSnap: state.selectedLoreSnap || [],
+      loreAutoSuppressed: !!state.loreAutoSuppressed,
       posts: state.posts || [],
       threads: state.threads || [],
       userFans: Number(state.userFans) || 0,
@@ -1045,17 +1071,31 @@ body{display:grid;place-items:center;overflow:hidden}
       charFollowing: Number(state.charFollowing) || 0,
       savedAt: Date.now(),
     };
+  }
+  async function writePhoneBundleToMetadata(){
+    const bundle = makePhoneBundle();
     if (WB_HOST?.saveChatStore) {
-      await saveChatBinding({ phoneBundle: bundle, activeSlotId });
+      const records = { ...(chatBinding.slotRecords || {}) };
+      records[activeSlotId] = bundle;
+      await saveChatBinding({ slotRecords: records, activeSlotId, migratedToSlots: true });
       return true;
     }
-    return patchChatMetadata({
-      weibo_phone_bundle: bundle,
-      // 同步旧键，避免其它逻辑读不到
-      weibo_wb_lore: bundle.wbLore,
-      weibo_selected_lore: bundle.selectedLoreIds,
-      weibo_selected_lore_snap: bundle.selectedLoreSnap,
-    });
+    const cm = getSillyContextSafe()?.chatMetadata || {};
+    return patchChatMetadata({ weibo_slot_records: { ...(cm.weibo_slot_records || {}), [activeSlotId]: bundle } });
+  }
+  function resetPhoneStateForSlot(){
+    state.posts = [];
+    state.threads = [];
+    state.page = null;
+    state.wbLore = String(currentSlot()?.wbLore || '');
+    state.selectedLoreIds = [];
+    state.selectedLoreSnap = [];
+    state.loreAutoSuppressed = false;
+    state.userFans = 0;
+    state.charFans = 0;
+    state.userFollowing = Number(currentSlot()?.account?.userFollowing) || 12;
+    state.charFollowing = Number(currentSlot()?.account?.charFollowing) || 86;
+    state.fansFromStore = false;
   }
   function hydrateFromChatMetadata(){
     const bundle = readPhoneBundleFromMetadata();
@@ -1070,6 +1110,7 @@ body{display:grid;place-items:center;overflow:hidden}
       state.selectedLoreSnap = bundle.selectedLoreSnap;
       hit = true;
     }
+    state.loreAutoSuppressed = !!bundle.loreAutoSuppressed;
     const uf = Number(bundle.userFans);
     const cf = Number(bundle.charFans);
     if (Number.isFinite(uf) && uf > 0) { state.userFans = uf; state.fansFromStore = true; hit = true; }
@@ -1285,14 +1326,15 @@ body{display:grid;place-items:center;overflow:hidden}
       if (!_lorePickPending.size && selected.size) {
         selected.forEach((id) => _lorePickPending.add(id));
       }
-      state.selectedLoreIds = [..._lorePickPending];
-      try {
-        const snap = getSillyContextSafe()?.chatMetadata?.weibo_selected_lore_snap;
-        if (Array.isArray(snap) && snap.length) state.selectedLoreSnap = snap;
-      } catch (_) {}
+      const snap = readPhoneBundleFromMetadata()?.selectedLoreSnap;
+      if (Array.isArray(snap) && snap.length) state.selectedLoreSnap = snap;
 
       const books = _loreCatalogCache?.books || [];
       const flat = _loreCatalogCache?.flat || [];
+      if (!_lorePickPending.size && !state.loreAutoSuppressed) {
+        const marker = String(phoneSettings.loreScanKeyword || currentSlotContext().loreScanKeyword || '🩶').trim();
+        if (marker) flat.filter((item) => !item.disabled && String(item.name || '').includes(marker)).forEach((item) => _lorePickPending.add(item.id));
+      }
       if (!books.length && !flat.length) {
         box.innerHTML = '<div class="lore-empty">未读到已启动世界书。<br>请确认已启用世界书，或点「刷新世界书列表」。</div>';
         bindLorePickListEvents(box);
@@ -1534,11 +1576,7 @@ body{display:grid;place-items:center;overflow:hidden}
     return pick ? pick.text : '';
   }
   function readChatMetadataLore(){
-    try {
-      const ctx = getSillyContextSafe();
-      const v = ctx?.chatMetadata?.weibo_wb_lore;
-      return String(v || '').trim();
-    } catch (_) { return ''; }
+    return String(readPhoneBundleFromMetadata()?.wbLore || '').trim();
   }
   async function writeChatMetadataLore(text){
     text = String(text || '').trim();
@@ -1583,7 +1621,6 @@ body{display:grid;place-items:center;overflow:hidden}
     if (!state.fansFromStore) applyFansFromWbLore(text);
     await writePhoneBundleToMetadata();
     savePhoneData();
-    deferredSyncToFloor(120);
     return text;
   }
   /** 抓取 wb_lore：优先 chatMetadata（藏楼也在），再当前壳/本地/仍可见的聊天 */
@@ -1614,10 +1651,11 @@ body{display:grid;place-items:center;overflow:hidden}
         found = String(all[phoneDataBucketId()]?.wbLore || '').trim();
       } catch (_) {}
     }
-    // 4) 扫仍留在 chat 数组里的楼层（已被藏/删的读不到）
-    const scanned = scanChatForWbLore();
-    if (force && scanned) found = scanned;
-    else if (!found && scanned) found = scanned;
+    // 只有用户明确点「重新抓取」/切入勾选拉取时才扫楼层
+    if (force || opts.fromChat) {
+      const scanned = scanChatForWbLore();
+      if (scanned) found = scanned;
+    }
 
     if (found) await persistWbLore(found);
     else if (force) await persistWbLore('');
@@ -1640,6 +1678,7 @@ body{display:grid;place-items:center;overflow:hidden}
         wbLore: state.wbLore || '',
         selectedLoreIds: state.selectedLoreIds || [],
         selectedLoreSnap: state.selectedLoreSnap || [],
+        loreAutoSuppressed: !!state.loreAutoSuppressed,
         userFans: Number(state.userFans) || 0,
         charFans: Number(state.charFans) || 0,
         userFollowing: Number(state.userFollowing) || 0,
@@ -1661,6 +1700,7 @@ body{display:grid;place-items:center;overflow:hidden}
       if (hit.wbLore) state.wbLore = String(hit.wbLore);
       if (Array.isArray(hit.selectedLoreIds)) state.selectedLoreIds = hit.selectedLoreIds.map(String);
       if (Array.isArray(hit.selectedLoreSnap)) state.selectedLoreSnap = hit.selectedLoreSnap;
+      state.loreAutoSuppressed = !!hit.loreAutoSuppressed;
       const uf = Number(hit.userFans);
       const cf = Number(hit.charFans);
       if (Number.isFinite(uf) && uf > 0) { state.userFans = uf; state.fansFromStore = true; }
@@ -1707,21 +1747,11 @@ body{display:grid;place-items:center;overflow:hidden}
     }
   }
   function deferredSyncToFloor(delay = 320){
-    if (_floorSyncTimer) clearTimeout(_floorSyncTimer);
-    _floorSyncTimer = setTimeout(async () => {
-      if (_floorSyncPending) return;
-      _floorSyncPending = true;
-      try { await syncToFloor(); }
-      finally {
-        _floorSyncPending = false;
-        _floorSyncTimer = null;
-      }
-    }, delay);
+    // v3：微博/评论/私信只存 chatMetadata + localStorage，不再写入正文楼层。
+    return false;
   }
   function persistPhoneState(){
     savePhoneData();
-    deferredSyncToFloor();
-    // 主存：chatMetadata（藏楼 / 新开微博壳都不丢）
     writePhoneBundleToMetadata().catch(() => {});
   }
   function clearPhoneData(){
@@ -1735,40 +1765,11 @@ body{display:grid;place-items:center;overflow:hidden}
     state.page = null;
     // 清空帖/私信，但保留 wb_lore / 世界书勾选（另有清除按钮）
     writePhoneBundleToMetadata().catch(() => {});
-    deferredSyncToFloor(80);
   }
   function restorePhoneState(){
-    // 1) 主存 chatMetadata（与楼层无关：藏前200楼后再 QR，仍从这里灌）
+    resetPhoneStateForSlot();
+    // 主存 chatMetadata：当前档位独立读取
     const metaHit = hydrateFromChatMetadata();
-
-    // 2) 当前微博壳若仍在且有数据，用壳上的帖/私信（同一壳的最新操作）
-    try {
-      const msgId = ensureWeiboMsgId();
-      if (msgId != null) {
-        const raw = getChatMessageText(msgId, '');
-        if (messageLooksLikeWeiboShell(raw)) {
-          const parsed = parseWeiboApp(raw);
-          if ((parsed.posts && parsed.posts.length) || (parsed.threads && parsed.threads.length)) {
-            state.posts = parsed.posts;
-            state.threads = parsed.threads;
-            applyUiMeta(extractUiMeta(raw));
-          }
-          const floorLore = joinWbLoreChunks(extractWbLoreBlocks(raw));
-          if (floorLore) state.wbLore = floorLore;
-          const floorSnap = extractLorePickSnap(raw);
-          if (floorSnap.length) state.selectedLoreSnap = floorSnap;
-          const meta = extractUiMeta(raw);
-          if (Array.isArray(meta?.selectedLoreIds) && meta.selectedLoreIds.length) {
-            state.selectedLoreIds = meta.selectedLoreIds.map(String);
-          }
-        }
-      }
-    } catch (_) {}
-
-    // 3) 再补一次 metadata：新空壳没有 lore 时从主存填回
-    hydrateFromChatMetadata();
-
-    // 4) 仍空才用同浏览器 localStorage（粉量以 fansFromStore 为准，避免未初始化的 0 误判）
     const hasPersist = !!(
       state.posts.length || state.threads.length || state.wbLore
       || (state.selectedLoreIds || []).length || state.fansFromStore
@@ -1778,17 +1779,14 @@ body{display:grid;place-items:center;overflow:hidden}
         // 有本地缓存再写回；粉量兜底留给 boot 里 lore 抓取之后
         if (state.fansFromStore) ensureProfileStats({ allowDefault: false });
         writePhoneBundleToMetadata().catch(() => {});
-        deferredSyncToFloor(120);
         return 'local';
       }
       return null;
     }
 
     if (state.fansFromStore) ensureProfileStats({ allowDefault: false });
-    // 把主存镜像写进「当前」微博壳（新 QR 需要带上 lore/快照）
     writePhoneBundleToMetadata().catch(() => {});
-    deferredSyncToFloor(150);
-    return metaHit ? 'metadata' : 'floor';
+    return metaHit ? 'metadata' : null;
   }
 
   function badgeHTML(n){
@@ -1904,8 +1902,9 @@ body{display:grid;place-items:center;overflow:hidden}
    * - 角色书里「微博热搜输出」「脆文输出」「UpdateVariable」会抢格式，禁止整本灌进手机 prompt
    * - 只保留：人设摘要、本局开场、近期聊天（截断）、知情范围、同层协议世界书
    */
-  async function collectStContextSnapshot(maxMsgs = 12, maxChars = 14000, scanKeyword = ''){
+  async function collectStContextSnapshot(maxMsgs = 3, maxChars = 14000, scanKeyword = ''){
     maxMsgs = Math.max(0, Math.min(60, Number(phoneSettings.recentMessages ?? maxMsgs) || 0));
+    const contextMode = ['recent','summary','none'].includes(phoneSettings.contextMode) ? phoneSettings.contextMode : 'recent';
     const chunks = [];
     const push = (title, text) => {
       const t = String(text || '').trim();
@@ -2056,8 +2055,12 @@ body{display:grid;place-items:center;overflow:hidden}
       push('角色卡读取异常', String(e && e.message || e));
     }
 
-    // —— 本局开场 + 聊天：只来自当前会话楼层 ——
-    try {
+    // —— 前文来源：最近聊天 / 手动总结 / 不注入 ——
+    if (contextMode === 'summary') {
+      push('用户手动前文总结', clip(phoneSettings.manualSummary || '（未填写总结）', 10000));
+    } else if (contextMode === 'none') {
+      push('聊天前文', '（本档位已关闭前文注入）');
+    } else try {
       let list = [];
       if (typeof getChatMessages === 'function') {
         try { list = getChatMessages(-99999) || []; } catch (_) {}
@@ -2118,17 +2121,16 @@ body{display:grid;place-items:center;overflow:hidden}
         .replace(_ejsBlockRe, '[ejs已省略]')
         .split(_ejsOpen).join('<\uFF05')
         .split(_ejsClose).join('\uFF05>');
-      const kw = String(scanKeyword || '').toLowerCase();
       const selectedIds = readSelectedLoreIds();
       const manual = selectedIds.length > 0;
       const selectedSet = new Set(selectedIds);
+      const titleMarker = String(phoneSettings.loreScanKeyword || currentSlotContext().loreScanKeyword || '🩶').trim();
+      const allowAutoTitleScan = !manual && !state.loreAutoSuppressed && !!titleMarker;
       const liveHitIds = new Set();
 
       // 恢复楼层/metadata 里钉住的勾选快照
-      try {
-        const metaSnap = getSillyContextSafe()?.chatMetadata?.weibo_selected_lore_snap;
-        if (Array.isArray(metaSnap) && metaSnap.length) state.selectedLoreSnap = metaSnap;
-      } catch (_) {}
+      const metaSnap = readPhoneBundleFromMetadata()?.selectedLoreSnap;
+      if (Array.isArray(metaSnap) && metaSnap.length) state.selectedLoreSnap = metaSnap;
 
       const takeUseful = (bookTitle, entriesObj) => {
         if (!entriesObj) return;
@@ -2142,12 +2144,11 @@ body{display:grid;place-items:center;overflow:hidden}
           if (!content) return;
           if (isJunkLore(name, keys, content)) return;
           const id = loreEntryId(bookTitle, e, index);
-          if (manual) {
-            if (!selectedSet.has(id)) return;
+          if (manual || allowAutoTitleScan) {
+            const wanted = manual ? selectedSet.has(id) : String(name || '').includes(titleMarker);
+            if (!wanted) return;
             liveHitIds.add(id);
-          } else if (!isUsefulLore(name, keys, content, kw, !!(e.constant))) {
-            return;
-          }
+          } else return;
           const limit = manual ? 2200 : (/world_setting|世界观|背景/.test(name + content.slice(0, 80)) ? 1800 : 900);
           entryLines.push(`[${bookTitle}] ${name || keys.join(',') || '条目'}\n${clip(content, limit)}`);
         });
@@ -2187,13 +2188,13 @@ body{display:grid;place-items:center;overflow:hidden}
 
       const modeLabel = manual
         ? '手动勾选世界书（现场读取优先，缺失用钉住快照）'
-        : ('自动扫描（协议/知情范围/开场命中' + (phoneSettings.includeBgLore !== false ? '+背景' : '') + '）');
+        : (allowAutoTitleScan ? ('自动扫描标题含「' + titleMarker + '」的条目') : '未勾选世界书');
       if (entryLines.length) {
         push('手机相关设定摘录｜' + modeLabel, entryLines.slice(0, manual ? 20 : 12).join('\n\n'));
       } else {
         push('手机相关设定摘录', manual
           ? '（已勾选但未读到正文：可点设置里「刷新世界书列表」后重新保存勾选）'
-          : '（无命中条目：可勾选世界书，或为开场加短「微博知情范围」）');
+          : (allowAutoTitleScan ? ('（没有标题含「' + titleMarker + '」的条目）') : '（当前未勾选世界书）'));
       }
     } catch (e) {
       push('世界书读取异常', String(e && e.message || e));
@@ -3504,6 +3505,241 @@ body{display:grid;place-items:center;overflow:hidden}
   }
 
   // ---- AI ----
+  const WEIBO_NATIVE_DETAILED = String.raw`<weibo_native_output>
+
+**微博原生表达模拟**
+
+You are simulating naturally occurring content within Weibo. Generate native platform content directly rather than explaining Weibo, and strictly follow the protocol format below.
+
+【触发与输出总则】
+
+When the task contains weibo, feed, or msg, enter Weibo tool mode.
+
+Output only the corresponding protocol tags and pipeline lines. Do not output narrative prose, status bars, HTML, chain-of-thought, UpdateVariable, JSONPatch, commentary, or explanations.
+
+Do not post, comment, or send private messages on behalf of {{user}} unless {{user}} explicitly provides the exact content.
+
+【微博生态】
+
+Weibo is not formal prose, forum analysis, or news summary. Prioritize native platform rhythm, slang, emotional density, information gaps, and social context.
+
+Do not add AI-style disclaimers, moral commentary, detached analysis, or concluding lessons.
+
+Users may swear, exaggerate, misunderstand context, speak irrationally, use 阴阳怪气, memes, fragments, abbreviations, emoji, pinyin, repeated punctuation, or post only a few characters.
+
+Do not force posts into “claim + evidence + conclusion”.
+
+Different account types must sound distinct:
+
+普通用户: fragmented, casual, emotion-first.
+粉丝: 控评、做数据、反黑、护短、内讧 are all possible.
+黑粉/串子: 反串、捧杀、阴阳、断章取义、带节奏.
+营销号: clickbait, vague framing, suspense, traffic-chasing.
+媒体/官博: relatively standardized but still account-specific.
+明星/选手/公众人物本人: usually more restrained and often brief.
+站姐、超话主持人、数据站、反黑站、搬运号、路人号 should retain their own discourse habits.
+
+Do not model “微博网友” as one collective mind. Different circles may hold conflicting information, attitudes, and narratives. A loud or highly liked opinion is not automatically majority opinion.
+
+【信息传播】
+
+Information spreads unevenly.
+
+事件刚发生时: screenshots, 偷拍视频, hearsay, speculation, mistakes, and partial context may coexist.
+
+逐渐发酵时: 热搜、营销号搬运、粉圈控评、路人加入、旧料考古、不同版本传播.
+
+官方回应后: users may accept, question, meme, continue arguing, or shift attention elsewhere.
+
+Do not let an official explanation automatically end discussion. Context may be cropped, distorted, memefied, or transformed through reposting.
+
+Language should evolve with time: early reactions are raw and uncertain; later discourse may become factional, meme-heavy, archaeological, revisionist, or turn into recurring 黑梗.
+
+【热搜与评论】
+
+热搜 titles should resemble native Weibo phrasing, e.g.:
+
+#某某回应#
+#某某直播事故#
+#某某今天也是想下班的一天#
+#某某这波什么水平#
+
+爆 / 沸 / 热 may appear when plausible, but are not mandatory.
+
+Comments may include 热评、粉丝控评、路人、黑粉、串子、吃瓜群众、广告、复制粘贴、楼中楼、折叠评论、编辑后评论.
+
+Comments may derail, argue with each other, misunderstand the post, or focus on secondary details. Do not make every comment agree or discuss the same point.
+
+Reposts may be extremely short and may shift the topic:
+
+原博 → 大V搬运 → 粉圈截图 → 路人转发 → 二创 → 热搜
+
+【叙事功能】
+
+Weibo exists inside the fictional world and may actively alter it: leak information, create misunderstandings, change public opinion, provoke PR responses, expose private conflicts, revive old incidents, or affect characters and institutions.
+
+When established events naturally produce online consequences, develop them without waiting for every individual instruction.
+
+Do not invent major public events that have not occurred.
+
+【协议一：weibo】
+
+<weibo>
+<post:编号>
+[微博|发布者|头像|正文|时间|赞数|转发数|评论数]
+[伪图|图片描述]
+[评论|评论者|正文|时间]
+</post:编号>
+</weibo>
+
+Reproduce only the specified target post and its existing [伪图], then append exactly 5 new 热评.
+
+Do not repeat old comments or create unrelated posts.
+
+Use varied, plausible commenter identities and tones. Randomized passerby-style usernames are preferred unless a known account is contextually required.
+
+Do not make all comments use memes, insults, or the same stance.
+
+【协议二：feed】
+
+Output exactly one <weibo> block containing <post:1> through <post:5>.
+
+Each post uses:
+
+[微博|发布者|头像|正文|时间|赞数|转发数|评论数]
+
+Optional:
+
+[伪图|图片描述]
+
+Maximum 5:
+
+[评论|评论者|正文|时间]
+
+The feed should primarily use information already public in the current plot.
+
+Mix account types, topics, circles, relevance levels, and tones so the result feels like an algorithmic recommendation feed rather than five coordinated posts.
+
+Not every post needs an image or comments. Vary post length strongly.
+
+Do not prematurely invent confirmed relationships, transfers, resignations, scandals, victories, eliminations, deaths, official statements, or other major developments.
+
+【协议三：msg】
+
+<msg>
+<chat:联系人昵称>
+[私信|联系人昵称|头像|正文|时间]
+</chat:联系人昵称>
+</msg>
+
+For “收路人私信”, generate exactly 10 new messages, preferably across 8–10 contacts.
+
+For a specified existing conversation, add only 3–6 new messages.
+
+Private messages are not timeline posts. Never output <weibo> or <post:> in msg mode, and do not use <dm> or <thread:>.
+
+Contacts should retain distinct voices. Private messages may be more direct, awkward, intimate, intrusive, hesitant, flattering, aggressive, or opportunistic than public comments.
+
+【格式约束】
+
+Once weibo, feed, or msg is triggered, protocol format takes priority.
+
+Do not add prose before or after the tags. Do not use Markdown code fences.
+
+Keep fixed field labels unchanged: 微博、伪图、评论、私信、发布者、头像、正文、时间、赞数、转发数、评论数.
+
+Keep “|” separators unchanged.
+
+For feed, numbering must remain exactly <post:1> through <post:5>.
+For weibo, preserve the requested post number.
+For msg, use the contact nickname directly in <chat:联系人昵称>.
+
+</weibo_native_output>`;
+
+  const WEIBO_NATIVE_COMPACT = String.raw`<weibo_format>
+
+【触发】
+weibo：单帖评论
+feed：推荐流
+msg：微博私信
+
+触发后只输出对应协议标签与管道行，不输出正文剧情、解释、HTML、JSON、状态栏或其他附加内容。
+
+【weibo】
+
+<weibo>
+<post:编号>
+[微博|发布者|头像|正文|时间|赞数|转发数|评论数]
+[伪图|图片描述]
+[评论|评论者|正文|时间]
+</post:编号>
+</weibo>
+
+Rules:
+- Reproduce only the specified post.
+- Preserve its existing [伪图] if present.
+- Append exactly 5 new comments.
+- Do not repeat old comments or create unrelated posts.
+- Preserve the requested post number.
+
+【feed】
+
+<weibo>
+<post:1>
+[微博|发布者|头像|正文|时间|赞数|转发数|评论数]
+[伪图|图片描述]
+[评论|评论者|正文|时间]
+</post:1>
+
+...
+
+<post:5>
+[微博|发布者|头像|正文|时间|赞数|转发数|评论数]
+</post:5>
+</weibo>
+
+Rules:
+- Output exactly <post:1> through <post:5>.
+- Every post must contain one [微博] line.
+- [伪图] is optional.
+- Each post may contain up to 5 [评论] lines.
+- Do not output posts outside <post:1>–<post:5>.
+
+【msg】
+
+<msg>
+<chat:联系人昵称>
+[私信|联系人昵称|头像|正文|时间]
+</chat:联系人昵称>
+</msg>
+
+Rules:
+- “收路人私信”: output exactly 10 new private messages, preferably across 8–10 contacts.
+- Specified conversation: append 3–6 new messages only within that chat.
+- Never use <weibo>, <post:>, <dm>, or <thread:> inside msg mode.
+
+【固定格式】
+
+Keep these field labels unchanged:
+微博、伪图、评论、私信、发布者、头像、正文、时间、赞数、转发数、评论数
+
+Keep “|” as the field separator.
+
+Do not add prose before or after protocol tags.
+Do not wrap output in Markdown code fences.
+
+</weibo_format>`;
+
+  const WEIBO_INFORMATION_BOUNDARY = String.raw`<weibo_information_boundary>
+只能使用在当前剧情中已经公开，或该账号根据其身份和传播链可合理知情的信息。
+角色私下对话、内心、未公开身份/关系/计划、私信、隐蔽事件，不得自动成为路人、粉丝、媒体或其他微博账号的共同知识。
+只有上下文明确说明已公开、泄露、被目击、被转发，或由知情者发布时，才能沿合理链路传播。不同账号的知情范围必须分层，不得全知。
+</weibo_information_boundary>`;
+
+  function selectedNativePrompt(){
+    return phoneSettings.nativePrompt === 'compact' ? WEIBO_NATIVE_COMPACT : WEIBO_NATIVE_DETAILED;
+  }
+
   async function requestAiReply(opts={}){
     if(state.aiBusy) return alertBox('请稍候','AI 正在回复');
     if(!AI_GENERATE && !AI_GENERATE_RAW) return alertBox('提示','需在酒馆同层环境使用 generate / generateRaw');
@@ -3523,12 +3759,27 @@ body{display:grid;place-items:center;overflow:hidden}
       if(state.page?.type==='dm') opts.threadName=state.page.name;
     }
 
-    const keyword = mode === 'feed' ? 'feed'
+    const keyword = mode === 'all' ? 'feed + weibo + msg'
+      : mode === 'feed' ? 'feed'
       : mode === 'char-post' ? 'weibo'
       : (mode.startsWith('dm') ? 'msg' : 'weibo');
     let context = '';
 
-    if(mode==='feed'){
+    if(mode==='all'){
+      const who = displayChar || rawCharName || '角色';
+      context = [
+        '【同层微博任务｜全部拉取｜单次请求】',
+        '请在一次输出中同时返回推荐信息流、路人私信和角色微博。三段必须用下列容器包裹，不得混排：',
+        '<feed_result><weibo>…严格 post:1 至 post:5…</weibo></feed_result>',
+        `<char_result><weibo><post:1>[微博|${who}|char|正文|时间|赞数|转发数|评论数]…</post:1></weibo></char_result>`,
+        '<msg_result><msg>…恰好 10 条新私信，尽量来自 8–10 个联系人…</msg></msg_result>',
+        '推荐流恰好 5 帖；角色微博恰好 1 帖，发布者必须是 ' + who + '；私信恰好 10 条。',
+        '不得代替 {{user}} 发布、评论或发私信。不得把私密信息当作公开信息。',
+        '已有主题（避免复读）：', recentWeiboTopics(8),
+        '已有私信联系人（避免固定复用）：' + (existingDmContacts().join('、') || '无'),
+        '当前微博快照：', serializeWeiboApp(),
+      ].join('\n');
+    }else if(mode==='feed'){
       context = [
         '【同层微博任务｜关键词 feed｜推荐页拉取】',
         '剧情依据以快照中的「本局开场（当前聊天第 1 楼）」为准；禁止使用其它线路/其它备用开场的设定。',
@@ -3633,12 +3884,14 @@ body{display:grid;place-items:center;overflow:hidden}
     document.getElementById('pageAi').disabled=true;
     const pullBtn=document.getElementById('feedPullBtn');
     if(pullBtn) pullBtn.disabled=true;
+    const allBtn=document.getElementById('allPullBtn');
+    if(allBtn) allBtn.disabled=true;
     try{
       // 精简快照：开场只认当前聊天第 1 楼
-      const snapMsgs = mode === 'feed' ? 14 : 10;
+      const snapMsgs = Math.max(0, Number(phoneSettings.recentMessages ?? 3));
       const snapChars = (phoneSettings.includeBgLore !== false)
-        ? (mode === 'feed' ? 22000 : 16000)
-        : (mode === 'feed' ? 16000 : 12000);
+        ? ((mode === 'feed' || mode === 'all') ? 22000 : 16000)
+        : ((mode === 'feed' || mode === 'all') ? 16000 : 12000);
       const contextSnap = await collectStContextSnapshot(snapMsgs, snapChars, keyword);
 
       const forbid = [
@@ -3651,6 +3904,11 @@ body{display:grid;place-items:center;overflow:hidden}
       ].join('\n');
 
       const taskText = [
+        '【内置原生微博协议｜固定注入】',
+        selectedNativePrompt(),
+        '',
+        WEIBO_INFORMATION_BOUNDARY,
+        '',
         forbid,
         '【剧情依据｜已清洗】',
         contextSnap || '（无快照）',
@@ -3751,14 +4009,24 @@ body{display:grid;place-items:center;overflow:hidden}
         console.log('[同层微博] 返回为空，改读楼层消息，长度', (out||'').length);
       }
       pushAiRawLog({ mode, ok:true, input: taskText, context: contextSnap, output: out || '', meta: logMeta });
-      const added = mergeAiPayload(out, {...opts, mode});
+      let added = 0;
+      if (mode === 'all') {
+        const take = (tag) => String(out || '').match(new RegExp('<' + tag + '>([\\s\\S]*?)<\\/' + tag + '>', 'i'))?.[1] || '';
+        const feedOut = take('feed_result');
+        const charOut = take('char_result');
+        const msgOut = take('msg_result');
+        added += mergeAiPayload(feedOut, { mode:'feed' });
+        added += mergeAiPayload(charOut, { mode:'char-post' });
+        added += mergeAiPayload(msgOut, { mode:'dm-scatter' });
+      } else added = mergeAiPayload(out, {...opts, mode});
       state.userHasSentNewMessage=false;
       renderAll();
       if(!added){
         alertBox('完成但未解析到内容', '原始输出已写入「我→🧾日志」');
         return;
       }
-      const tip = mode==='feed' ? `已拉取 ${added} 条推荐微博`
+      const tip = mode==='all' ? `全部拉取完成，共新增 ${added} 项`
+        : mode==='feed' ? `已拉取 ${added} 条推荐微博`
         : mode==='char-post' ? `角色已发 ${added} 条微博`
         : mode==='weibo' ? `已生成 ${added} 条评论`
         : mode==='dm-scatter' ? `已生成 ${added} 条私信`
@@ -3779,6 +4047,8 @@ body{display:grid;place-items:center;overflow:hidden}
       document.getElementById('pageAi').disabled=false;
       const pullBtn=document.getElementById('feedPullBtn');
       if(pullBtn) pullBtn.disabled=false;
+      const allBtn=document.getElementById('allPullBtn');
+      if(allBtn) allBtn.disabled=false;
     }
   }
 
@@ -3853,6 +4123,10 @@ body{display:grid;place-items:center;overflow:hidden}
   document.getElementById('feedPullBtn').onclick=()=>{
     switchTab('home');
     requestAiReply({mode:'feed'});
+  };
+  document.getElementById('allPullBtn').onclick=()=>{
+    switchTab('home');
+    requestAiReply({mode:'all'});
   };
 
   document.getElementById('feed').addEventListener('click', (e)=>{
@@ -3935,6 +4209,21 @@ body{display:grid;place-items:center;overflow:hidden}
       maxTokens: Math.max(256, Math.min(65535, Number(document.getElementById('setApiMax').value) || 4096)),
     };
   }
+  function renderApiModels(models, selected){
+    const el = document.getElementById('setApiModel');
+    const list = [...new Set((models || []).map((x) => String(x || '').trim()).filter(Boolean))];
+    const chosen = String(selected || '');
+    if (chosen && !list.includes(chosen)) list.unshift(chosen);
+    el.innerHTML = list.length
+      ? list.map((id) => `<option value="${esc(id)}">${esc(id)}</option>`).join('')
+      : '<option value="">保存 Token 后自动拉取</option>';
+    el.value = chosen && list.includes(chosen) ? chosen : (list[0] || '');
+  }
+  function updateContextModeVisibility(){
+    const mode = document.getElementById('setContextMode').value || 'recent';
+    document.getElementById('recentContextBox').hidden = mode !== 'recent';
+    document.getElementById('summaryContextBox').hidden = mode !== 'summary';
+  }
   function updateApiVisibility(){
     const side = document.getElementById('setApiSide').checked;
     document.getElementById('sideApiFields').hidden = !side;
@@ -3963,8 +4252,12 @@ body{display:grid;place-items:center;overflow:hidden}
     document.getElementById('setCharFans').value = formatFanNumber(Number(state.charFans) || Number(phoneSettings.charFans) || 0);
     document.getElementById('setUserFollowing').value = String(Number(state.userFollowing) || Number(phoneSettings.userFollowing) || 0);
     document.getElementById('setCharFollowing').value = String(Number(state.charFollowing) || Number(phoneSettings.charFollowing) || 0);
-    const context = globalConfig.context || {};
-    document.getElementById('setRecentMessages').value = String(context.recentMessages ?? 12);
+    const context = currentSlotContext();
+    document.getElementById('setContextMode').value = ['recent','summary','none'].includes(context.mode) ? context.mode : 'recent';
+    document.getElementById('setRecentMessages').value = String(context.recentMessages ?? 3);
+    document.getElementById('setManualSummary').value = String(context.manualSummary || '');
+    document.getElementById('setLoreScanKeyword').value = String(context.loreScanKeyword || '🩶');
+    document.getElementById('setNativePrompt').value = context.nativePrompt === 'compact' ? 'compact' : 'detailed';
     document.getElementById('setIncludeChar').checked = context.includeChar !== false;
     document.getElementById('setIncludePersona').checked = context.includePersona !== false;
     document.getElementById('setIncludeScenario').checked = context.includeScenario !== false;
@@ -3974,12 +4267,14 @@ body{display:grid;place-items:center;overflow:hidden}
     document.getElementById(api.mode === 'side' ? 'setApiSide' : 'setApiMain').checked = true;
     document.getElementById('setApiSource').value = api.source || 'custom';
     document.getElementById('setApiUrl').value = api.url || '';
-    document.getElementById('setApiModel').value = api.model || '';
+    renderApiModels(api.models || [], api.model || '');
     document.getElementById('setApiTemp').value = String(api.temperature ?? 0.8);
     document.getElementById('setApiMax').value = String(api.maxTokens || 4096);
     document.getElementById('setApiToken').value = '';
+    document.getElementById('setPullPrevLore').checked = false;
+    updateContextModeVisibility();
     updateApiVisibility();
-    state.wbLore = String(chatBinding?.phoneBundle?.wbLore || slot?.wbLore || state.wbLore || '');
+    state.wbLore = String(readPhoneBundleFromMetadata()?.wbLore || slot?.wbLore || state.wbLore || '');
     fillWbLoreEditor(state.wbLore, { forceAccount: false });
   }
   function openSettingsPanel(){
@@ -4014,7 +4309,11 @@ body{display:grid;place-items:center;overflow:hidden}
       includeChar: !!document.getElementById('setIncludeChar').checked,
       includePersona: !!document.getElementById('setIncludePersona').checked,
       includeScenario: !!document.getElementById('setIncludeScenario').checked,
+      contextMode: document.getElementById('setContextMode').value || 'recent',
       recentMessages: Math.max(0, Math.min(60, Number(document.getElementById('setRecentMessages').value) || 0)),
+      manualSummary: document.getElementById('setManualSummary').value.trim(),
+      loreScanKeyword: document.getElementById('setLoreScanKeyword').value.trim() || '🩶',
+      nativePrompt: document.getElementById('setNativePrompt').value === 'compact' ? 'compact' : 'detailed',
       injectMain: !!document.getElementById('setInjectMain').checked,
       selectedLoreIds: picks.ids,
     };
@@ -4025,10 +4324,26 @@ body{display:grid;place-items:center;overflow:hidden}
       slot.initPrompt = document.getElementById('setInitPrompt').value.trim();
       slot.wbLore = String(document.getElementById('loreRawText').value || state.wbLore || '').trim();
       slot.account = { ...(slot.account || {}), ...settingsPatch };
+      slot.context = {
+        mode: settingsPatch.contextMode,
+        recentMessages: settingsPatch.recentMessages,
+        manualSummary: settingsPatch.manualSummary,
+        loreScanKeyword: settingsPatch.loreScanKeyword,
+        nativePrompt: settingsPatch.nativePrompt,
+        includeChar: settingsPatch.includeChar,
+        includePersona: settingsPatch.includePersona,
+        includeScenario: settingsPatch.includeScenario,
+        includeWorldInfo: settingsPatch.includeBgLore,
+        injectMain: settingsPatch.injectMain,
+      };
     }
     globalConfig.api = { ...globalConfig.api, ...apiDraftFromForm() };
     globalConfig.context = {
+      mode: settingsPatch.contextMode,
       recentMessages: settingsPatch.recentMessages,
+      manualSummary: settingsPatch.manualSummary,
+      loreScanKeyword: settingsPatch.loreScanKeyword,
+      nativePrompt: settingsPatch.nativePrompt,
       includeChar: settingsPatch.includeChar,
       includePersona: settingsPatch.includePersona,
       includeScenario: settingsPatch.includeScenario,
@@ -4050,7 +4365,7 @@ body{display:grid;place-items:center;overflow:hidden}
     savePhoneSettings(phoneSettings);
     await persistLorePicks(picks.ids, picks.snap);
     state.wbLore = String(slot?.wbLore || state.wbLore || '');
-    await saveChatBinding({ activeSlotId, phoneBundle: { ...(chatBinding.phoneBundle || {}), wbLore: state.wbLore } });
+    await writePhoneBundleToMetadata();
     try { WB_HOST?.setMainInjection?.(state.wbLore, settingsPatch.injectMain); } catch (_) {}
     const renamedUser = remapIdentityNames('user', prevUser, displayName);
     const renamedChar = remapIdentityNames('char', prevChar, displayChar);
@@ -4059,30 +4374,41 @@ body{display:grid;place-items:center;overflow:hidden}
     renderAll();
     if (closeAfter) closeSettingsPanel();
     const total = renamedUser + renamedChar;
-    const pickTip = picks.ids.length ? `，已钉住 ${picks.ids.length} 条世界书` : '，世界书走自动扫描';
+    const pickTip = picks.ids.length ? `，已钉住 ${picks.ids.length} 条世界书` : '，未勾选世界书';
     showBubble((total ? `设置已保存，已回溯 ${total} 处昵称` : '设置已保存') + pickTip);
     return slot;
   }
   document.getElementById('settingsSave').onclick = ()=>persistSettingsForm(true);
   document.querySelectorAll('input[name="apiMode"]').forEach((el) => el.onchange = updateApiVisibility);
+  document.getElementById('setContextMode').onchange = updateContextModeVisibility;
   document.getElementById('settingsActivateSlot').onclick = async ()=>{
     await persistSettingsForm(false);
+    const pullPreviousLore = !!document.getElementById('setPullPrevLore').checked;
     activeSlotId = String(document.getElementById('setSlotSelect').value || 'default');
     const slot = currentSlot();
     if (!slot) return showBubble('档位不存在');
-    state.wbLore = String(slot.wbLore || '');
+    resetPhoneStateForSlot();
+    if (!hydrateFromChatMetadata()) loadPhoneData();
+    if (pullPreviousLore) {
+      const previousLore = findPreviousWbLoreFromChat();
+      if (previousLore) {
+        state.wbLore = previousLore;
+        slot.wbLore = previousLore;
+      }
+    }
     phoneSettings = Object.assign(defaultPhoneSettings(), slot.account || {});
     savePhoneSettings(phoneSettings);
-    await saveChatBinding({ activeSlotId, phoneBundle: { ...(chatBinding.phoneBundle || {}), wbLore: state.wbLore } });
+    await saveChatBinding({ activeSlotId });
+    await writePhoneBundleToMetadata();
     try { await WB_HOST?.writeFirstFloor?.(slot); } catch (e) { return alertBox('首楼写入失败', String(e?.message || e)); }
     try { WB_HOST?.setMainInjection?.(state.wbLore, !!globalConfig.context.injectMain); } catch (_) {}
     fillSettingsForm();
     renderAll();
-    showBubble(`已切入「${slot.name}」，初始化提示词与 wb_lore 已写入首楼`);
+    showBubble(`已切入「${slot.name}」，已显示本档独立记录${pullPreviousLore ? '，并尝试拉取前文 wb_lore' : ''}`);
   };
   document.getElementById('settingsNewSlot').onclick = ()=>{
     const id = 'slot_' + Date.now().toString(36);
-    globalConfig.slots.push({ id, name:'新档位', initPrompt:'', wbLore:'', account:{} });
+    globalConfig.slots.push({ id, name:'新档位', initPrompt:'', wbLore:'', account:{}, context:{ mode:'recent', recentMessages:3, manualSummary:'', loreScanKeyword:'🩶', nativePrompt:'detailed' } });
     writeGlobalConfig(globalConfig);
     renderSlotSelect();
     document.getElementById('setSlotSelect').value = id;
@@ -4105,7 +4431,22 @@ body{display:grid;place-items:center;overflow:hidden}
       WB_HOST?.saveApiSettings?.(apiDraftFromForm());
       await WB_HOST?.saveApiToken?.(document.getElementById('setApiToken').value.trim());
       document.getElementById('setApiToken').value = '';
-      status.textContent = 'Token 已保存；下次打开设置也不会回显。';
+      status.textContent = 'Token 已保存，正在拉取模型…';
+      const models = await WB_HOST?.listApiModels?.(apiDraftFromForm());
+      renderApiModels(models || [], models?.[0] || '');
+      globalConfig = readGlobalConfig();
+      status.textContent = `Token 已保存（不回显），已拉取 ${(models || []).length} 个模型。`;
+    } catch (e) { status.textContent = String(e?.message || e); }
+  };
+  document.getElementById('settingsRefreshModels').onclick = async ()=>{
+    const status = document.getElementById('apiStatus');
+    try {
+      status.textContent = '正在拉取模型…';
+      const current = document.getElementById('setApiModel').value;
+      const models = await WB_HOST?.listApiModels?.(apiDraftFromForm());
+      renderApiModels(models || [], (models || []).includes(current) ? current : models?.[0]);
+      globalConfig = readGlobalConfig();
+      status.textContent = `已拉取 ${(models || []).length} 个模型。`;
     } catch (e) { status.textContent = String(e?.message || e); }
   };
   document.getElementById('settingsClearToken').onclick = async ()=>{
@@ -4122,28 +4463,35 @@ body{display:grid;place-items:center;overflow:hidden}
     await persistSettingsForm(false);
     const pre = document.getElementById('contextPreview');
     pre.textContent = '正在拼装上下文…'; pre.classList.add('show');
-    try { pre.textContent = await collectStContextSnapshot(phoneSettings.recentMessages, 24000, 'weibo'); }
+    try {
+      const snapshot = await collectStContextSnapshot(phoneSettings.recentMessages, 24000, 'weibo');
+      pre.textContent = [selectedNativePrompt(), WEIBO_INFORMATION_BOUNDARY, snapshot].join('\n\n');
+    }
     catch (e) { pre.textContent = '预览失败：' + String(e?.message || e); }
   };
   document.getElementById('settingsRefreshLore').onclick = ()=>{
     _loreCatalogCache = null; // 丢掉旧列表，避免角色书/世界书重名残留
     _lorePickBookKey = null;
+    _lorePickPending.clear();
+    state.loreAutoSuppressed = false;
+    phoneSettings.loreScanKeyword = document.getElementById('setLoreScanKeyword').value.trim() || '🩶';
     renderLorePickList(true);
   };
   document.getElementById('settingsClearLorePick').onclick = async ()=>{
     syncLorePendingFromDom();
     _lorePickPending.clear();
+    state.loreAutoSuppressed = true;
     await persistLorePicks([], []);
     _lorePickBookKey = null;
     renderLorePickList(false);
-    showBubble('已清空勾选，改回自动扫描');
+    showBubble('已清空勾选；不会自动恢复，除非你点“刷新并自动扫描”');
   };
   document.getElementById('settingsClearData').onclick = ()=>{
-    if (!confirm('清空当前聊天里的微博、评论、私信？此操作不可撤销。')) return;
+    if (!confirm('清空当前档位里的微博、评论、私信？其它档位不受影响。')) return;
     clearPhoneData();
     closePage();
     renderAll();
-    showBubble('本聊天微博数据已清空');
+    showBubble('本档位微博数据已清空');
   };
   document.getElementById('settingsHarvestLore').onclick = async ()=>{
     const lore = await harvestWbLore({ force: true });
@@ -4202,7 +4550,7 @@ body{display:grid;place-items:center;overflow:hidden}
       slot.initPrompt = document.getElementById('setInitPrompt').value.trim();
       slot.name = document.getElementById('setSlotName').value.trim() || slot.name;
       writeGlobalConfig(globalConfig);
-      await saveChatBinding({ activeSlotId, phoneBundle: { ...(chatBinding.phoneBundle || {}), wbLore: text } });
+      await writePhoneBundleToMetadata();
       try { await WB_HOST?.writeFirstFloor?.(slot); } catch (e) { return alertBox('首楼写入失败', String(e?.message || e)); }
     }
     applyFansFromWbLore(text, { force: true });
@@ -4273,7 +4621,7 @@ body{display:grid;place-items:center;overflow:hidden}
   if (WB_HOST) {
     const slot = currentSlot();
     if (!chatBinding.activeSlotId) {
-      saveChatBinding({ activeSlotId, phoneBundle: { ...(chatBinding.phoneBundle || {}), wbLore: state.wbLore || slot?.wbLore || '' } })
+      writePhoneBundleToMetadata()
         .then(() => (slot?.initPrompt || slot?.wbLore) ? WB_HOST.writeFirstFloor?.(slot) : null)
         .catch(() => {});
     }

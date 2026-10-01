@@ -17,6 +17,7 @@ let jwr2Root = null;
 let jwr2Frame = null;
 let jwr2RemotePromise = null;
 let jwr2ChatListener = null;
+let jwr2DragCleanup = null;
 
 function jwr2ScriptId() {
   try { return typeof getScriptId === 'function' ? String(getScriptId() || '') : ''; }
@@ -94,9 +95,9 @@ function jwr2SafeContext() {
 
 function jwr2DefaultStore() {
   return {
-    version: 2,
-    api: { mode: 'main', source: 'custom', url: '', model: '', temperature: 0.8, maxTokens: 4096, token: '' },
-    context: { recentMessages: 12, includeChar: true, includePersona: true, includeScenario: true, includeWorldInfo: true, injectMain: false },
+    version: 3,
+    api: { mode: 'main', source: 'custom', url: '', model: '', models: [], temperature: 0.8, maxTokens: 4096, token: '' },
+    context: { mode: 'recent', recentMessages: 3, manualSummary: '', includeChar: true, includePersona: true, includeScenario: true, includeWorldInfo: true, loreScanKeyword: '🩶', nativePrompt: 'detailed', injectMain: false },
     slots: [{ id: 'default', name: '默认档位', initPrompt: '', wbLore: '' }],
   };
 }
@@ -110,6 +111,8 @@ function jwr2ReadSettings() {
   out.api = { ...base.api, ...(raw.api || {}) };
   out.context = { ...base.context, ...(raw.context || {}) };
   out.slots = Array.isArray(raw.slots) && raw.slots.length ? jwr2Clone(raw.slots, base.slots) : base.slots;
+  if (Number(raw.version || 0) < 3 && Number(raw.context?.recentMessages) === 12) out.context.recentMessages = 3;
+  out.version = 3;
   return out;
 }
 
@@ -266,6 +269,64 @@ async function jwr2SaveToken(token) {
   jwr2WriteSettings({ api: { token: value, encryptedToken: '' } });
   return jwr2ApiPublicState();
 }
+function jwr2CollectModelIds(data) {
+  const out = [];
+  const seen = new Set();
+  const add = (value) => {
+    const id = String(value || '').trim();
+    if (!id || seen.has(id)) return;
+    seen.add(id); out.push(id);
+  };
+  const walk = (value, depth = 0) => {
+    if (depth > 5 || value == null) return;
+    if (Array.isArray(value)) return value.forEach((item) => walk(item, depth + 1));
+    if (typeof value !== 'object') return;
+    if (typeof value.id === 'string') add(value.id);
+    else if (typeof value.name === 'string' && !/^(data|models?|object)$/i.test(value.name)) add(value.name);
+    ['data', 'models', 'items', 'result'].forEach((key) => { if (value[key] != null) walk(value[key], depth + 1); });
+  };
+  walk(data);
+  return out.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+}
+async function jwr2ListApiModels(draft = {}) {
+  jwr2WriteSettings({ api: draft });
+  const api = jwr2ReadSettings().api;
+  if (api.mode !== 'side') return [];
+  if (!api.url) throw new Error('请先填写 API 基础地址');
+  if (!api.token) throw new Error('请先保存 Token');
+  const ctx = jwr2Context();
+  const base = jwr2NormalizeUrl(api.url);
+  const common = api.source === 'custom'
+    ? { chat_completion_source: 'custom', custom_url: base, custom_include_headers: JSON.stringify({ Authorization: 'Bearer ' + api.token }) }
+    : { chat_completion_source: api.source || 'openai', reverse_proxy: base, proxy_password: api.token };
+  let lastError = null;
+  try {
+    if (!ctx?.getRequestHeaders) throw new Error('酒馆请求头不可用');
+    const res = await fetch('/api/backends/chat-completions/status', {
+      method: 'POST', headers: ctx.getRequestHeaders(), body: JSON.stringify(common),
+    });
+    const raw = await res.text();
+    let data = null; try { data = JSON.parse(raw); } catch (_) {}
+    if (!res.ok) throw new Error('HTTP ' + res.status + '：' + String(data?.error?.message || data?.message || raw).slice(0, 180));
+    const models = jwr2CollectModelIds(data);
+    if (models.length) {
+      jwr2WriteSettings({ api: { models, model: models.includes(api.model) ? api.model : models[0] } });
+      return models;
+    }
+  } catch (error) { lastError = error; }
+  try {
+    const res = await fetch(base + '/models', { headers: { Authorization: 'Bearer ' + api.token, Accept: 'application/json' } });
+    const raw = await res.text();
+    let data = null; try { data = JSON.parse(raw); } catch (_) {}
+    if (!res.ok) throw new Error('HTTP ' + res.status + '：' + String(data?.error?.message || data?.message || raw).slice(0, 180));
+    const models = jwr2CollectModelIds(data);
+    if (!models.length) throw new Error('接口未返回可用模型');
+    jwr2WriteSettings({ api: { models, model: models.includes(api.model) ? api.model : models[0] } });
+    return models;
+  } catch (error) {
+    throw new Error('拉取模型失败：' + String(error?.message || lastError?.message || error));
+  }
+}
 async function jwr2TestApi(draft) {
   if (draft) jwr2WriteSettings({ api: draft });
   const mode = jwr2ReadSettings().api.mode;
@@ -299,6 +360,7 @@ function jwr2InstallBridge() {
     getApiState: () => jwr2ApiPublicState(),
     saveApiSettings: (value) => jwr2WriteSettings({ api: value }),
     saveApiToken: (token) => jwr2SaveToken(token),
+    listApiModels: (draft) => jwr2ListApiModels(draft),
     clearApiToken: () => { jwr2WriteSettings({ api: { token: '', encryptedToken: '' } }); return jwr2ApiPublicState(); },
     testApi: (draft) => jwr2TestApi(draft),
     generate: (request) => jwr2GenerateRaw(request),
@@ -396,11 +458,54 @@ function jwr2Mount() {
   jwr2Frame = root.querySelector('#jwr2-frame');
   JWR2_HOST[JWR2_INSTANCE_KEY] = jwr2Cleanup;
   jwr2InstallBridge();
-  root.querySelector('#jwr2-fab').onclick = jwr2Open;
+  const fab = root.querySelector('#jwr2-fab');
+  const posKey = 'jwr2_fab_position_v1';
+  let moved = false;
+  const clampFab = (x, y) => ({
+    x: Math.max(8, Math.min((JWR2_HOST.innerWidth || 390) - 62, Number(x) || 8)),
+    y: Math.max(8, Math.min((JWR2_HOST.innerHeight || 760) - 62, Number(y) || 8)),
+  });
+  const placeFab = (value) => {
+    const p = clampFab(value?.x, value?.y);
+    fab.style.left = p.x + 'px'; fab.style.top = p.y + 'px';
+    fab.style.right = 'auto'; fab.style.bottom = 'auto';
+    return p;
+  };
+  try {
+    const saved = JSON.parse(JWR2_HOST.localStorage?.getItem(posKey) || 'null');
+    if (saved) placeFab(saved);
+  } catch (_) {}
+  const onPointerDown = (event) => {
+    if (event.button != null && event.button !== 0) return;
+    const rect = fab.getBoundingClientRect?.() || { left: 0, top: 0 };
+    const offsetX = event.clientX - rect.left;
+    const offsetY = event.clientY - rect.top;
+    const startX = event.clientX; const startY = event.clientY;
+    moved = false;
+    fab.setPointerCapture?.(event.pointerId);
+    const onMove = (ev) => {
+      if (Math.abs(ev.clientX - startX) + Math.abs(ev.clientY - startY) > 5) moved = true;
+      const p = placeFab({ x: ev.clientX - offsetX, y: ev.clientY - offsetY });
+      if (moved) ev.preventDefault?.();
+      try { JWR2_HOST.localStorage?.setItem(posKey, JSON.stringify(p)); } catch (_) {}
+    };
+    const onUp = () => {
+      JWR2_DOC.removeEventListener?.('pointermove', onMove, true);
+      JWR2_DOC.removeEventListener?.('pointerup', onUp, true);
+      setTimeout(() => { moved = false; }, 0);
+    };
+    JWR2_DOC.addEventListener?.('pointermove', onMove, true);
+    JWR2_DOC.addEventListener?.('pointerup', onUp, true);
+  };
+  fab.addEventListener?.('pointerdown', onPointerDown);
+  fab.onclick = () => { if (!moved) jwr2Open(); };
+  jwr2DragCleanup = () => fab.removeEventListener?.('pointerdown', onPointerDown);
   root.querySelector('#jwr2-backdrop').onclick = jwr2Close;
 }
 
 function jwr2Cleanup() {
+  try { jwr2DragCleanup?.(); } catch (_) {}
+  jwr2DragCleanup = null;
   try { jwr2ChatListener?.stop?.(); } catch (_) {}
   jwr2ChatListener = null;
   try { jwr2Root?.remove(); } catch (_) {}
