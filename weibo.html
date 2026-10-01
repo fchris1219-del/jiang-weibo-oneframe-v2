@@ -1,0 +1,4288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>同层微博</title>
+<style>
+:root{
+  --orange:#ff8200;
+  --orange2:#ff8140;
+  --blue:#507daf;
+  --text:#333;
+  --sub:#939393;
+  --line:#f0f0f0;
+  --bg:#f7f7f7;
+  --card:#fff;
+}
+.ai-dot{width:22px;height:22px;border-radius:50%;border:none;background:var(--orange);color:#fff;
+  font-size:12px;cursor:pointer;margin-right:4px;box-shadow:0 0 0 2px rgba(255,130,0,.22)}
+.acts .ai-gen{color:#fff;background:var(--orange);border-radius:12px;margin:6px 4px;padding:6px 0;font-size:11px;font-weight:600}
+.msg-ai-bar button,.page-ai-bar button{
+  width:100%;height:36px;border:none;border-radius:18px;background:var(--orange);color:#fff;
+  font-size:14px;font-weight:600;cursor:pointer
+}
+.page-ai-bar button{font-size:13px}
+.gen-bubble{
+  margin:8px 0 2px;display:inline-flex;align-items:center;gap:6px;
+  max-width:100%;padding:7px 12px;border-radius:14px 14px 14px 4px;
+  background:#fff5eb;color:#c96800;font-size:12px;line-height:1.4;
+  border:1px solid #ffe0bf;cursor:pointer
+}
+.gen-bubble b{font-weight:600;color:var(--orange)}
+.float-toast{
+  position:absolute;left:50%;bottom:78px;transform:translateX(-50%);
+  z-index:40;max-width:86%;padding:10px 16px;border-radius:20px;
+  background:rgba(0,0,0,.78);color:#fff;font-size:13px;line-height:1.4;
+  text-align:center;pointer-events:none;opacity:0;transition:opacity .2s;
+  box-shadow:0 6px 20px rgba(0,0,0,.18)
+}
+.float-toast.show{opacity:1}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;margin:0;padding:0;background:transparent;
+  font-family:-apple-system,"PingFang SC","Helvetica Neue","Microsoft YaHei",sans-serif;color:var(--text)}
+body{display:grid;place-items:center;overflow:hidden}
+#app{
+  width:100%;height:100%;margin:0;background:var(--bg);
+  border-radius:22px;overflow:hidden;position:relative;
+  box-shadow:0 24px 80px rgba(0,0,0,.42);display:flex;flex-direction:column;
+}
+/* status */
+.status{height:30px;padding:0 10px 0 14px;display:flex;align-items:center;gap:8px;
+  font-size:11px;color:#111;background:var(--card);flex:0 0 auto;border-bottom:1px solid #f5f5f5}
+.status .status-spacer{flex:1}.status .host-btn{width:24px;height:24px;border:0;border-radius:8px;
+  background:transparent;color:#777;font-size:17px;line-height:1;cursor:pointer}.status .host-btn:active{background:#f1f1f1}
+/* screens */
+.screen{display:none;flex:1;min-height:0;flex-direction:column;background:var(--bg)}
+.screen.on{display:flex}
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.scroll::-webkit-scrollbar{width:0}
+
+/* home top */
+.home-top{background:var(--card);padding:4px 12px 0;flex:0 0 auto;border-bottom:1px solid #f5f5f5}
+.home-top .row{display:flex;align-items:center;height:40px}
+.home-top .tabs{flex:1;display:flex;justify-content:center;gap:22px;font-size:16px;color:#666}
+.home-top .tabs span{position:relative;padding-bottom:8px;cursor:pointer}
+.home-top .tabs span.on{color:#111;font-weight:700}
+.home-top .tabs span.on::after{content:"";position:absolute;left:50%;bottom:0;transform:translateX(-50%);
+  width:18px;height:3px;background:var(--orange);border-radius:2px}
+.icon-btn{width:32px;height:32px;border:none;background:transparent;font-size:18px;cursor:pointer;color:#333;position:relative}
+.plus{width:28px;height:28px;border-radius:50%;background:var(--orange);color:#fff;border:none;
+  font-size:20px;line-height:1;cursor:pointer;font-weight:500}
+
+/* plus menu */
+.plus-menu{
+  position:absolute;top:62px;right:10px;z-index:20;background:#4a4a4a;color:#fff;
+  border-radius:10px;padding:6px 0;min-width:140px;display:none;
+  box-shadow:0 8px 24px rgba(0,0,0,.25);pointer-events:none
+}
+.plus-menu.show{display:block;pointer-events:auto}
+.plus-menu::before{
+  content:"";position:absolute;top:-6px;right:14px;border-left:6px solid transparent;
+  border-right:6px solid transparent;border-bottom:6px solid #4a4a4a
+}
+.plus-menu div{padding:10px 16px;font-size:14px;cursor:pointer;display:flex;align-items:center;gap:10px}
+.plus-menu div:active{background:rgba(255,255,255,.08)}
+.plus-menu i{width:18px;text-align:center;font-style:normal}
+
+/* feed card */
+.post{background:var(--card);padding:12px 14px 10px;border-bottom:8px solid var(--bg)}
+.post .lock{font-size:11px;color:var(--sub);margin-bottom:8px}
+.post .hd{display:flex;gap:10px;align-items:center}
+.post .av{width:40px;height:40px;border-radius:50%;background:#ffd6c2;flex:0 0 auto;
+  display:flex;align-items:center;justify-content:center;font-size:16px;overflow:hidden}
+.post .av img,.me-av img,.cmt .av img,.post-bar .mini img,.msg-row .ico img{
+  width:100%;height:100%;object-fit:cover;display:block;border-radius:50%}
+.post .nm{color:var(--orange);font-size:15px;font-weight:600}
+.post .sub{font-size:11px;color:var(--sub);margin-top:1px}
+.post .txt{margin-top:8px;font-size:15px;line-height:1.65;white-space:pre-wrap;word-break:break-word}
+.post .quote{margin-top:8px;background:#f7f7f7;border-radius:6px;padding:10px}
+.post .quote .at{color:var(--blue)}
+.fake-pic{
+  margin-top:8px;height:160px;border-radius:6px;background:#ececec;
+  display:flex;align-items:center;justify-content:center;text-align:center;
+  color:#888;font-size:13px;padding:16px;line-height:1.5;position:relative
+}
+.fake-pic b{display:block;color:#666;font-weight:500;margin-bottom:4px;font-size:12px}
+.post-bar{margin-top:10px;display:flex;align-items:center;gap:8px}
+.post-bar .mini{width:24px;height:24px;border-radius:50%;background:#ffd6c2;flex:0 0 auto;
+  display:flex;align-items:center;justify-content:center;font-size:11px}
+.post-bar .inp{
+  flex:1;height:32px;border-radius:16px;background:#f2f2f2;border:none;
+  padding:0 12px;font-size:12px;color:#999;display:flex;align-items:center;cursor:pointer
+}
+.acts{display:flex;margin-top:6px;border-top:1px solid #f5f5f5}
+.acts div{flex:1;text-align:center;padding:9px 0;font-size:12px;color:#8c8c8c;cursor:pointer}
+.acts div:active{opacity:.6}
+.pull-bar{
+  background:var(--card);padding:8px 14px 10px;border-bottom:1px solid #f5f5f5;flex:0 0 auto
+}
+.pull-bar button{
+  width:100%;height:34px;border:1px solid #ffd4a8;border-radius:17px;
+  background:#fff5eb;color:var(--orange);font-size:13px;font-weight:600;cursor:pointer
+}
+.pull-bar button:disabled{opacity:.55;cursor:wait}
+.feed-cmts{padding:6px 2px 2px;border-top:1px solid #f5f5f5}
+.feed-cmts .fc{
+  font-size:12px;line-height:1.5;margin:4px 0;color:#333
+}
+.feed-cmts .fc b{color:#666a8c;font-weight:500}
+.feed-cmts .more{font-size:11px;color:#999;margin-top:2px}
+
+/* messages */
+.msg-top{background:var(--card);height:44px;display:flex;align-items:center;justify-content:center;
+  gap:28px;position:relative;border-bottom:1px solid #f5f5f5;flex:0 0 auto}
+.msg-top span{font-size:15px;color:#666;cursor:pointer;padding-bottom:8px;position:relative}
+.msg-top span.on{color:#111;font-weight:700}
+.msg-top span.on::after{content:"";position:absolute;left:50%;bottom:0;transform:translateX(-50%);
+  width:20px;height:3px;background:var(--orange);border-radius:2px}
+.msg-banner{background:#fff5eb;color:var(--orange);font-size:12px;padding:8px 14px;
+  display:flex;justify-content:space-between;align-items:center}
+.msg-row{background:var(--card);display:flex;align-items:center;gap:12px;padding:12px 14px;
+  border-bottom:1px solid #f2f2f2;cursor:pointer}
+.msg-row .ico{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;color:#fff;font-size:18px;flex:0 0 auto}
+.msg-row .ico.at{background:#4a90e2}
+.msg-row .ico.cmt{background:#5ecf6a}
+.msg-row .ico.like{background:var(--orange)}
+.msg-row .mid{flex:1;min-width:0}
+.msg-row .t{font-size:15px;font-weight:500}
+.msg-row .p{font-size:12px;color:var(--sub);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.msg-row .right{text-align:right;flex:0 0 auto}
+.msg-row .tm{font-size:11px;color:var(--sub)}
+.msg-row .dot{width:8px;height:8px;border-radius:50%;background:#f44;margin:6px 0 0 auto}
+.chev{color:#ccc;font-size:16px}
+
+/* me */
+.me-top{background:var(--card);padding:10px 14px 16px}
+.me-tools{display:flex;justify-content:flex-end;gap:14px;font-size:18px;color:#333;margin-bottom:8px}
+.me-hd{display:flex;gap:12px;align-items:center}
+.me-av{width:64px;height:64px;border-radius:50%;background:#ffd6c2;
+  display:flex;align-items:center;justify-content:center;font-size:24px}
+.me-name{font-size:18px;font-weight:700}
+.me-bio{font-size:12px;color:var(--sub);margin-top:4px}
+.me-stats{display:flex;margin-top:16px;text-align:center}
+.me-stats div{flex:1}
+.me-stats b{display:block;font-size:16px}
+.me-stats span{font-size:11px;color:var(--sub)}
+.me-grid{background:var(--card);margin-top:8px;padding:14px 8px 6px;display:grid;grid-template-columns:repeat(4,1fr);gap:14px 0}
+.me-grid div{text-align:center;font-size:11px;color:#555;cursor:pointer}
+.me-grid i{display:block;font-size:22px;font-style:normal;margin-bottom:4px;color:#666}
+.me-card{background:var(--card);margin:8px 0 0;padding:14px;border-radius:0}
+.set-row{margin-top:12px}
+.set-row label{display:block;font-size:12px;color:#666;margin-bottom:4px}
+.set-row input[type=text],.set-row input[type=number],.set-row textarea{
+  width:100%;border:1px solid #eee;border-radius:8px;padding:0 10px;
+  font:inherit;font-size:14px;background:#fafafa;outline:none
+}
+.set-row input[type=text],.set-row input[type=number]{height:36px}
+.set-row textarea{padding:8px 10px;min-height:72px;resize:vertical;line-height:1.45}
+.set-row.half{display:flex;gap:8px}
+.set-row.half > div{flex:1;min-width:0}
+.lore-sec-box{margin-top:10px;padding-top:8px;border-top:1px dashed #eee}
+.set-row .chk{display:flex;align-items:flex-start;gap:8px;font-size:13px;color:#444;line-height:1.45}
+.set-row .chk input{margin-top:3px}
+.set-actions{display:flex;gap:8px;margin-top:14px}
+.set-actions button{
+  flex:1;height:36px;border:none;border-radius:18px;font-size:14px;font-weight:600;cursor:pointer
+}
+.set-actions .save{background:var(--orange);color:#fff}
+.set-actions .reset{background:#f2f2f2;color:#666}
+.set-hint{font-size:11px;color:#999;margin-top:6px;line-height:1.5}
+.lore-pick-list{
+  margin-top:10px;max-height:260px;overflow:auto;border:1px solid #eee;border-radius:10px;
+  background:#fafafa;padding:6px 8px
+}
+.lore-pick-list .lore-empty{font-size:12px;color:#999;padding:14px 6px;text-align:center;line-height:1.5}
+.lore-pick-nav{
+  display:flex;align-items:center;gap:8px;padding:4px 2px 10px;border-bottom:1px solid #eee;margin-bottom:4px
+}
+.lore-pick-nav .back{
+  border:none;background:#f2f2f2;color:#666;border-radius:12px;padding:4px 10px;font-size:12px;cursor:pointer
+}
+.lore-pick-nav .tt{flex:1;font-size:12px;font-weight:600;color:#333;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lore-book-row{
+  display:flex;align-items:center;gap:8px;padding:10px 6px;border-bottom:1px solid #f0f0f0;cursor:pointer
+}
+.lore-book-row:active{background:#fff3ea}
+.lore-book-row .meta{flex:1;min-width:0}
+.lore-book-row .nm{font-weight:600;font-size:13px;color:#222}
+.lore-book-row .bk{color:#999;font-size:11px;margin-top:2px}
+.lore-book-row .chev{color:#ccc;font-size:18px;flex:0 0 auto}
+.lore-pick-item{
+  display:flex;align-items:flex-start;gap:8px;padding:8px 4px;border-bottom:1px solid #f0f0f0;
+  font-size:12px;color:#333;line-height:1.4
+}
+.lore-pick-item:last-child{border-bottom:0}
+.lore-pick-item input{margin-top:2px;flex:0 0 auto}
+.lore-pick-item .meta{flex:1;min-width:0}
+.lore-pick-item .nm{font-weight:600;font-size:12px}
+.lore-pick-item .bk{color:#999;font-size:10px;margin-top:1px}
+.lore-pick-item .pv{color:#888;font-size:11px;margin-top:3px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+
+/* profile home (参考 微博开场) */
+.pf-wrap{background:var(--bg);min-height:100%}
+.pf-profile{background:var(--card);padding:18px 14px 14px;border-bottom:6px solid var(--bg)}
+.pf-profile .row{display:flex;align-items:center;gap:12px}
+.pf-av{width:56px;height:56px;border-radius:50%;background:#ffd6c2;flex:0 0 auto;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;font-size:22px}
+.pf-av img{width:100%;height:100%;object-fit:cover;display:block}
+.pf-name{font-size:17px;font-weight:700}
+.pf-uid{color:var(--sub);font-size:12px;margin-top:2px}
+.pf-bio{margin-top:10px;color:#333;font-size:13px;line-height:1.7}
+.pf-stats{display:flex;gap:22px;margin-top:12px;font-size:13px}
+.pf-stats b{font-size:15px}
+.pf-stats span{color:var(--sub);margin-left:3px}
+.pf-tabs{background:var(--card);display:flex;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:3}
+.pf-tabs div{flex:1;text-align:center;padding:10px 0;font-size:14px;color:var(--sub)}
+.pf-tabs div.on{color:var(--text);font-weight:600;position:relative}
+.pf-tabs div.on::after{content:"";position:absolute;left:50%;transform:translateX(-50%);
+  bottom:0;width:26px;height:2px;background:var(--orange);border-radius:2px}
+.pf-end{text-align:center;color:#c4c4c4;font-size:12px;padding:18px 0 26px}
+.pf-follow{
+  margin-top:12px;width:100%;height:34px;border:none;border-radius:17px;
+  background:var(--orange);color:#fff;font-size:14px;font-weight:600;
+  letter-spacing:2px;cursor:pointer
+}
+.pf-follow.on{background:#f5f5f5;color:#666;border:1px solid #e6e6e6;letter-spacing:0}
+.pf-follow:active{opacity:.85}
+.pf-switch{
+  margin-top:10px;width:100%;border:none;background:transparent;
+  color:var(--link,#eb7350);font-size:13px;padding:6px 0;cursor:pointer;text-align:left
+}
+.me-hd{cursor:pointer}
+.me-hd:active{opacity:.85}
+
+/* bottom nav */
+.tabbar{
+  flex:0 0 auto;height:52px;background:rgba(255,255,255,.96);border-top:1px solid #eee;
+  display:flex;align-items:center;padding-bottom:2px;z-index:10
+}
+.tabbar button{
+  flex:1;border:none;background:transparent;font-size:10px;color:#666;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;position:relative
+}
+.tabbar button.on{color:#111;font-weight:600}
+.tabbar .ico{font-size:18px;line-height:1;position:relative}
+.badge-dot,.badge-num{
+  position:absolute;background:#f44;border:1.5px solid #fff;pointer-events:none
+}
+.badge-dot{
+  width:8px;height:8px;border-radius:50%;top:-2px;right:-6px
+}
+.badge-num{
+  min-width:16px;height:16px;padding:0 4px;border-radius:8px;
+  color:#fff;font-size:10px;font-weight:700;line-height:16px;text-align:center;
+  top:-7px;right:-12px;box-sizing:border-box
+}
+.tabbar .badge-num{top:-6px;right:-14px}
+.msg-row{position:relative}
+.msg-row .badge-wrap{position:relative;flex:0 0 auto}
+.msg-row .ico{position:relative}
+.acts [data-act="cm"]{position:relative}
+.acts .badge-dot{top:6px;right:calc(50% - 18px)}
+.post .gen-bubble{position:relative}
+.post .gen-bubble .badge-dot{top:4px;right:8px;border-color:#fff5eb}
+
+/* overlay pages */
+.page{
+  position:absolute;inset:0;background:var(--card);z-index:30;
+  transform:translateX(100%);transition:transform .25s ease;display:flex;flex-direction:column;
+  pointer-events:none; /* 滑出时绝不挡点击；酒馆 iframe 里 transform 仍可能吃事件 */
+}
+.page.show{transform:translateX(0);pointer-events:auto}
+.page-top{height:44px;display:flex;align-items:center;padding:0 10px;border-bottom:1px solid #f0f0f0;flex:0 0 auto}
+.page-top .back{font-size:28px;width:32px;border:none;background:none;cursor:pointer;line-height:1;font-weight:300}
+.page-top .tt{flex:1;text-align:center;font-size:16px;font-weight:600}
+.page-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+
+/* chat */
+.chat{background:var(--bg);min-height:100%;padding:12px;display:flex;flex-direction:column;gap:8px}
+.bub{max-width:78%;padding:8px 11px;border-radius:8px;font-size:14px;line-height:1.5;word-break:break-word}
+.bub.npc{background:#fff;align-self:flex-start;border:1px solid #eee}
+.bub.me{background:#fff1e6;align-self:flex-end}
+.bub .tm{font-size:10px;color:var(--sub);margin-top:4px}
+.chat-bar{display:flex;gap:8px;padding:8px 10px;border-top:1px solid #eee;background:#fff}
+.chat-bar input{flex:1;border:1px solid #eee;border-radius:16px;padding:8px 12px;font:inherit;outline:none}
+.chat-bar button{border:none;background:var(--orange);color:#fff;border-radius:16px;padding:0 14px;font-size:13px}
+
+/* modal */
+.mask{position:absolute;inset:0;background:rgba(0,0,0,.45);z-index:40;display:none;align-items:flex-end;justify-content:center;pointer-events:none}
+.mask.show{display:flex;pointer-events:auto}
+.sheet{width:100%;background:#fff;border-radius:14px 14px 0 0;padding:16px 16px 20px}
+.sheet h4{font-size:16px;margin-bottom:10px;text-align:center}
+.sheet textarea,.sheet input[type=text]{
+  width:100%;border:1px solid #eee;border-radius:8px;padding:10px;font:inherit;font-size:14px;
+  margin-top:8px;outline:none;background:#fafafa;resize:vertical
+}
+.sheet .btns{display:flex;gap:10px;margin-top:14px}
+.sheet .btns button{flex:1;height:40px;border:none;border-radius:20px;font-size:15px;cursor:pointer}
+.sheet .btns .cancel{background:#f2f2f2;color:#666}
+.sheet .btns .ok{background:var(--orange);color:#fff;font-weight:600}
+.toast-mask{align-items:center;padding:0 36px}
+.toast-box{background:#fff;border-radius:12px;padding:18px 16px 10px;text-align:center;width:100%}
+.toast-box p{font-size:13px;color:#666;line-height:1.6;margin-top:6px}
+.toast-box button{width:100%;margin-top:12px;border:none;border-top:1px solid #eee;background:none;
+  color:var(--orange);font-size:15px;padding:12px 0;cursor:pointer}
+
+/* AI raw log */
+.log-panel{
+  position:absolute;inset:0;z-index:50;background:#0f1115;color:#d7dde8;
+  display:none;flex-direction:column;pointer-events:none;
+}
+.log-panel.show{display:flex;pointer-events:auto}
+.log-top{
+  flex:0 0 auto;height:44px;display:flex;align-items:center;gap:8px;
+  padding:0 10px;border-bottom:1px solid #2a2f3a;background:#171a21
+}
+.log-top .back{border:none;background:none;color:#fff;font-size:26px;line-height:1;cursor:pointer;width:28px}
+.log-top .tt{flex:1;font-size:15px;font-weight:600}
+.log-top button.mini{
+  border:1px solid #3a4150;background:#222833;color:#cfd6e4;border-radius:12px;
+  padding:4px 10px;font-size:11px;cursor:pointer
+}
+.log-body{flex:1;overflow:auto;padding:10px;font-size:11px;line-height:1.45}
+.log-empty{color:#6b7385;text-align:center;padding:40px 12px}
+.log-item{border:1px solid #2a2f3a;border-radius:10px;margin-bottom:10px;overflow:hidden;background:#151922}
+.log-item .meta{padding:8px 10px;background:#1c2230;color:#9aa3b5;display:flex;justify-content:space-between;gap:8px}
+.log-item .blk{padding:8px 10px;border-top:1px solid #2a2f3a}
+.log-item .lbl{color:#ff9f43;font-size:10px;margin-bottom:4px;letter-spacing:.04em}
+.log-item pre{
+  white-space:pre-wrap;word-break:break-word;margin:0;color:#e8edf7;
+  max-height:220px;overflow:auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace
+}
+
+.cmt{padding:12px 14px;border-bottom:1px solid #f5f5f5;display:flex;gap:10px}
+.cmt .av{width:32px;height:32px;border-radius:50%;background:#eee;display:flex;align-items:center;
+  justify-content:center;font-size:14px;flex:0 0 auto}
+.cmt .u{font-size:13px;color:#666a8c}
+.cmt .t{font-size:14px;margin-top:2px;line-height:1.55}
+.cmt .meta{font-size:11px;color:var(--sub);margin-top:4px}
+.empty{text-align:center;color:#ccc;padding:48px 16px;font-size:13px}
+.hot{display:inline-block;background:#fff1ec;color:#eb7350;font-size:10px;padding:0 4px;border-radius:2px;margin-left:4px}
+
+/* v2 设置：整页一层表面，用分隔线而不是卡片套卡片 */
+#settingsPanel{background:#fff!important;color:#282828!important}
+#settingsPanel .log-top{height:48px!important;background:#fff!important;border-bottom:1px solid #ececec!important}
+#settingsPanel .log-body{padding:0 16px 88px!important;background:#fff;font-size:13px}
+.settings-intro{padding:16px 0 14px;border-bottom:1px solid #ececec}
+.settings-intro strong{display:block;font-size:18px;line-height:1.25}.settings-intro p{margin-top:5px;color:#8b8b8b;font-size:11px;line-height:1.55}
+.settings-section{padding:17px 0;border-bottom:1px solid #ececec}
+.settings-section:last-of-type{border-bottom:0}.settings-section h3{font-size:14px;margin:0;color:#222}
+.settings-section .section-note{margin-top:5px;color:#969696;font-size:11px;line-height:1.55}
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.settings-grid .set-row{min-width:0}
+.settings-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:12px;padding:4px;background:#f3f3f3;border-radius:11px}
+.settings-tabs label{position:relative;display:block;margin:0}.settings-tabs input{position:absolute;opacity:0;pointer-events:none}
+.settings-tabs span{height:34px;border-radius:8px;display:grid;place-items:center;color:#777;font-size:12px;font-weight:600;cursor:pointer}
+.settings-tabs input:checked+span{background:#fff;color:#e56b12;box-shadow:0 1px 5px rgba(0,0,0,.09)}
+.settings-inline{display:flex;gap:8px;align-items:center;margin-top:11px}.settings-inline>*{min-width:0}
+.settings-inline select{flex:1;height:38px;border:1px solid #e7e7e7;border-radius:9px;background:#fafafa;padding:0 9px;font:inherit}
+.mini-action{height:38px;padding:0 12px;border:0;border-radius:9px;background:#f1f1f1;color:#555;font-size:12px;font-weight:600;cursor:pointer}
+.mini-action.primary{background:#fff0e5;color:#dd6a10}
+.settings-switch{display:flex!important;align-items:flex-start!important;gap:9px!important;margin-top:11px!important;font-size:12px!important;color:#444!important;line-height:1.5!important}
+.settings-switch input{margin-top:2px;accent-color:var(--orange)}
+.settings-detail{margin-top:12px}.settings-detail[hidden]{display:none}
+.api-status{margin-top:10px;padding:9px 11px;border-radius:9px;background:#f7f7f7;color:#777;font-size:11px;line-height:1.5;white-space:pre-wrap}
+.settings-footer{position:absolute;left:0;right:0;bottom:0;z-index:4;display:grid;grid-template-columns:1fr 1.7fr;gap:9px;
+  padding:11px 16px calc(11px + env(safe-area-inset-bottom));background:rgba(255,255,255,.96);border-top:1px solid #ececec;backdrop-filter:blur(10px)}
+.settings-footer button{height:42px;border:0;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer}
+.settings-footer .reset{background:#f1f1f1;color:#666}.settings-footer .save{background:var(--orange);color:#fff}
+.slot-status{margin-top:10px;padding:10px 11px;border-left:3px solid var(--orange);background:#fff8f1;color:#6f5b49;font-size:11px;line-height:1.55}
+.context-preview{max-height:210px;overflow:auto;white-space:pre-wrap;word-break:break-word;font-size:10px;line-height:1.55;
+  padding:10px;border-radius:9px;background:#191c22;color:#dce3ed;margin-top:10px;display:none}
+.context-preview.show{display:block}
+@media(max-width:520px){#app{border-radius:0;box-shadow:none}.settings-grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="status"><span id="clock">9:41</span><span>5G ▮▮▮▯</span><span class="status-spacer"></span><button class="host-btn" id="hostRefreshBtn" title="刷新前端">↻</button><button class="host-btn" id="hostCloseBtn" title="关闭微博">×</button></div>
+
+  <!-- 微博首页 -->
+  <section class="screen on" id="sc-home">
+    <div class="home-top">
+      <div class="row">
+        <button class="ai-dot" id="aiBtn" title="申请AI">✓</button>
+        <div class="tabs">
+          <span>超话</span>
+          <span class="on" data-feed="rec">推荐</span>
+          <span data-feed="fol">关注</span>
+        </div>
+        <button class="plus" id="plusBtn">+</button>
+      </div>
+      <div class="pull-bar" id="pullBar">
+        <button type="button" id="feedPullBtn">刷新推荐 · 拉取 5 条微博</button>
+      </div>
+    </div>
+    <div class="scroll" id="feedScroll">
+      <div id="feed"></div>
+    </div>
+  </section>
+
+  <!-- 角色/用户微博主页 -->
+  <section class="screen" id="sc-video">
+    <div class="scroll" id="profileHome"><div class="empty">加载主页…</div></div>
+  </section>
+  <section class="screen" id="sc-discover"><div class="empty">发现（暂未开放）</div></section>
+
+  <!-- 消息 -->
+  <section class="screen" id="sc-msg">
+    <div class="msg-top">
+      <span>发现群</span>
+      <span>动态</span>
+      <span class="on">消息</span>
+    </div>
+    <div class="scroll">
+      <div class="msg-banner"><span>打开通知，及时收到互动消息</span><span>×</span></div>
+      <div class="msg-ai-bar"><button type="button" id="dmScatterBtn">收路人私信</button></div>
+      <div class="msg-row" data-stub="@我的"><div class="ico at">@</div><div class="mid"><div class="t">@我的</div></div><div class="chev">›</div></div>
+      <div class="msg-row" data-stub="评论" id="rowComments"><div class="ico cmt" id="icoComments">💬</div><div class="mid"><div class="t">评论</div><div class="p" id="rowCommentsHint">暂无新评论</div></div><div class="right" id="rowCommentsRight"></div><div class="chev">›</div></div>
+      <div class="msg-row" data-stub="赞"><div class="ico like">👍</div><div class="mid"><div class="t">赞</div></div><div class="chev">›</div></div>
+      <div id="dmList"></div>
+    </div>
+  </section>
+
+  <!-- 我 -->
+  <section class="screen" id="sc-me">
+    <div class="scroll">
+      <div class="me-top">
+        <div class="me-tools">
+          <span id="openLogBtn" title="AI原始日志" style="cursor:pointer">🧾</span>
+          <span id="openSettingsBtn" title="设置" style="cursor:pointer">⚙</span>
+        </div>
+        <div class="me-hd" id="meHdOpen" title="打开我的微博主页">
+          <div class="me-av" id="meAv">我</div>
+          <div>
+            <div class="me-name" id="meName">我</div>
+            <div class="me-bio" id="meBio">简介：同层微博</div>
+          </div>
+        </div>
+        <div class="me-stats">
+          <div><b id="stWb">0</b><span>微博</span></div>
+          <div><b id="stFollow">12</b><span>关注</span></div>
+          <div><b id="stFan">0</b><span>粉丝</span></div>
+          <div><b>0</b><span>访客</span></div>
+        </div>
+      </div>
+      <div class="me-grid">
+        <div data-act="compose"><i>🖼</i>我的相册</div>
+        <div><i>⭐</i>我的赞</div>
+        <div><i>🕐</i>浏览记录</div>
+        <div><i>📝</i>草稿箱</div>
+        <div><i>💰</i>我的钱包</div>
+        <div><i>🛒</i>微博电商</div>
+        <div><i>🎤</i>创作中心</div>
+        <div><i>📣</i>广告中心</div>
+      </div>
+      <div class="me-card">
+        <div style="font-size:14px;font-weight:600;margin-bottom:8px">使用提示</div>
+        <div style="font-size:12px;color:#888;line-height:1.7">
+          推荐页可点「刷新推荐」一次拉取 5 条剧情相关微博（每条≥5评）<br>
+          信息流「写评论…」或正文页可自己回复；也可点「生成路人评」<br>
+          「消息」页可点「收路人私信」：分散多个随机路人<br>
+          评论/私信都是随机网名，贴合微博主题，不是固定几人<br>
+          「我」页点头像区可进我的微博主页；底栏「主页」进角色微博主页<br>
+          「我」页点 🧾 可看 AI 原始输入/输出日志（不解析）
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <nav class="tabbar">
+    <button class="on" data-tab="home"><span class="ico">🏠</span>微博</button>
+    <button data-tab="video"><span class="ico">👤</span>主页</button>
+    <button data-tab="discover"><span class="ico">🔍</span>发现</button>
+    <button data-tab="msg"><span class="ico" id="tabMsgIco">✉</span>消息</button>
+    <button data-tab="me"><span class="ico">☺</span>我</button>
+  </nav>
+
+  <div class="plus-menu" id="plusMenu">
+    <div data-act="write"><i>✏️</i>写微博</div>
+    <div data-act="dm"><i>✉</i>发私信</div>
+    <div data-act="album"><i>🖼</i>相册</div>
+  </div>
+
+  <!-- 详情/私信页 -->
+  <div class="page" id="page">
+    <div class="page-top">
+      <button class="back" id="pageBack">‹</button>
+      <div class="tt" id="pageTitle">正文</div>
+      <button class="ai-dot" id="pageAi" title="申请AI">✓</button>
+    </div>
+    <div class="page-body" id="pageBody"></div>
+  </div>
+
+  <!-- 发博/提示 -->
+  <div class="mask" id="mask">
+    <div class="sheet" id="sheet"></div>
+  </div>
+
+  <!-- AI 原始日志：只捕捉，不解析 -->
+  <div class="log-panel" id="logPanel">
+    <div class="log-top">
+      <button type="button" class="back" id="logBack">‹</button>
+      <div class="tt">AI 原始日志</div>
+      <button type="button" class="mini" id="logCopy">复制最近</button>
+      <button type="button" class="mini" id="logClear">清空</button>
+    </div>
+    <div class="log-body" id="logBody"><div class="log-empty">还没有记录。生成评论/私信后会显示原始输入与输出。</div></div>
+  </div>
+
+  <!-- 设置：单层整页，不再套第二个弹窗/轮廓 -->
+  <div class="log-panel" id="settingsPanel">
+    <div class="log-top">
+      <button type="button" class="back" id="settingsBack" style="color:#333">‹</button>
+      <div class="tt" style="color:#111">微博设置</div>
+      <span id="settingsSyncState" style="font-size:10px;color:#999">随聊天保存</span>
+    </div>
+    <div class="log-body">
+      <div class="settings-intro">
+        <strong>这一档微博，跟这一段聊天走</strong>
+        <p>账号与 API 配置同步到酒馆服务器；微博记录、当前档位与世界书选择保存到本聊天的 chatMetadata。</p>
+      </div>
+
+      <section class="settings-section" id="slotSection">
+        <h3>档位</h3>
+        <div class="section-note">切入档位时会立刻保存，并把该档的初始化提示词与 wb_lore 写进首楼。</div>
+        <div class="settings-inline">
+          <select id="setSlotSelect" aria-label="微博档位"></select>
+          <button type="button" class="mini-action primary" id="settingsActivateSlot">切入</button>
+          <button type="button" class="mini-action" id="settingsNewSlot">新建</button>
+        </div>
+        <div class="set-row"><label for="setSlotName">档位名称</label><input type="text" id="setSlotName" placeholder="例如：主线 / 娱乐圈后期" /></div>
+        <div class="set-row"><label for="setInitPrompt">初始化提示词（wblore）</label><textarea id="setInitPrompt" rows="5" placeholder="这一档微博生成时始终优先遵守的设定……"></textarea></div>
+        <div class="slot-status" id="slotStatus">正在读取当前聊天档…</div>
+      </section>
+
+      <section class="settings-section">
+        <h3>账号</h3>
+        <div class="section-note">修改昵称后会回溯替换已有微博、评论和私信中的旧昵称。</div>
+        <div class="settings-grid">
+          <div class="set-row"><label for="setUserId">我的微博昵称</label><input type="text" id="setUserId" /></div>
+          <div class="set-row"><label for="setCharId">角色微博昵称</label><input type="text" id="setCharId" /></div>
+        </div>
+        <div class="set-row"><label for="setUserBio">我的简介</label><input type="text" id="setUserBio" placeholder="账号简介（可选）" /></div>
+        <div class="settings-grid">
+          <div class="set-row"><label for="setUserFans">我的粉丝</label><input type="text" id="setUserFans" /></div>
+          <div class="set-row"><label for="setUserFollowing">我的关注</label><input type="text" id="setUserFollowing" /></div>
+          <div class="set-row"><label for="setCharFans">角色粉丝</label><input type="text" id="setCharFans" /></div>
+          <div class="set-row"><label for="setCharFollowing">角色关注</label><input type="text" id="setCharFollowing" /></div>
+        </div>
+      </section>
+
+      <section class="settings-section">
+        <h3>生成通道</h3>
+        <div class="section-note">默认跟随酒馆当前主 API；只有明确选择副 API 才走独立通道。</div>
+        <div class="settings-tabs">
+          <label><input type="radio" name="apiMode" id="setApiMain" value="main" checked><span>跟随酒馆主 API</span></label>
+          <label><input type="radio" name="apiMode" id="setApiSide" value="side"><span>独立副 API</span></label>
+        </div>
+        <div class="settings-detail" id="sideApiFields" hidden>
+          <div class="set-row"><label for="setApiSource">传输格式</label><select id="setApiSource" style="width:100%;height:38px;border:1px solid #eee;border-radius:9px;background:#fafafa;padding:0 9px">
+            <option value="custom">Custom (OpenAI-compatible)</option><option value="openai">OpenAI</option><option value="ai21">AI21</option><option value="aimlapi">AI/ML API</option><option value="azure_openai">Azure OpenAI</option><option value="chutes">Chutes</option><option value="claude">Claude</option><option value="workers_ai">Cloudflare Workers AI</option><option value="cohere">Cohere</option><option value="deepseek">DeepSeek</option><option value="electronhub">Electron Hub</option><option value="fireworks">Fireworks AI</option><option value="groq">Groq</option><option value="makersuite">Google AI Studio</option><option value="vertexai">Google Vertex AI</option><option value="mistralai">MistralAI</option><option value="minimax">MiniMax</option><option value="moonshot">Moonshot AI</option><option value="nanogpt">NanoGPT</option><option value="openrouter">OpenRouter</option><option value="perplexity">Perplexity</option><option value="pollinations">Pollinations</option><option value="siliconflow">SiliconFlow</option><option value="xai">xAI (Grok)</option><option value="zai">Z.AI (GLM)</option>
+          </select></div>
+          <div class="set-row"><label for="setApiUrl">API 基础地址</label><input type="text" id="setApiUrl" placeholder="https://api.example.com/v1" /></div>
+          <div class="set-row"><label for="setApiModel">模型名称</label><input type="text" id="setApiModel" placeholder="gpt-4.1-mini" /></div>
+          <div class="settings-grid">
+            <div class="set-row"><label for="setApiTemp">Temperature</label><input type="number" id="setApiTemp" min="0" max="2" step="0.1" /></div>
+            <div class="set-row"><label for="setApiMax">最大输出 Tokens</label><input type="number" id="setApiMax" min="256" max="65535" step="128" /></div>
+          </div>
+          <div class="set-row"><label for="setApiToken">Token（输入后加密保存）</label><input type="password" id="setApiToken" autocomplete="new-password" placeholder="sk-…" /></div>
+          <div class="set-row"><label for="setApiPass">本地解锁口令（不保存）</label><input type="password" id="setApiPass" autocomplete="new-password" /></div>
+          <div class="settings-inline"><button type="button" class="mini-action primary" id="settingsSaveToken">加密保存</button><button type="button" class="mini-action" id="settingsUnlockToken">解锁</button><button type="button" class="mini-action" id="settingsTestApi">测试</button></div>
+        </div>
+        <div class="api-status" id="apiStatus">当前：跟随酒馆主 API</div>
+      </section>
+
+      <section class="settings-section">
+        <h3>上下文注入</h3>
+        <div class="section-note">仅拼装给微博生成请求，不会污染酒馆正文。顺序：档位提示 → 人设/场景 → 世界书 → 最近聊天 → 微博快照 → 当前任务。</div>
+        <div class="set-row"><label for="setRecentMessages">最近聊天条数</label><input type="number" id="setRecentMessages" min="0" max="60" step="1" /></div>
+        <label class="settings-switch"><input type="checkbox" id="setIncludeChar" checked><span>注入角色描述与性格</span></label>
+        <label class="settings-switch"><input type="checkbox" id="setIncludePersona" checked><span>注入用户 Persona</span></label>
+        <label class="settings-switch"><input type="checkbox" id="setIncludeScenario" checked><span>注入当前场景</span></label>
+        <label class="settings-switch"><input type="checkbox" id="setIncludeBg" checked><span>注入已激活世界书；手动勾选时优先使用勾选条目</span></label>
+        <label class="settings-switch"><input type="checkbox" id="setInjectMain"><span>同时把当前档位 wb_lore 注入酒馆主对话（默认关闭）</span></label>
+        <div class="settings-inline"><button type="button" class="mini-action primary" id="settingsPreviewContext">查看本次注入预览</button><button type="button" class="mini-action" id="settingsRefreshLore">刷新世界书</button><button type="button" class="mini-action" id="settingsClearLorePick">清空勾选</button></div>
+        <pre class="context-preview" id="contextPreview"></pre>
+        <div id="lorePickList" class="lore-pick-list"><div class="lore-empty">打开设置时自动加载…</div></div>
+      </section>
+
+      <section class="settings-section">
+        <h3>wb_lore</h3>
+        <div class="section-note" id="wbLoreHint">切入档位后会自动写入首楼；这里可从旧楼层提取或手动编辑。</div>
+        <div class="settings-inline"><button type="button" class="mini-action" id="settingsPullPrevLore">拉取旧楼</button><button type="button" class="mini-action" id="settingsFillPinnedLore">填入当前档</button><button type="button" class="mini-action" id="settingsHarvestLore">重新抓取</button></div>
+        <div class="set-row"><label for="loreRawText">完整 wb_lore</label><textarea id="loreRawText" rows="8" placeholder="&lt;wb_lore&gt; 内部全文…"></textarea></div>
+        <details style="margin-top:10px"><summary style="font-size:12px;color:#777;cursor:pointer">分栏编辑</summary><div id="loreSecList" class="lore-sec-box"></div><div class="set-row"><label for="loreRestText">其它正文</label><textarea id="loreRestText" rows="4"></textarea></div></details>
+        <div class="settings-inline"><button type="button" class="mini-action" id="settingsParseLoreRaw">从原文拆分</button><button type="button" class="mini-action primary" id="settingsWriteLoreFloor">写入首楼并保存档位</button><button type="button" class="mini-action" id="settingsClearLore">清空</button></div>
+      </section>
+
+      <section class="settings-section">
+        <h3>本聊天记录</h3>
+        <div class="section-note">主存为本聊天 chatMetadata；localStorage 只作离线镜像。切换聊天会自动绑定另一份微博记录。</div>
+        <div class="settings-inline"><button type="button" class="mini-action" id="settingsClearData">清空本聊天的微博/评论/私信</button></div>
+      </section>
+    </div>
+    <div class="settings-footer"><button type="button" class="reset" id="settingsReset">恢复默认</button><button type="button" class="save" id="settingsSave">保存当前设置</button></div>
+  </div>
+
+  <div class="float-toast" id="floatToast" aria-live="polite"></div>
+</div>
+
+<script>
+(function(){
+  // 支持 iframe ?char=&user=&ua=&ca=（正则/扩展注入，避免在正则里塞大脚本）
+  try {
+    const q = new URLSearchParams(location.search || '');
+    const pick = (k) => {
+      const v = q.get(k);
+      return (v != null && String(v).trim() !== '') ? String(v) : '';
+    };
+    if (pick('char')) window.charName = pick('char');
+    if (pick('user')) window.userName = pick('user');
+    if (pick('ua')) window.userAvatarPath = pick('ua');
+    if (pick('ca')) window.charAvatarPath = pick('ca');
+  } catch (_) {}
+
+  const charName = (typeof window.charName !== 'undefined') ? window.charName : '{{char}}';
+  const userName = (typeof window.userName !== 'undefined') ? window.userName : '{{user}}';
+  const userAvatarPath = (typeof window.userAvatarPath !== 'undefined') ? window.userAvatarPath : '{{userAvatarPath}}';
+  const charAvatarPath = (typeof window.charAvatarPath !== 'undefined') ? window.charAvatarPath : '{{charAvatarPath}}';
+  const rawUserName = (!userName || String(userName).includes('{{')) ? '' : String(userName);
+  const rawCharName = (!charName || String(charName).includes('{{')) ? '' : String(charName);
+  const WB_HOST = window.WeiboHost && typeof window.WeiboHost === 'object' ? window.WeiboHost : null;
+
+  function defaultGlobalConfig(){
+    return {
+      version: 2,
+      api: { mode:'main', source:'custom', url:'', model:'', temperature:0.8, maxTokens:4096 },
+      context: { recentMessages:12, includeChar:true, includePersona:true, includeScenario:true, includeWorldInfo:true, injectMain:false },
+      slots: [{ id:'default', name:'默认档位', initPrompt:'', wbLore:'' }],
+    };
+  }
+  function normalizeGlobalConfig(raw){
+    const base = defaultGlobalConfig();
+    const value = raw && typeof raw === 'object' ? raw : {};
+    return {
+      ...base,
+      ...value,
+      api: { ...base.api, ...(value.api || {}) },
+      context: { ...base.context, ...(value.context || {}) },
+      slots: Array.isArray(value.slots) && value.slots.length ? value.slots : base.slots,
+    };
+  }
+  function readGlobalConfig(){
+    try { if (WB_HOST?.getSettings) return normalizeGlobalConfig(WB_HOST.getSettings()); } catch (_) {}
+    try { return normalizeGlobalConfig(JSON.parse(localStorage.getItem('weibo_global_v2') || '{}')); } catch (_) { return defaultGlobalConfig(); }
+  }
+  function writeGlobalConfig(next){
+    globalConfig = normalizeGlobalConfig({ ...globalConfig, ...(next || {}) });
+    try { WB_HOST?.saveSettings?.(globalConfig); } catch (_) {}
+    try { localStorage.setItem('weibo_global_v2', JSON.stringify(globalConfig)); } catch (_) {}
+    return globalConfig;
+  }
+  function readChatBinding(){
+    try { if (WB_HOST?.getChatStore) return WB_HOST.getChatStore() || {}; } catch (_) {}
+    return {};
+  }
+  let globalConfig = readGlobalConfig();
+  let chatBinding = readChatBinding();
+  let activeSlotId = String(chatBinding.activeSlotId || globalConfig.slots[0]?.id || 'default');
+  function currentSlot(){
+    return globalConfig.slots.find((s) => String(s.id) === String(activeSlotId)) || globalConfig.slots[0];
+  }
+  async function saveChatBinding(patch){
+    chatBinding = { ...chatBinding, ...(patch || {}), activeSlotId };
+    try { await WB_HOST?.saveChatStore?.(chatBinding); } catch (_) {}
+    return chatBinding;
+  }
+
+  const PHONE_SETTINGS_KEY = 'weibo_phone_settings_v1';
+  function settingsBucketId(){
+    return (rawCharName || 'default') + '::' + (rawUserName || 'user');
+  }
+  function defaultPhoneSettings(){
+    const ctxSet = globalConfig?.context || {};
+    const slot = currentSlot() || {};
+    const account = slot.account || {};
+    return {
+      userWeiboId: account.userWeiboId || '',
+      charWeiboId: account.charWeiboId || '',
+      userBio: account.userBio || '',
+      userFans: Number(account.userFans) || 0,
+      charFans: Number(account.charFans) || 0,
+      userFollowing: Number.isFinite(Number(account.userFollowing)) ? Number(account.userFollowing) : 12,
+      charFollowing: Number.isFinite(Number(account.charFollowing)) ? Number(account.charFollowing) : 86,
+      includeBgLore: ctxSet.includeWorldInfo !== false,
+      includeChar: ctxSet.includeChar !== false,
+      includePersona: ctxSet.includePersona !== false,
+      includeScenario: ctxSet.includeScenario !== false,
+      recentMessages: Math.max(0, Math.min(60, Number(ctxSet.recentMessages) || 12)),
+      injectMain: !!ctxSet.injectMain,
+      selectedLoreIds: [],
+      userAliases: [],
+      charAliases: [],
+    };
+  }
+  function loadPhoneSettings(){
+    const base = defaultPhoneSettings();
+    try {
+      const all = JSON.parse(localStorage.getItem(PHONE_SETTINGS_KEY) || '{}');
+      return Object.assign(base, all[settingsBucketId()] || {});
+    } catch (_) { return base; }
+  }
+  function savePhoneSettings(next){
+    const cur = Object.assign(defaultPhoneSettings(), phoneSettings || {}, next || {});
+    try {
+      const all = JSON.parse(localStorage.getItem(PHONE_SETTINGS_KEY) || '{}');
+      all[settingsBucketId()] = cur;
+      localStorage.setItem(PHONE_SETTINGS_KEY, JSON.stringify(all));
+    } catch (_) {}
+    phoneSettings = cur;
+    const slot = currentSlot();
+    if (slot) {
+      slot.account = {
+        userWeiboId: cur.userWeiboId || '', charWeiboId: cur.charWeiboId || '', userBio: cur.userBio || '',
+        userFans: Number(cur.userFans) || 0, charFans: Number(cur.charFans) || 0,
+        userFollowing: Number(cur.userFollowing) || 0, charFollowing: Number(cur.charFollowing) || 0,
+      };
+      globalConfig.context = {
+        ...globalConfig.context,
+        includeWorldInfo: cur.includeBgLore !== false,
+        includeChar: cur.includeChar !== false,
+        includePersona: cur.includePersona !== false,
+        includeScenario: cur.includeScenario !== false,
+        recentMessages: Math.max(0, Math.min(60, Number(cur.recentMessages) || 12)),
+        injectMain: !!cur.injectMain,
+      };
+      writeGlobalConfig(globalConfig);
+    }
+    applyDisplayNames();
+    return cur;
+  }
+  let phoneSettings = loadPhoneSettings();
+  let displayName = rawUserName || '我';
+  let displayChar = rawCharName || '';
+  function applyDisplayNames(){
+    displayName = (phoneSettings.userWeiboId || '').trim() || rawUserName || '我';
+    displayChar = (phoneSettings.charWeiboId || '').trim() || rawCharName || '';
+  }
+  applyDisplayNames();
+
+  const state = {
+    tab: 'home',
+    posts: [],
+    threads: [],
+    page: null,
+    userHasSentNewMessage: false,
+    aiBusy: false,
+    currentMsgId: null,
+    lastFloorWriteAt: 0,
+    wbLore: String(currentSlot()?.wbLore || ''), // 当前档位设定；切入时写首楼 + chatMetadata
+    selectedLoreIds: [], // 用户勾选的世界书条目 id
+    selectedLoreSnap: [], // 勾选时钉住的正文快照 {id,book,name,content}，现场读失败时兜底
+    profileWho: 'char', // 主页 tab：char | user
+    userFans: 0,
+    charFans: 0,
+    userFollowing: 12,
+    charFollowing: 86,
+    fansFromStore: false, // 已从楼层/metadata 读到粉丝时，开场 lore 不再覆盖
+  };
+  window.state = state;
+
+  function hashSeed(s){
+    let h = 2166136261;
+    const str = String(s || '');
+    for (let i = 0; i < str.length; i++) {
+      h ^= str.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return h >>> 0;
+  }
+  /** 新开局默认粉丝量：角色偏「有热度」，用户偏普通号 */
+  function defaultFansFor(who){
+    if (who === 'char') {
+      const h = hashSeed(displayChar || rawCharName || 'char');
+      return 18000 + (h % 42000); // 约 1.8万～6万
+    }
+    const h = hashSeed(displayName || rawUserName || 'user');
+    return 220 + (h % 1800); // 约 220～2000
+  }
+  function ensureProfileStats(opts={}){
+    const force = !!opts.force;
+    const allowDefault = opts.allowDefault !== false;
+    const fromSettingsUser = Number(phoneSettings.userFans) || 0;
+    const fromSettingsChar = Number(phoneSettings.charFans) || 0;
+    // 默认随机粉量只作「lore/已存都没有」的兜底，绝不把 fansFromStore 置真（否则会挡住开场 [账号] 行）
+    if (force || !(Number(state.userFans) > 0)) {
+      if (fromSettingsUser > 0) state.userFans = fromSettingsUser;
+      else if (allowDefault) state.userFans = defaultFansFor('user');
+    }
+    if (force || !(Number(state.charFans) > 0)) {
+      if (fromSettingsChar > 0) state.charFans = fromSettingsChar;
+      else if (allowDefault) state.charFans = defaultFansFor('char');
+    }
+    const uf = Number(phoneSettings.userFollowing);
+    const cf = Number(phoneSettings.charFollowing);
+    if (Number.isFinite(uf) && uf >= 0) state.userFollowing = uf;
+    if (Number.isFinite(cf) && cf >= 0) state.charFollowing = cf;
+    if (!(Number(state.userFollowing) >= 0)) state.userFollowing = 12;
+    if (!(Number(state.charFollowing) >= 0)) state.charFollowing = 86;
+  }
+  // 不在这里填随机粉：等 harvest wb_lore / 已存记录之后再 ensureProfileStats
+
+  const PHONE_DATA_KEY = 'weibo_phone_data_v1';
+  let _floorSyncTimer = null;
+  let _floorSyncPending = false;
+
+  function getSillyContextSafe(){
+    try {
+      if (typeof SillyTavern !== 'undefined' && SillyTavern.getContext) return SillyTavern.getContext();
+    } catch (_) {}
+    try {
+      if (window.parent && window.parent !== window && window.parent.SillyTavern?.getContext) {
+        return window.parent.SillyTavern.getContext();
+      }
+    } catch (_) {}
+    return null;
+  }
+  function currentChatId(){
+    try {
+      const ctx = getSillyContextSafe();
+      if (typeof ctx?.getCurrentChatId === 'function') {
+        const id = ctx.getCurrentChatId();
+        if (id != null && id !== '') return String(id);
+      }
+      if (ctx?.chatId != null && ctx.chatId !== '') return String(ctx.chatId);
+    } catch (_) {}
+    return 'unknown_chat';
+  }
+  function phoneDataBucketId(){
+    return currentChatId() + '::' + (rawCharName || 'char') + '::' + (rawUserName || 'user');
+  }
+  function extractRawMessageText(entry){
+    if (!entry) return '';
+    if (typeof entry === 'string') return entry;
+    return String(entry.mes ?? entry.message ?? entry.content ?? '');
+  }
+  function getChatMessageEntry(messageId){
+    try {
+      if (typeof getChatMessages === 'function' && messageId != null) {
+        const list = getChatMessages(messageId);
+        if (Array.isArray(list) && list[0]) return list[0];
+      }
+    } catch (_) {}
+    try {
+      const ctx = getSillyContextSafe();
+      const chat = Array.isArray(ctx?.chat) ? ctx.chat : [];
+      const idNum = Number(messageId);
+      if (!Number.isNaN(idNum) && chat[idNum]) return chat[idNum];
+      return chat.find((m) => String(m?.message_id ?? m?.id ?? '') === String(messageId)) || null;
+    } catch (_) {}
+    return null;
+  }
+  function getChatMessageText(messageId, fallback = ''){
+    return extractRawMessageText(getChatMessageEntry(messageId)) || String(fallback || '');
+  }
+  async function setChatMessageText(messageText, messageId = null, options = { refresh: 'none' }){
+    const resolvedId = messageId != null ? messageId : ensureWeiboMsgId();
+    if (resolvedId == null) return false;
+    const setter = (typeof setChatMessages === 'function')
+      ? setChatMessages
+      : (typeof window.parent?.setChatMessages === 'function' ? window.parent.setChatMessages.bind(window.parent) : null);
+    if (!setter) return false;
+    try {
+      await setter([{ message_id: resolvedId, message: String(messageText || '') }], options);
+      state.lastFloorWriteAt = Date.now();
+      return true;
+    } catch (e) {
+      console.warn('[同层微博] 写回楼层失败', e);
+      return false;
+    }
+  }
+  function messageLooksLikeWeiboShell(raw){
+    return /<weiboapp\b/i.test(String(raw || ''));
+  }
+  function ensureWeiboMsgId(){
+    try {
+      if (typeof getCurrentMessageId === 'function') {
+        const liveId = getCurrentMessageId();
+        if (liveId !== undefined && liveId !== null && liveId !== '') {
+          const raw = getChatMessageText(liveId, '');
+          if (messageLooksLikeWeiboShell(raw) || !String(raw || '').trim() || raw === '<weiboapp></weiboapp>') {
+            state.currentMsgId = liveId;
+            return state.currentMsgId;
+          }
+        }
+      }
+    } catch (_) {}
+    if (state.currentMsgId != null) return state.currentMsgId;
+    try {
+      const ctx = getSillyContextSafe();
+      const chat = Array.isArray(ctx?.chat) ? ctx.chat : [];
+      for (let i = chat.length - 1; i >= 0; i--) {
+        const raw = extractRawMessageText(chat[i]);
+        if (!messageLooksLikeWeiboShell(raw)) continue;
+        const id = chat[i]?.message_id ?? chat[i]?.id ?? i;
+        state.currentMsgId = id;
+        return state.currentMsgId;
+      }
+    } catch (_) {}
+    try {
+      if (typeof getCurrentMessageId === 'function') {
+        const liveId = getCurrentMessageId();
+        if (liveId !== undefined && liveId !== null && liveId !== '') {
+          state.currentMsgId = liveId;
+          return state.currentMsgId;
+        }
+      }
+    } catch (_) {}
+    return state.currentMsgId;
+  }
+  function extractUiMeta(raw){
+    const m = String(raw || '').match(/<!--wb_ui:([\s\S]*?)-->/);
+    if (!m) return null;
+    try { return JSON.parse(m[1]); } catch (_) { return null; }
+  }
+  function extractLorePickSnap(raw){
+    const m = String(raw || '').match(/<!--wb_lore_pick:([\s\S]*?)-->/);
+    if (!m) return [];
+    try {
+      const arr = JSON.parse(m[1]);
+      return Array.isArray(arr) ? arr : [];
+    } catch (_) { return []; }
+  }
+  function applyUiMeta(meta){
+    if (!meta) return;
+    (meta.postsUnread || []).forEach((u, i) => {
+      if (state.posts[i]) state.posts[i].unread = Number(u) || 0;
+    });
+    const map = meta.threadsUnread || {};
+    Object.keys(map).forEach((name) => {
+      const t = state.threads.find((x) => x.name === name);
+      if (t) t.unread = Number(map[name]) || 0;
+    });
+    if (Array.isArray(meta.selectedLoreIds)) {
+      state.selectedLoreIds = meta.selectedLoreIds.map(String);
+    }
+    const uf = Number(meta.userFans);
+    const cf = Number(meta.charFans);
+    if (Number.isFinite(uf) && uf > 0) { state.userFans = uf; state.fansFromStore = true; }
+    if (Number.isFinite(cf) && cf > 0) { state.charFans = cf; state.fansFromStore = true; }
+    const ufo = Number(meta.userFollowing);
+    const cfo = Number(meta.charFollowing);
+    if (Number.isFinite(ufo) && ufo >= 0) state.userFollowing = ufo;
+    if (Number.isFinite(cfo) && cfo >= 0) state.charFollowing = cfo;
+  }
+  function loreEntryId(bookTitle, e, index){
+    const book = String(bookTitle || 'book');
+    const uid = e?.uid ?? e?.id;
+    if (uid != null && String(uid) !== '') return book + '::uid:' + uid;
+    const name = String(e?.comment || e?.name || '').trim();
+    const keys = [].concat(e?.key || [], e?.keys || []).flat().map((x) => String(x || '').trim()).filter(Boolean).join(',');
+    return book + '::' + (name || keys || ('i' + index));
+  }
+  function readSelectedLoreIds(){
+    try {
+      const meta = getSillyContextSafe()?.chatMetadata?.weibo_selected_lore;
+      if (Array.isArray(meta) && meta.length) return meta.map(String);
+    } catch (_) {}
+    if (Array.isArray(state.selectedLoreIds) && state.selectedLoreIds.length) return state.selectedLoreIds.map(String);
+    if (Array.isArray(phoneSettings.selectedLoreIds) && phoneSettings.selectedLoreIds.length) {
+      return phoneSettings.selectedLoreIds.map(String);
+    }
+    return [];
+  }
+  async function patchChatMetadata(patch){
+    try {
+      if (WB_HOST?.saveChatStore) {
+        const legacy = { ...(chatBinding.legacy || {}), ...(patch || {}) };
+        await saveChatBinding({ legacy });
+        return true;
+      }
+      const ctx = getSillyContextSafe();
+      if (!ctx) return false;
+      if (!ctx.chatMetadata || typeof ctx.chatMetadata !== 'object') ctx.chatMetadata = {};
+      Object.assign(ctx.chatMetadata, patch || {});
+      if (typeof ctx.saveMetadata === 'function') await ctx.saveMetadata();
+      else if (typeof saveMetadata === 'function') await saveMetadata();
+      return true;
+    } catch (e) {
+      console.warn('[同层微博] patchChatMetadata 失败', e);
+      return false;
+    }
+  }
+  /**
+   * 本聊天真持久层：chatMetadata（跟聊天 json 走，不在楼层里）。
+   * 藏/删前 200 楼、后来再 QR 新开微博壳，仍能从这里灌回。
+   * 微博楼层只是「当前壳」的镜像，会被藏楼带走，不能当主存。
+   */
+  function readPhoneBundleFromMetadata(){
+    try {
+      const hostBundle = WB_HOST?.getChatStore?.()?.phoneBundle;
+      if (hostBundle && typeof hostBundle === 'object') return hostBundle;
+      const cm = getSillyContextSafe()?.chatMetadata || {};
+      const bundle = cm.weibo_phone_bundle;
+      if (bundle && typeof bundle === 'object') return bundle;
+      // 兼容旧字段
+      const legacy = {};
+      if (cm.weibo_wb_lore) legacy.wbLore = cm.weibo_wb_lore;
+      if (Array.isArray(cm.weibo_selected_lore)) legacy.selectedLoreIds = cm.weibo_selected_lore;
+      if (Array.isArray(cm.weibo_selected_lore_snap)) legacy.selectedLoreSnap = cm.weibo_selected_lore_snap;
+      return Object.keys(legacy).length ? legacy : null;
+    } catch (_) { return null; }
+  }
+  async function writePhoneBundleToMetadata(){
+    const bundle = {
+      wbLore: state.wbLore || '',
+      selectedLoreIds: state.selectedLoreIds || [],
+      selectedLoreSnap: state.selectedLoreSnap || [],
+      posts: state.posts || [],
+      threads: state.threads || [],
+      userFans: Number(state.userFans) || 0,
+      charFans: Number(state.charFans) || 0,
+      userFollowing: Number(state.userFollowing) || 0,
+      charFollowing: Number(state.charFollowing) || 0,
+      savedAt: Date.now(),
+    };
+    if (WB_HOST?.saveChatStore) {
+      await saveChatBinding({ phoneBundle: bundle, activeSlotId });
+      return true;
+    }
+    return patchChatMetadata({
+      weibo_phone_bundle: bundle,
+      // 同步旧键，避免其它逻辑读不到
+      weibo_wb_lore: bundle.wbLore,
+      weibo_selected_lore: bundle.selectedLoreIds,
+      weibo_selected_lore_snap: bundle.selectedLoreSnap,
+    });
+  }
+  function hydrateFromChatMetadata(){
+    const bundle = readPhoneBundleFromMetadata();
+    if (!bundle) return false;
+    let hit = false;
+    if (bundle.wbLore) { state.wbLore = String(bundle.wbLore); hit = true; }
+    if (Array.isArray(bundle.selectedLoreIds)) {
+      state.selectedLoreIds = bundle.selectedLoreIds.map(String);
+      if (state.selectedLoreIds.length) hit = true;
+    }
+    if (Array.isArray(bundle.selectedLoreSnap) && bundle.selectedLoreSnap.length) {
+      state.selectedLoreSnap = bundle.selectedLoreSnap;
+      hit = true;
+    }
+    const uf = Number(bundle.userFans);
+    const cf = Number(bundle.charFans);
+    if (Number.isFinite(uf) && uf > 0) { state.userFans = uf; state.fansFromStore = true; hit = true; }
+    if (Number.isFinite(cf) && cf > 0) { state.charFans = cf; state.fansFromStore = true; hit = true; }
+    const ufo = Number(bundle.userFollowing);
+    const cfo = Number(bundle.charFollowing);
+    if (Number.isFinite(ufo) && ufo >= 0) state.userFollowing = ufo;
+    if (Number.isFinite(cfo) && cfo >= 0) state.charFollowing = cfo;
+    // 当前壳若是空的，用 metadata 里的帖/私信灌回（新 QR / 旧楼已藏）
+    const emptyPhone = !(state.posts && state.posts.length) && !(state.threads && state.threads.length);
+    if (emptyPhone) {
+      if (Array.isArray(bundle.posts) && bundle.posts.length) { state.posts = bundle.posts; hit = true; }
+      if (Array.isArray(bundle.threads) && bundle.threads.length) { state.threads = bundle.threads; hit = true; }
+    }
+    return hit;
+  }
+  async function persistLorePicks(ids, snap){
+    state.selectedLoreIds = [...new Set((ids || []).map(String))];
+    state.selectedLoreSnap = Array.isArray(snap) ? snap : (state.selectedLoreSnap || []);
+    phoneSettings.selectedLoreIds = state.selectedLoreIds.slice();
+    savePhoneSettings(phoneSettings);
+    await writePhoneBundleToMetadata();
+    persistPhoneState();
+  }
+  function collectEnabledBookNames(ctx){
+    // 保序：按酒馆里勾选/启用的顺序收集已启动世界书名
+    const ordered = [];
+    const seen = new Set();
+    const addName = (n) => {
+      n = String(n == null ? '' : n).trim();
+      if (!n || seen.has(n)) return;
+      seen.add(n);
+      ordered.push(n);
+    };
+    try {
+      const roots = [window];
+      try { if (window.parent && window.parent !== window) roots.push(window.parent); } catch (_) {}
+      for (const w of roots) {
+        try { if (Array.isArray(w.selected_world_info)) w.selected_world_info.forEach(addName); } catch (_) {}
+        try {
+          const gs = w.world_info && w.world_info.globalSelect;
+          if (Array.isArray(gs)) gs.forEach(addName);
+        } catch (_) {}
+        try {
+          // 下拉框勾选顺序
+          const doc = w.document;
+          if (!doc) continue;
+          doc.querySelectorAll('#world_info option:checked, #world_info option[selected]').forEach((opt) => {
+            addName(opt.textContent || opt.value);
+          });
+        } catch (_) {}
+      }
+    } catch (_) {}
+    try {
+      const ch = ctx?.characters?.[ctx.characterId];
+      const data = ch?.data || ch || {};
+      const ext = data.extensions || {};
+      addName(ext.world);
+      [].concat(ext.worlds || [], data.world || []).flat().forEach(addName);
+    } catch (_) {}
+    try {
+      const chatWi = ctx?.chatMetadata?.world_info;
+      if (Array.isArray(chatWi)) chatWi.forEach(addName);
+      else addName(chatWi);
+    } catch (_) {}
+    return ordered;
+  }
+  function sortWorldInfoEntries(entriesObj){
+    const list = Array.isArray(entriesObj)
+      ? entriesObj.slice()
+      : Object.values(entriesObj || {}).filter(Boolean);
+    // 与酒馆世界书面板一致：order 降序（100 在上）
+    list.sort((a, b) => {
+      const oa = Number(a?.order ?? a?.displayIndex ?? a?.display_index ?? NaN);
+      const ob = Number(b?.order ?? b?.displayIndex ?? b?.display_index ?? NaN);
+      const aNum = Number.isFinite(oa) ? oa : -1e9;
+      const bNum = Number.isFinite(ob) ? ob : -1e9;
+      if (aNum !== bNum) return bNum - aNum;
+      const ua = Number(a?.uid ?? a?.id ?? NaN);
+      const ub = Number(b?.uid ?? b?.id ?? NaN);
+      if (Number.isFinite(ua) && Number.isFinite(ub) && ua !== ub) return ub - ua;
+      return 0;
+    });
+    return list;
+  }
+  async function listWorldLoreCatalog(){
+    const ctx = getSillyContextSafe();
+    const books = [];
+    const seen = new Set();
+    const neutralizeEjs = (s) => {
+      const _ejsOpen = '<' + '%';
+      const _ejsClose = '%' + '>';
+      const _ejsBlockRe = new RegExp(
+        _ejsOpen.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[\\s\\S]*?' + _ejsClose.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+        'g'
+      );
+      return String(s || '')
+        .replace(_ejsBlockRe, '[ejs已省略]')
+        .split(_ejsOpen).join('<\uFF05')
+        .split(_ejsClose).join('\uFF05>');
+    };
+    const pushBook = (bookKey, bookLabel, entriesObj) => {
+      if (!entriesObj) return;
+      const list = sortWorldInfoEntries(entriesObj);
+      const entries = [];
+      list.forEach((e, index) => {
+        if (!e) return;
+        const keys = [].concat(e.key || e.keys || [], e.keysecondary || e.secondary_keys || []).flat()
+          .map((x) => String(x || '').trim()).filter(Boolean);
+        const rawName = e.comment || e.name || '';
+        const content = neutralizeEjs(e.content || '').trim();
+        const disabled = !!(e.disable || e.enabled === false);
+        const name = (disabled ? '［禁用］' : '') + (rawName || keys.join(',') || ('条目' + (index + 1)));
+        const id = loreEntryId(bookKey, e, index);
+        if (seen.has(id)) return;
+        seen.add(id);
+        entries.push({
+          id,
+          book: bookLabel,
+          bookKey,
+          name,
+          keys,
+          preview: content ? content.slice(0, 120) : '（无正文）',
+          content,
+          disabled,
+          order: Number(e.order ?? e.displayIndex ?? e.display_index ?? 0),
+        });
+      });
+      books.push({ key: bookKey, label: bookLabel, entries });
+    };
+
+    try {
+      const ch = ctx?.characters?.[ctx.characterId];
+      const data = ch?.data || ch || {};
+      const charBooks = data.character_book || ch?.character_book;
+      const loadFn = (typeof ctx?.loadWorldInfo === 'function') ? ctx.loadWorldInfo.bind(ctx) : null;
+      const nameList = collectEnabledBookNames(ctx);
+      const nameSet = new Set(nameList.map((n) => String(n || '').trim()));
+
+      // 角色书与「已启用世界书」重名时只保留世界书，避免刷出两本同名
+      let charBookLabel = '';
+      if (charBooks?.entries) {
+        const cname = String(charBooks.name || ch?.name || 'character_book').trim();
+        const dup = nameSet.has(cname) || [...nameSet].some((n) => n === cname || n.endsWith(cname) || cname.endsWith(n));
+        if (!dup) {
+          charBookLabel = '角色书:' + cname;
+          pushBook(charBookLabel, charBookLabel, charBooks.entries);
+        }
+      }
+
+      if (loadFn) {
+        for (const name of nameList) {
+          try {
+            const dataWi = await loadFn(name);
+            const label = '世界书:' + name;
+            pushBook(label, label, dataWi?.entries || dataWi);
+          } catch (_) {}
+        }
+      } else if (!books.length) {
+        console.warn('[同层微博] loadWorldInfo 不可用，仅角色书条目');
+      }
+    } catch (_) {}
+
+    const flat = books.flatMap((b) => b.entries);
+    return { books, flat };
+  }
+  let _loreCatalogCache = null; // { books, flat }
+  let _lorePickBookKey = null;  // null=世界书列表；非空=某本书条目页
+  let _lorePickPending = new Set();
+
+  function syncLorePendingFromDom(){
+    document.querySelectorAll('#lorePickList input[data-lore-id]').forEach((el) => {
+      const id = el.getAttribute('data-lore-id');
+      if (!id) return;
+      if (el.checked) _lorePickPending.add(id);
+      else _lorePickPending.delete(id);
+    });
+  }
+  function bindLorePickListEvents(box){
+    box.onclick = (e) => {
+      const back = e.target.closest('[data-lore-back]');
+      if (back) {
+        syncLorePendingFromDom();
+        _lorePickBookKey = null;
+        renderLorePickList(false);
+        return;
+      }
+      const bookRow = e.target.closest('[data-lore-book]');
+      if (bookRow) {
+        _lorePickBookKey = bookRow.getAttribute('data-lore-book');
+        renderLorePickList(false);
+        return;
+      }
+    };
+    box.onchange = (e) => {
+      const inp = e.target.closest('input[data-lore-id]');
+      if (!inp) return;
+      const id = inp.getAttribute('data-lore-id');
+      if (inp.checked) _lorePickPending.add(id);
+      else _lorePickPending.delete(id);
+    };
+  }
+  async function renderLorePickList(forceReload){
+    const box = document.getElementById('lorePickList');
+    if (!box) return;
+    box.innerHTML = '<div class="lore-empty">正在读取酒馆世界书…</div>';
+    try {
+      if (forceReload || !_loreCatalogCache) {
+        _loreCatalogCache = await listWorldLoreCatalog();
+        _lorePickBookKey = null;
+      }
+      const selected = new Set(readSelectedLoreIds());
+      if (!_lorePickPending.size && selected.size) {
+        selected.forEach((id) => _lorePickPending.add(id));
+      }
+      state.selectedLoreIds = [..._lorePickPending];
+      try {
+        const snap = getSillyContextSafe()?.chatMetadata?.weibo_selected_lore_snap;
+        if (Array.isArray(snap) && snap.length) state.selectedLoreSnap = snap;
+      } catch (_) {}
+
+      const books = _loreCatalogCache?.books || [];
+      const flat = _loreCatalogCache?.flat || [];
+      if (!books.length && !flat.length) {
+        box.innerHTML = '<div class="lore-empty">未读到已启动世界书。<br>请确认已启用世界书，或点「刷新世界书列表」。</div>';
+        bindLorePickListEvents(box);
+        return;
+      }
+
+      // —— 第一层：世界书列表 ——
+      if (_lorePickBookKey == null) {
+        const totalSel = _lorePickPending.size;
+        box.innerHTML = `
+          <div class="lore-empty" style="padding:6px 4px 10px;text-align:left">
+            已启动 ${books.length} 本世界书 · 共 ${flat.length} 条${totalSel ? ` · 已勾选 ${totalSel}` : ''}<br>
+            点进某一本再勾选条目
+          </div>` + books.map((b) => {
+          const nSel = b.entries.filter((e) => _lorePickPending.has(e.id)).length;
+          return `<div class="lore-book-row" data-lore-book="${esc(b.key)}">
+            <div class="meta">
+              <div class="nm">${esc(b.label)}</div>
+              <div class="bk">${b.entries.length} 条条目${nSel ? ` · 已选 ${nSel}` : ''}</div>
+            </div>
+            <div class="chev">›</div>
+          </div>`;
+        }).join('');
+        bindLorePickListEvents(box);
+        return;
+      }
+
+      // —— 第二层：某本书的条目（order 降序） ——
+      const book = books.find((b) => b.key === _lorePickBookKey);
+      if (!book) {
+        _lorePickBookKey = null;
+        return renderLorePickList(false);
+      }
+      const entries = book.entries.slice(); // 已按 order 降序
+      box.innerHTML = `
+        <div class="lore-pick-nav">
+          <button type="button" class="back" data-lore-back>‹ 世界书</button>
+          <div class="tt">${esc(book.label)}</div>
+        </div>
+        <div class="lore-empty" style="padding:4px 2px 8px;text-align:left">${entries.length} 条 · 按 order 降序</div>
+        ${entries.map((item) => `
+          <label class="lore-pick-item"${item.disabled ? ' style="opacity:.65"' : ''}>
+            <input type="checkbox" data-lore-id="${esc(item.id)}" ${_lorePickPending.has(item.id) ? 'checked' : ''} />
+            <div class="meta">
+              <div class="nm">${esc(item.name)}</div>
+              <div class="bk">order ${esc(String(item.order))}${item.keys?.length ? ' · ' + esc(item.keys.slice(0, 4).join(', ')) : ''}</div>
+              <div class="pv">${esc(item.preview)}${(item.content || '').length > 120 ? '…' : ''}</div>
+            </div>
+          </label>`).join('')}
+      `;
+      bindLorePickListEvents(box);
+    } catch (e) {
+      box.innerHTML = '<div class="lore-empty">读取失败：' + esc(String(e && e.message || e)) + '</div>';
+    }
+  }
+  function collectCheckedLorePicks(){
+    syncLorePendingFromDom();
+    const ids = [..._lorePickPending];
+    const catalog = _loreCatalogCache?.flat || [];
+    const byId = new Map(catalog.map((x) => [x.id, x]));
+    const snap = ids.map((id) => {
+      const hit = byId.get(id);
+      if (hit) return { id: hit.id, book: hit.book, name: hit.name, content: hit.content };
+      const old = (state.selectedLoreSnap || []).find((x) => x.id === id);
+      return old || { id, book: '', name: id, content: '' };
+    }).filter((x) => x.content);
+    return { ids, snap };
+  }
+  function extractWbLoreBlocks(raw){
+    const out = [];
+    const re = /<wb_lore>([\s\S]*?)<\/wb_lore>/gi;
+    let m;
+    while ((m = re.exec(String(raw || '')))) {
+      const t = String(m[1] || '').trim();
+      if (t) out.push(t);
+    }
+    return out;
+  }
+  function joinWbLoreChunks(chunks){
+    const seen = new Set();
+    const out = [];
+    (chunks || []).forEach((c) => {
+      const t = String(c || '').trim();
+      if (!t || seen.has(t)) return;
+      seen.add(t);
+      out.push(t);
+    });
+    return out.join('\n\n');
+  }
+  const DEFAULT_LORE_SECTION_TITLES = ['微博撰写要求', '其它初始化'];
+  /** 把 wb_lore 拆成：账号字段 +【分节】+ 其它正文 */
+  function parseWbLoreEditorModel(raw){
+    let text = String(raw || '').replace(/\r\n/g, '\n').trim();
+    const account = extractAccountInitFromLore(text) || {
+      userId: '', charId: '', userFans: 0, charFans: 0,
+      userFollowing: -1, charFollowing: -1, hit: false,
+    };
+    text = text.replace(/\[\s*账号\s*\|[^\]]*\]/gi, '').trim();
+    const markers = [];
+    const reM = /【([^】]+)】/g;
+    let m;
+    while ((m = reM.exec(text))) {
+      markers.push({ title: String(m[1] || '').trim(), start: m.index, end: m.index + m[0].length });
+    }
+    const sections = [];
+    let rest = '';
+    if (!markers.length) {
+      rest = text;
+    } else {
+      rest = text.slice(0, markers[0].start).trim();
+      for (let i = 0; i < markers.length; i++) {
+        const bodyStart = markers[i].end;
+        const bodyEnd = i + 1 < markers.length ? markers[i + 1].start : text.length;
+        sections.push({
+          title: markers[i].title || ('分节' + (i + 1)),
+          body: text.slice(bodyStart, bodyEnd).trim(),
+        });
+      }
+    }
+    // 保证常用标题有空壳，方便手填
+    DEFAULT_LORE_SECTION_TITLES.forEach((title) => {
+      if (!sections.some((s) => s.title === title)) sections.push({ title, body: '' });
+    });
+    return { account, sections, rest };
+  }
+  function readLoreAccountFromSettingsForm(){
+    return {
+      userId: (document.getElementById('setUserId')?.value || '').trim(),
+      charId: (document.getElementById('setCharId')?.value || '').trim(),
+      userFans: parseFanNumber(document.getElementById('setUserFans')?.value),
+      charFans: parseFanNumber(document.getElementById('setCharFans')?.value),
+      userFollowing: parseFanNumber(document.getElementById('setUserFollowing')?.value),
+      charFollowing: parseFanNumber(document.getElementById('setCharFollowing')?.value),
+    };
+  }
+  function applyLoreAccountToSettingsForm(account, opts={}){
+    if (!account) return;
+    const force = !!opts.force;
+    const setIf = (id, val, asFan) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (!force && String(el.value || '').trim()) return;
+      if (val == null || val === '' || (typeof val === 'number' && val < 0)) return;
+      el.value = asFan ? formatFanNumber(val) : String(val);
+    };
+    if (account.userId) setIf('setUserId', account.userId, false);
+    if (account.charId) setIf('setCharId', account.charId, false);
+    if (account.userFans > 0) setIf('setUserFans', account.userFans, true);
+    if (account.charFans > 0) setIf('setCharFans', account.charFans, true);
+    if (account.userFollowing >= 0) setIf('setUserFollowing', account.userFollowing, false);
+    if (account.charFollowing >= 0) setIf('setCharFollowing', account.charFollowing, false);
+  }
+  function renderLoreSectionEditors(sections){
+    const box = document.getElementById('loreSecList');
+    if (!box) return;
+    const list = (sections && sections.length) ? sections : DEFAULT_LORE_SECTION_TITLES.map((t) => ({ title: t, body: '' }));
+    box.innerHTML = list.map((s, i) => `
+      <div class="set-row" data-lore-sec="${i}">
+        <label>【${esc(s.title)}】</label>
+        <textarea rows="4" data-lore-sec-title="${esc(s.title)}" placeholder="这一节的设定正文…">${esc(s.body || '')}</textarea>
+      </div>`).join('');
+  }
+  function readLoreSectionsFromDom(){
+    const box = document.getElementById('loreSecList');
+    if (!box) return [];
+    return [...box.querySelectorAll('textarea[data-lore-sec-title]')].map((ta) => ({
+      title: String(ta.getAttribute('data-lore-sec-title') || '').trim(),
+      body: String(ta.value || '').trim(),
+    })).filter((s) => s.title);
+  }
+  function composeWbLoreFromEditor(){
+    const acc = readLoreAccountFromSettingsForm();
+    const sections = readLoreSectionsFromDom();
+    const rest = String(document.getElementById('loreRestText')?.value || '').trim();
+    const lines = [];
+    lines.push(`[账号|user|${acc.userId || ''}|粉丝:${formatFanNumber(acc.userFans || 0)}|关注:${acc.userFollowing || 0}]`);
+    lines.push(`[账号|char|${acc.charId || ''}|粉丝:${formatFanNumber(acc.charFans || 0)}|关注:${acc.charFollowing || 0}]`);
+    if (rest) lines.push(rest);
+    sections.forEach((s) => {
+      if (!s.body) return;
+      lines.push(`【${s.title}】`);
+      lines.push(s.body);
+    });
+    return lines.join('\n').trim();
+  }
+  function fillWbLoreEditor(raw, opts={}){
+    const model = parseWbLoreEditorModel(raw);
+    applyLoreAccountToSettingsForm(model.account, { force: !!opts.forceAccount });
+    renderLoreSectionEditors(model.sections);
+    const restEl = document.getElementById('loreRestText');
+    if (restEl) restEl.value = model.rest || '';
+    const rawEl = document.getElementById('loreRawText');
+    if (rawEl) rawEl.value = String(raw || '').trim();
+    return model;
+  }
+  /** 从上到下扫描聊天，取「最近一次出现 wb_lore 的楼层」；优先跳过当前微博壳 */
+  function findPreviousWbLoreFromChat(){
+    const hits = [];
+    let curMsgId = null;
+    try { curMsgId = ensureWeiboMsgId(); } catch (_) {}
+    const pushEntry = (entry, idxHint) => {
+      const raw = extractRawMessageText(entry);
+      const blocks = extractWbLoreBlocks(raw);
+      if (!blocks.length) return;
+      const text = joinWbLoreChunks(blocks);
+      if (!text) return;
+      let mid = entry?.message_id ?? entry?.mesId ?? entry?.id ?? idxHint;
+      if (typeof mid === 'string' && /^\d+$/.test(mid)) mid = Number(mid);
+      const isCurrent = curMsgId != null && Number(mid) === Number(curMsgId);
+      // 当前微博壳里也可能嵌了旧 lore：标出来，优先用更早楼层
+      hits.push({ text, mid, isCurrent, idx: hits.length });
+    };
+    try {
+      const ctx = getSillyContextSafe();
+      const chat = Array.isArray(ctx?.chat) ? ctx.chat : [];
+      chat.forEach((entry, i) => pushEntry(entry, i));
+    } catch (_) {}
+    try {
+      if (typeof getChatMessages === 'function') {
+        let list = [];
+        try { list = getChatMessages(-99999) || []; } catch (_) {}
+        if (!Array.isArray(list) || !list.length) {
+          try { list = getChatMessages() || []; } catch (_) {}
+        }
+        (list || []).forEach((entry, i) => pushEntry(entry, i));
+      }
+    } catch (_) {}
+    // 去重后按「新→旧」；优先非当前微博壳
+    const seen = new Set();
+    const newestFirst = [];
+    for (let i = hits.length - 1; i >= 0; i--) {
+      const h = hits[i];
+      if (!h?.text || seen.has(h.text)) continue;
+      seen.add(h.text);
+      newestFirst.push(h);
+    }
+    const nonCur = newestFirst.filter((h) => !h.isCurrent);
+    const pick = nonCur[0] || newestFirst[0];
+    return pick ? pick.text : '';
+  }
+  function readChatMetadataLore(){
+    try {
+      const ctx = getSillyContextSafe();
+      const v = ctx?.chatMetadata?.weibo_wb_lore;
+      return String(v || '').trim();
+    } catch (_) { return ''; }
+  }
+  async function writeChatMetadataLore(text){
+    text = String(text || '').trim();
+    try {
+      const ctx = getSillyContextSafe();
+      if (!ctx) return false;
+      if (!ctx.chatMetadata || typeof ctx.chatMetadata !== 'object') ctx.chatMetadata = {};
+      if (text) ctx.chatMetadata.weibo_wb_lore = text;
+      else delete ctx.chatMetadata.weibo_wb_lore;
+      if (typeof ctx.saveMetadata === 'function') await ctx.saveMetadata();
+      else if (typeof saveMetadata === 'function') await saveMetadata();
+      return true;
+    } catch (e) {
+      console.warn('[同层微博] 写入 chatMetadata 失败', e);
+      return false;
+    }
+  }
+  function scanChatForWbLore(){
+    const chunks = [];
+    const take = (raw) => extractWbLoreBlocks(raw).forEach((t) => chunks.push(t));
+    try {
+      const ctx = getSillyContextSafe();
+      const chat = Array.isArray(ctx?.chat) ? ctx.chat : [];
+      chat.forEach((entry) => take(extractRawMessageText(entry)));
+    } catch (_) {}
+    try {
+      if (typeof getChatMessages === 'function') {
+        let list = [];
+        try { list = getChatMessages(-99999) || []; } catch (_) {}
+        if (!Array.isArray(list) || !list.length) {
+          try { list = getChatMessages() || []; } catch (_) {}
+        }
+        (list || []).forEach((entry) => take(extractRawMessageText(entry)));
+      }
+    } catch (_) {}
+    return joinWbLoreChunks(chunks);
+  }
+  async function persistWbLore(text){
+    text = String(text || '').trim();
+    state.wbLore = text;
+    // 仅「还没有楼层/已存粉丝记录」时，用开场 lore 做第一次初始化
+    if (!state.fansFromStore) applyFansFromWbLore(text);
+    await writePhoneBundleToMetadata();
+    savePhoneData();
+    deferredSyncToFloor(120);
+    return text;
+  }
+  /** 抓取 wb_lore：优先 chatMetadata（藏楼也在），再当前壳/本地/仍可见的聊天 */
+  async function harvestWbLore(opts = {}){
+    const force = !!opts.force;
+    if (state.wbLore && !force) {
+      if (!state.fansFromStore) applyFansFromWbLore(state.wbLore);
+      return state.wbLore;
+    }
+
+    let found = '';
+    // 1) 主存：本聊天 metadata（与楼层无关）
+    found = readChatMetadataLore() || String(readPhoneBundleFromMetadata()?.wbLore || '').trim();
+    // 2) 当前微博壳（可能是新 QR，也可能旧壳还在）
+    if (!found || force) {
+      try {
+        const msgId = ensureWeiboMsgId();
+        if (msgId != null) {
+          const fromFloor = joinWbLoreChunks(extractWbLoreBlocks(getChatMessageText(msgId, '')));
+          if (fromFloor) found = force ? fromFloor : (found || fromFloor);
+        }
+      } catch (_) {}
+    }
+    // 3) 同浏览器 localStorage
+    if (!found) {
+      try {
+        const all = JSON.parse(localStorage.getItem(PHONE_DATA_KEY) || '{}');
+        found = String(all[phoneDataBucketId()]?.wbLore || '').trim();
+      } catch (_) {}
+    }
+    // 4) 扫仍留在 chat 数组里的楼层（已被藏/删的读不到）
+    const scanned = scanChatForWbLore();
+    if (force && scanned) found = scanned;
+    else if (!found && scanned) found = scanned;
+
+    if (found) await persistWbLore(found);
+    else if (force) await persistWbLore('');
+    else if (!state.fansFromStore) applyFansFromWbLore(state.wbLore);
+    return state.wbLore || '';
+  }
+  function applyPhoneSnapshot(posts, threads, meta, lore, loreSnap){
+    if (Array.isArray(posts)) state.posts = posts;
+    if (Array.isArray(threads)) state.threads = threads;
+    applyUiMeta(meta);
+    if (lore) state.wbLore = String(lore).trim();
+    if (Array.isArray(loreSnap) && loreSnap.length) state.selectedLoreSnap = loreSnap;
+  }
+  function savePhoneData(){
+    try {
+      const all = JSON.parse(localStorage.getItem(PHONE_DATA_KEY) || '{}');
+      all[phoneDataBucketId()] = {
+        posts: state.posts || [],
+        threads: state.threads || [],
+        wbLore: state.wbLore || '',
+        selectedLoreIds: state.selectedLoreIds || [],
+        selectedLoreSnap: state.selectedLoreSnap || [],
+        userFans: Number(state.userFans) || 0,
+        charFans: Number(state.charFans) || 0,
+        userFollowing: Number(state.userFollowing) || 0,
+        charFollowing: Number(state.charFollowing) || 0,
+        savedAt: Date.now(),
+      };
+      localStorage.setItem(PHONE_DATA_KEY, JSON.stringify(all));
+    } catch (e) {
+      console.warn('[同层微博] 本地缓存失败', e);
+    }
+  }
+  function loadPhoneData(){
+    try {
+      const all = JSON.parse(localStorage.getItem(PHONE_DATA_KEY) || '{}');
+      const hit = all[phoneDataBucketId()];
+      if (!hit) return false;
+      if (Array.isArray(hit.posts)) state.posts = hit.posts;
+      if (Array.isArray(hit.threads)) state.threads = hit.threads;
+      if (hit.wbLore) state.wbLore = String(hit.wbLore);
+      if (Array.isArray(hit.selectedLoreIds)) state.selectedLoreIds = hit.selectedLoreIds.map(String);
+      if (Array.isArray(hit.selectedLoreSnap)) state.selectedLoreSnap = hit.selectedLoreSnap;
+      const uf = Number(hit.userFans);
+      const cf = Number(hit.charFans);
+      if (Number.isFinite(uf) && uf > 0) { state.userFans = uf; state.fansFromStore = true; }
+      if (Number.isFinite(cf) && cf > 0) { state.charFans = cf; state.fansFromStore = true; }
+      const ufo = Number(hit.userFollowing);
+      const cfo = Number(hit.charFollowing);
+      if (Number.isFinite(ufo) && ufo >= 0) state.userFollowing = ufo;
+      if (Number.isFinite(cfo) && cfo >= 0) state.charFollowing = cfo;
+      return !!(state.posts.length || state.threads.length || state.wbLore || state.selectedLoreIds.length || state.userFans || state.charFans);
+    } catch (e) {
+      console.warn('[同层微博] 读取本地缓存失败', e);
+      return false;
+    }
+  }
+  function loadFromFloor(){
+    try {
+      const msgId = ensureWeiboMsgId();
+      if (msgId == null) return false;
+      const raw = getChatMessageText(msgId, '');
+      if (!messageLooksLikeWeiboShell(raw)) return false;
+      const parsed = parseWeiboApp(raw);
+      const lore = joinWbLoreChunks(extractWbLoreBlocks(raw));
+      const loreSnap = extractLorePickSnap(raw);
+      const has = (parsed.posts && parsed.posts.length) || (parsed.threads && parsed.threads.length) || !!lore || loreSnap.length;
+      if (!has) return false;
+      applyPhoneSnapshot(parsed.posts, parsed.threads, extractUiMeta(raw), lore, loreSnap);
+      return true;
+    } catch (e) {
+      console.warn('[同层微博] 从楼层恢复失败', e);
+      return false;
+    }
+  }
+  async function syncToFloor(){
+    try {
+      const msgId = ensureWeiboMsgId();
+      if (msgId == null) return false;
+      const payload = serializeWeiboApp();
+      const ok = await setChatMessageText(payload, msgId, { refresh: 'none' });
+      if (ok) window.__weiboapp_serialized = payload;
+      return ok;
+    } catch (e) {
+      console.warn('[同层微博] syncToFloor 失败', e);
+      return false;
+    }
+  }
+  function deferredSyncToFloor(delay = 320){
+    if (_floorSyncTimer) clearTimeout(_floorSyncTimer);
+    _floorSyncTimer = setTimeout(async () => {
+      if (_floorSyncPending) return;
+      _floorSyncPending = true;
+      try { await syncToFloor(); }
+      finally {
+        _floorSyncPending = false;
+        _floorSyncTimer = null;
+      }
+    }, delay);
+  }
+  function persistPhoneState(){
+    savePhoneData();
+    deferredSyncToFloor();
+    // 主存：chatMetadata（藏楼 / 新开微博壳都不丢）
+    writePhoneBundleToMetadata().catch(() => {});
+  }
+  function clearPhoneData(){
+    try {
+      const all = JSON.parse(localStorage.getItem(PHONE_DATA_KEY) || '{}');
+      delete all[phoneDataBucketId()];
+      localStorage.setItem(PHONE_DATA_KEY, JSON.stringify(all));
+    } catch (_) {}
+    state.posts = [];
+    state.threads = [];
+    state.page = null;
+    // 清空帖/私信，但保留 wb_lore / 世界书勾选（另有清除按钮）
+    writePhoneBundleToMetadata().catch(() => {});
+    deferredSyncToFloor(80);
+  }
+  function restorePhoneState(){
+    // 1) 主存 chatMetadata（与楼层无关：藏前200楼后再 QR，仍从这里灌）
+    const metaHit = hydrateFromChatMetadata();
+
+    // 2) 当前微博壳若仍在且有数据，用壳上的帖/私信（同一壳的最新操作）
+    try {
+      const msgId = ensureWeiboMsgId();
+      if (msgId != null) {
+        const raw = getChatMessageText(msgId, '');
+        if (messageLooksLikeWeiboShell(raw)) {
+          const parsed = parseWeiboApp(raw);
+          if ((parsed.posts && parsed.posts.length) || (parsed.threads && parsed.threads.length)) {
+            state.posts = parsed.posts;
+            state.threads = parsed.threads;
+            applyUiMeta(extractUiMeta(raw));
+          }
+          const floorLore = joinWbLoreChunks(extractWbLoreBlocks(raw));
+          if (floorLore) state.wbLore = floorLore;
+          const floorSnap = extractLorePickSnap(raw);
+          if (floorSnap.length) state.selectedLoreSnap = floorSnap;
+          const meta = extractUiMeta(raw);
+          if (Array.isArray(meta?.selectedLoreIds) && meta.selectedLoreIds.length) {
+            state.selectedLoreIds = meta.selectedLoreIds.map(String);
+          }
+        }
+      }
+    } catch (_) {}
+
+    // 3) 再补一次 metadata：新空壳没有 lore 时从主存填回
+    hydrateFromChatMetadata();
+
+    // 4) 仍空才用同浏览器 localStorage（粉量以 fansFromStore 为准，避免未初始化的 0 误判）
+    const hasPersist = !!(
+      state.posts.length || state.threads.length || state.wbLore
+      || (state.selectedLoreIds || []).length || state.fansFromStore
+    );
+    if (!hasPersist) {
+      if (loadPhoneData()) {
+        // 有本地缓存再写回；粉量兜底留给 boot 里 lore 抓取之后
+        if (state.fansFromStore) ensureProfileStats({ allowDefault: false });
+        writePhoneBundleToMetadata().catch(() => {});
+        deferredSyncToFloor(120);
+        return 'local';
+      }
+      return null;
+    }
+
+    if (state.fansFromStore) ensureProfileStats({ allowDefault: false });
+    // 把主存镜像写进「当前」微博壳（新 QR 需要带上 lore/快照）
+    writePhoneBundleToMetadata().catch(() => {});
+    deferredSyncToFloor(150);
+    return metaHit ? 'metadata' : 'floor';
+  }
+
+  function badgeHTML(n){
+    n = Number(n) || 0;
+    if (n <= 0) return '';
+    if (n > 99) return '<span class="badge-num">99+</span>';
+    return `<span class="badge-num">${n}</span>`;
+  }
+  function unreadCommentTotal(){
+    return (state.posts || []).reduce((s, p) => s + (Number(p.unread) || 0), 0);
+  }
+  function unreadDmTotal(){
+    return (state.threads || []).reduce((s, t) => s + (Number(t.unread) || 0), 0);
+  }
+  function unreadAll(){
+    return unreadCommentTotal() + unreadDmTotal();
+  }
+  function setUnreadOnTarget(kind, key, added){
+    added = Number(added) || 0;
+    if (added <= 0) return;
+    // 正在看该界面则直接视为已读
+    if (kind === 'comment' && state.page?.type === 'post' && state.page.i === key) return;
+    if (kind === 'dm' && state.page?.type === 'dm' && state.page.name === key) return;
+    if (kind === 'comment') {
+      const p = state.posts[key];
+      if (p) p.unread = (Number(p.unread) || 0) + added;
+    } else if (kind === 'dm') {
+      const t = state.threads.find(x => x.name === key);
+      if (t) t.unread = (Number(t.unread) || 0) + added;
+    }
+  }
+  function clearPostUnread(i){
+    const p = state.posts[i];
+    if (p) p.unread = 0;
+  }
+  function clearDmUnread(name){
+    const t = state.threads.find(x => x.name === name);
+    if (t) t.unread = 0;
+  }
+  function renderBadges(){
+    const msgIco = document.getElementById('tabMsgIco');
+    if (msgIco) {
+      const total = unreadAll();
+      msgIco.querySelectorAll('.badge-dot,.badge-num').forEach(el => el.remove());
+      if (total > 0) msgIco.insertAdjacentHTML('beforeend', badgeHTML(total));
+    }
+    const cmtIco = document.getElementById('icoComments');
+    const cmtHint = document.getElementById('rowCommentsHint');
+    const cmtRight = document.getElementById('rowCommentsRight');
+    const uc = unreadCommentTotal();
+    if (cmtIco) {
+      cmtIco.querySelectorAll('.badge-dot,.badge-num').forEach(el => el.remove());
+      if (uc > 0) cmtIco.insertAdjacentHTML('beforeend', badgeHTML(uc));
+    }
+    if (cmtHint) cmtHint.textContent = uc > 0 ? `${uc} 条新评论待查看` : '暂无新评论';
+    if (cmtRight) cmtRight.innerHTML = uc > 0 ? '<div class="dot"></div>' : '';
+  }
+
+  /** 原始 IO 日志（不解析，只捕捉） */
+  const aiRawLogs = [];
+  window.__weiboAiRawLogs = aiRawLogs;
+
+  function pushAiRawLog(entry){
+    const item = {
+      id: Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+      time: new Date().toLocaleString(),
+      mode: entry.mode || '',
+      ok: entry.ok !== false,
+      error: entry.error || '',
+      input: String(entry.input ?? ''),
+      context: String(entry.context ?? ''),
+      output: String(entry.output ?? ''),
+      meta: entry.meta || '',
+    };
+    aiRawLogs.unshift(item);
+    if (aiRawLogs.length > 30) aiRawLogs.length = 30;
+    try { renderLogPanel(); } catch (_) {}
+    return item;
+  }
+  function openLogPanel(){
+    document.getElementById('logPanel').classList.add('show');
+    renderLogPanel();
+  }
+  function closeLogPanel(){
+    document.getElementById('logPanel').classList.remove('show');
+  }
+  function renderLogPanel(){
+    const body = document.getElementById('logBody');
+    if (!body) return;
+    if (!aiRawLogs.length) {
+      body.innerHTML = '<div class="log-empty">还没有记录。生成评论/私信后会显示原始输入与输出。</div>';
+      return;
+    }
+    body.innerHTML = aiRawLogs.map((l) => `
+      <div class="log-item">
+        <div class="meta">
+          <span>${esc(l.time)} · ${esc(l.mode || '-')}${l.ok ? '' : ' · 失败'}</span>
+          <span>ctx ${l.context.length} / in ${l.input.length} → out ${l.output.length}</span>
+        </div>
+        ${l.error ? `<div class="blk"><div class="lbl">ERROR</div><pre>${esc(l.error)}</pre></div>` : ''}
+        ${l.meta ? `<div class="blk"><div class="lbl">META（ordered_prompts 等）</div><pre>${esc(l.meta)}</pre></div>` : ''}
+        <div class="blk"><div class="lbl">CONTEXT（酒馆前文/人设/开场快照，未解析）</div><pre>${esc(l.context || '（未能采集到酒馆上下文）')}</pre></div>
+        <div class="blk"><div class="lbl">INPUT（user_input 任务段，未解析）</div><pre>${esc(l.input)}</pre></div>
+        <div class="blk"><div class="lbl">OUTPUT（模型原始返回，未解析）</div><pre>${esc(l.output || '（空）')}</pre></div>
+      </div>
+    `).join('');
+  }
+
+  /**
+   * 同层手机专用上下文（精简）。
+   * 依据左宥之卡结构：
+   * - 卡面 first_mes 常是占位；本局开场只认当前聊天第 1 楼，禁止从 alternate_greetings 乱挑
+   * - 角色书里「微博热搜输出」「脆文输出」「UpdateVariable」会抢格式，禁止整本灌进手机 prompt
+   * - 只保留：人设摘要、本局开场、近期聊天（截断）、知情范围、同层协议世界书
+   */
+  async function collectStContextSnapshot(maxMsgs = 12, maxChars = 14000, scanKeyword = ''){
+    maxMsgs = Math.max(0, Math.min(60, Number(phoneSettings.recentMessages ?? maxMsgs) || 0));
+    const chunks = [];
+    const push = (title, text) => {
+      const t = String(text || '').trim();
+      if (!t) return;
+      chunks.push('### ' + title + '\n' + t);
+    };
+
+    const slot = currentSlot();
+    if (slot?.initPrompt) push('当前微博档位初始化提示词（最高优先级）', String(slot.initPrompt).slice(0, 8000));
+
+    // 钉住设定优先：跟微博楼层 / chatMetadata，不依赖开场是否还在前文
+    try {
+      await harvestWbLore();
+      if (state.wbLore) {
+        push('同层微博钉住设定（wb_lore｜不受隐藏前文影响）', String(state.wbLore).slice(0, 8000));
+      }
+    } catch (_) {}
+
+    const _ejsOpen = '<' + '%';
+    const _ejsClose = '%' + '>';
+    const _ejsBlockRe = new RegExp(_ejsOpen.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[\\s\\S]*?' + _ejsClose.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+    const clip = (s, n) => {
+      s = String(s || '')
+        .replace(_ejsBlockRe, '[ejs已省略]')
+        .split(_ejsOpen).join('<\uFF05')
+        .split(_ejsClose).join('\uFF05>');
+      return s.length > n ? s.slice(0, n) + '…[截断]' : s;
+    };
+    // 供手机阅读的楼层清洗：去掉界面 HTML / 协议壳 / 变量块，保留剧情与开场正文
+    const cleanFloorText = (raw) => {
+      let s = String(raw || '');
+      const loreChunks = [];
+      s = s.replace(/<wb_lore>([\s\S]*?)<\/wb_lore>/gi, (_, inner) => {
+        const t = String(inner || '').trim();
+        if (t) loreChunks.push(t);
+        return '\n';
+      });
+      s = s.replace(/<script[\s\S]*?<\/script>/gi, '');
+      s = s.replace(/```html[\s\S]*?```/gi, '[界面已省略]');
+      s = s.replace(/```[\s\S]*?```/g, '');
+      s = s.replace(/<weiboapp>[\s\S]*?<\/weiboapp>/gi, '[同层微博界面已省略]');
+      s = s.replace(/<UpdateVariable>[\s\S]*?<\/UpdateVariable>/gi, '');
+      s = s.replace(/<JSONPatch>[\s\S]*?<\/JSONPatch>/gi, '');
+      s = s.replace(/<!--[\s\S]*?-->/g, '');
+      // 大段 HTML 标签压成空白，保留可见文案
+      if (/<\/?[a-z][\s\S]*>/i.test(s) && s.length > 800) {
+        s = s.replace(/<style[\s\S]*?<\/style>/gi, '')
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/&nbsp;/g, ' ')
+          .replace(/[ \t]+\n/g, '\n')
+          .replace(/\n{3,}/g, '\n\n')
+          .replace(/[ \t]{2,}/g, ' ');
+      }
+      s = s.trim();
+      if (loreChunks.length) {
+        s = (s ? s + '\n\n' : '') + '【开场隐藏设定 wb_lore】\n' + loreChunks.join('\n\n');
+      }
+      return s.trim();
+    };
+    const isJunkLore = (name, keys, content) => {
+      const blob = (String(name||'') + ' ' + (keys||[]).join(' ') + ' ' + String(content||'').slice(0, 500)).toLowerCase();
+      if (/updatevariable|jsonpatch|format_message_variable|mvu_update|status_current_variable/.test(blob)) return true;
+      if (/wb-root|doctype|模拟微博手机|脆文输出|threads|热搜输出/.test(blob)) return true;
+      if (/initvar|不要关|脚本内容读取/.test(String(name||''))) return true;
+      if (/writing_spec|forbidden_narrative|nsfw_information/.test(blob) && !/知情范围/.test(blob)) return true;
+      return false;
+    };
+    let openingHaystack = ''; // 本局开场文本，用于让「非微博专用」条目按关键词自动对上当前世界线
+
+    const isUsefulLore = (name, keys, content, kw, isConst) => {
+      const n = String(name || '');
+      const keyList = (keys || []).map((x) => String(x || '').trim()).filter(Boolean);
+      const keyStr = keyList.join(',').toLowerCase();
+      const c = String(content || '');
+      if (isJunkLore(n, keyList, c)) return false;
+
+      if (/知情范围|同层微博|推荐页拉取|微博路人/.test(n + c.slice(0, 200))) return true;
+      if (kw && (keyStr.includes(kw) || c.toLowerCase().includes(kw))) {
+        if (c.length < 3500) return true;
+      }
+
+      // 关键：条目关键词出现在「本局开场」里 → 视为当前世界线素材（不必是纯微博条目）
+      if (openingHaystack) {
+        const hay = openingHaystack.toLowerCase();
+        for (const k of keyList) {
+          const kk = k.toLowerCase();
+          if (kk.length < 2) continue;
+          // 路由旗标 / 开场标题 / 独特专名
+          if (hay.includes(kk) && c.length < 6000) return true;
+        }
+        // 名称里带线路标记且开场也有（如 嫂子梗3、布鲁克林、助理线）
+        const nameHit = n.match(/嫂子梗\d?|布鲁克林|助理线|前女友|小演员|网黄|私生女|伪骨科|on left hand|冲水按钮/i);
+        if (nameHit && hay.includes(String(nameHit[0]).toLowerCase()) && c.length < 6000) return true;
+      }
+
+      // 已开启背景条目（设置开关，默认开；未手动勾选时生效）
+      if (phoneSettings.includeBgLore !== false) {
+        if (/world_setting|世界观|背景设定|名利场|娱乐圈|家族/.test(n + c.slice(0, 400))) {
+          return c.length < 9000;
+        }
+        if (isConst && c.length > 200 && c.length < 7000
+          && !/好感度|阶段设定|变量|mvu|initvar|writing_spec|nsfw/i.test(n)
+          && !/associated_variable|JSONPatch|UpdateVariable/i.test(c.slice(0, 600))) {
+          return true;
+        }
+      }
+      return false;
+    };
+
+    let ctx = null;
+    try {
+      ctx = (typeof SillyTavern !== 'undefined' && SillyTavern.getContext)
+        ? SillyTavern.getContext()
+        : (window.parent && window.parent.SillyTavern && window.parent.SillyTavern.getContext)
+          ? window.parent.SillyTavern.getContext()
+          : null;
+    } catch (_) {}
+
+    // —— 人设摘要（短）——
+    try {
+      if (ctx) {
+        const charId = ctx.characterId;
+        const ch = (ctx.characters && charId != null) ? ctx.characters[charId] : null;
+        const data = ch?.data || ch || {};
+        push('角色名', ch?.name || data.name || displayChar || charName);
+        if (ctx.name1 || ctx.name2) push('user/char 显示名', `user=${ctx.name1 || ''} | char=${ctx.name2 || ''}`);
+        // description 太长只留身份/关系相关头一段
+        if (phoneSettings.includeChar !== false) {
+          push('角色摘要 description', clip(data.description || ch?.description || '', 2200));
+          if (data.personality || ch?.personality) push('性格', clip(data.personality || ch.personality, 800));
+        }
+        if (phoneSettings.includeScenario !== false && (data.scenario || ch?.scenario)) push('场景', clip(data.scenario || ch.scenario, 800));
+        if (phoneSettings.includePersona !== false) {
+          const persona = ctx?.powerUserSettings?.persona_description || ctx?.powerUserSettings?.persona || '';
+          if (persona) push('用户 Persona', clip(persona, 1400));
+        }
+
+        // 卡面 first_mes 常是占位；本局开场只认「当前聊天首楼」，绝不从 alternate_greetings 乱挑
+        const cardFirst = String(data.first_mes || ch?.first_mes || '').trim();
+        if (cardFirst && /^不喜欢我吗/.test(cardFirst)) {
+          push('卡面 first_mes', '（占位句，已忽略；本局开场见下方「本局开场」）');
+        } else if (cardFirst && cardFirst.length >= 40) {
+          // 仅当卡面 first_mes 本身就是长开场且与聊天一致时才作参考；仍以聊天首楼为准
+          push('卡面 first_mes（仅参考，以本局开场为准）', clip(cleanFloorText(cardFirst), 1200));
+        }
+      }
+    } catch (e) {
+      push('角色卡读取异常', String(e && e.message || e));
+    }
+
+    // —— 本局开场 + 聊天：只来自当前会话楼层 ——
+    try {
+      let list = [];
+      if (typeof getChatMessages === 'function') {
+        try { list = getChatMessages(-99999) || []; } catch (_) {}
+        if (!Array.isArray(list) || !list.length) {
+          try { list = getChatMessages() || []; } catch (_) {}
+        }
+      }
+      if ((!Array.isArray(list) || !list.length) && ctx && Array.isArray(ctx.chat)) list = ctx.chat;
+
+      if (Array.isArray(list) && list.length) {
+        const first = list[0];
+        const firstMes = cleanFloorText(first?.mes || first?.message || first?.content || '');
+        if (firstMes) {
+          // 从 HTML 注释里抠本局标题，便于核对
+          const raw0 = String(first?.mes || first?.message || first?.content || '');
+          const titleM = raw0.match(/<!--\s*title:\s*([^\n*]+?)\s*-->/i);
+          const descM = raw0.match(/<!--\s*desc:\s*([^\n*]+?)\s*-->/i);
+          const meta = [
+            titleM ? ('标题: ' + titleM[1].trim()) : '',
+            descM ? ('简介: ' + descM[1].trim()) : '',
+          ].filter(Boolean).join(' | ');
+          push('本局开场（当前聊天第 1 楼，已去界面壳）', (meta ? meta + '\n\n' : '') + clip(firstMes, 6000));
+          openingHaystack = ((meta ? meta + '\n' : '') + firstMes).slice(0, 10000);
+        } else {
+          push('本局开场', '（首楼为空或未能清洗出文本）');
+        }
+
+        const keep = Math.min(maxMsgs, list.length);
+        const slice = list.slice(Math.max(0, list.length - keep));
+        const lines = [];
+        slice.forEach((m, idx) => {
+          const abs = list.length - slice.length + idx;
+          const isUser = m?.is_user === true || m?.role === 'user' || m?.is_name === 'User';
+          const name = isUser ? (m?.name || displayName || 'USER') : (m?.name || displayChar || charName || 'CHAR');
+          let mes = cleanFloorText(m?.mes || m?.message || m?.content || '');
+          if (!mes) return;
+          // 第 1 楼已在「本局开场」给出，列表里只留极短索引避免重复占额度
+          const budget = abs === 0 ? 280 : (isUser ? 900 : 1200);
+          lines.push(`[#${abs}] ${isUser ? 'USER' : 'AI'}(${name}):\n${clip(mes, budget)}`);
+        });
+        if (lines.length) push('聊天记录（本会话已清洗截断，最近' + lines.length + '条）', lines.join('\n\n'));
+      } else {
+        push('本局开场', '（未读到当前聊天；请确认已进入本局对话）');
+        push('聊天记录', '（未读到）');
+      }
+    } catch (e) {
+      push('聊天记录读取异常', String(e && e.message || e));
+    }
+
+    // —— 世界书：手动勾选优先；否则自动扫描知情范围/背景 ——
+    if (phoneSettings.includeBgLore === false) {
+      push('手机相关设定摘录', '（设置中已关闭世界书注入）');
+    } else try {
+      const entryLines = [];
+      const bookNames = new Set();
+      const addName = (n) => { n = String(n == null ? '' : n).trim(); if (n) bookNames.add(n); };
+      const neutralizeEjs = (s) => String(s || '')
+        .replace(_ejsBlockRe, '[ejs已省略]')
+        .split(_ejsOpen).join('<\uFF05')
+        .split(_ejsClose).join('\uFF05>');
+      const kw = String(scanKeyword || '').toLowerCase();
+      const selectedIds = readSelectedLoreIds();
+      const manual = selectedIds.length > 0;
+      const selectedSet = new Set(selectedIds);
+      const liveHitIds = new Set();
+
+      // 恢复楼层/metadata 里钉住的勾选快照
+      try {
+        const metaSnap = getSillyContextSafe()?.chatMetadata?.weibo_selected_lore_snap;
+        if (Array.isArray(metaSnap) && metaSnap.length) state.selectedLoreSnap = metaSnap;
+      } catch (_) {}
+
+      const takeUseful = (bookTitle, entriesObj) => {
+        if (!entriesObj) return;
+        const list = Array.isArray(entriesObj) ? entriesObj : Object.values(entriesObj);
+        list.forEach((e, index) => {
+          if (!e || e.disable || e.enabled === false) return;
+          const keys = [].concat(e.key || e.keys || [], e.keysecondary || e.secondary_keys || []).flat()
+            .map(x => String(x || '').trim()).filter(Boolean);
+          const name = e.comment || e.name || '';
+          const content = neutralizeEjs(e.content || '').trim();
+          if (!content) return;
+          if (isJunkLore(name, keys, content)) return;
+          const id = loreEntryId(bookTitle, e, index);
+          if (manual) {
+            if (!selectedSet.has(id)) return;
+            liveHitIds.add(id);
+          } else if (!isUsefulLore(name, keys, content, kw, !!(e.constant))) {
+            return;
+          }
+          const limit = manual ? 2200 : (/world_setting|世界观|背景/.test(name + content.slice(0, 80)) ? 1800 : 900);
+          entryLines.push(`[${bookTitle}] ${name || keys.join(',') || '条目'}\n${clip(content, limit)}`);
+        });
+      };
+
+      collectEnabledBookNames(ctx).forEach(addName);
+
+      try {
+        const ch = ctx?.characters?.[ctx.characterId];
+        const data = ch?.data || ch || {};
+        const charBooks = data.character_book || ch?.character_book;
+        if (charBooks) takeUseful('角色书:' + (charBooks.name || 'character_book'), charBooks.entries);
+      } catch (_) {}
+
+      const loadFn = (typeof ctx?.loadWorldInfo === 'function') ? ctx.loadWorldInfo.bind(ctx) : null;
+      const nameList = Array.from(bookNames).filter(Boolean).slice(0, manual ? 16 : 8);
+      if (nameList.length) push('已启用世界书（仅列名）', nameList.join('、'));
+      if (loadFn) {
+        for (const name of nameList) {
+          try {
+            const data = await loadFn(name);
+            takeUseful('世界书:' + name, data?.entries || data);
+          } catch (_) {}
+        }
+      }
+
+      // 手动勾选但现场没读到：用钉在楼层/metadata 的快照兜底（不是易丢缓存）
+      if (manual) {
+        (state.selectedLoreSnap || []).forEach((item) => {
+          if (!item || !selectedSet.has(String(item.id))) return;
+          if (liveHitIds.has(String(item.id))) return;
+          const content = String(item.content || '').trim();
+          if (!content) return;
+          entryLines.push(`[钉住快照] ${item.name || item.id}\n${clip(content, 2200)}`);
+        });
+      }
+
+      const modeLabel = manual
+        ? '手动勾选世界书（现场读取优先，缺失用钉住快照）'
+        : ('自动扫描（协议/知情范围/开场命中' + (phoneSettings.includeBgLore !== false ? '+背景' : '') + '）');
+      if (entryLines.length) {
+        push('手机相关设定摘录｜' + modeLabel, entryLines.slice(0, manual ? 20 : 12).join('\n\n'));
+      } else {
+        push('手机相关设定摘录', manual
+          ? '（已勾选但未读到正文：可点设置里「刷新世界书列表」后重新保存勾选）'
+          : '（无命中条目：可勾选世界书，或为开场加短「微博知情范围」）');
+      }
+    } catch (e) {
+      push('世界书读取异常', String(e && e.message || e));
+    }
+
+    let text = chunks.join('\n\n');
+    if (text.length > maxChars) {
+      text = text.slice(0, maxChars) + '\n\n…[上下文快照总长截断 ' + maxChars + ' 字]';
+    }
+    return text;
+  }
+
+  const AI_GENERATE = typeof generate === 'function' ? generate : null;
+  const AI_GENERATE_RAW = typeof generateRaw === 'function' ? generateRaw : null;
+  const EMO = ['🍉','🧐','🙄','😂','🔥','🥺','🤔','🐟','🌙','☕','🧸','🍋','🥟','🎬','🧃','🌸'];
+
+  function emo(n){ let s=0; n=String(n||''); for(let i=0;i<n.length;i++) s+=n.charCodeAt(i); return EMO[s%EMO.length]; }
+  function nowHM(){ const d=new Date(); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+  function today(){ return '今天 '+nowHM(); }
+  function tick(){ document.getElementById('clock').textContent=nowHM(); }
+  setInterval(tick,1000); tick();
+  document.getElementById('hostCloseBtn').onclick = () => { try { WB_HOST?.close?.(); } catch (_) {} };
+  document.getElementById('hostRefreshBtn').onclick = () => { try { WB_HOST?.reload?.(); } catch (_) { location.reload(); } };
+  function esc(s){ return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function fmt(s){ return esc(s).replace(/\n/g,'<br>'); }
+
+  function isMacro(v){ return !v || /\{\{/.test(String(v)); }
+  function stOrigin(){
+    const o = (window.location && window.location.origin) ? String(window.location.origin) : '';
+    if (o && o !== 'null') return o.replace(/\/+$/, '');
+    try {
+      const p = window.parent?.location?.origin;
+      if (p && p !== 'null') return String(p).replace(/\/+$/, '');
+    } catch (_) {}
+    return 'http://127.0.0.1:8000';
+  }
+  function resolveAvatarUrl(raw){
+    let v = String(raw || '').trim();
+    if (!v || isMacro(v)) return '';
+    if (/^IMGDATA:/i.test(v) || v.includes('IMGDATA:')) {
+      const parts = v.split('|');
+      for (const part of parts) {
+        const p = String(part || '').trim();
+        if (/^IMGDATA:/i.test(p)) { v = p.slice(8).trim(); break; }
+      }
+    }
+    if (/^https?:\/\//i.test(v) || v.startsWith('data:')) return v;
+    // 去 ./ 前缀
+    v = v.replace(/^\.\//, '');
+    // 酒馆本地头像目录（用户 / 角色）
+    if (/^User Avatars\//i.test(v) || /^useravatars\//i.test(v) || /^characters\//i.test(v) || /^thumbnails\//i.test(v)) {
+      return stOrigin() + '/' + v.split('/').map((seg) => encodeURIComponent(seg)).join('/');
+    }
+    if (v.startsWith('/')) return stOrigin() + v;
+    // 仅纯文件名时，优先当作用户头像目录，而不是 catbox
+    const file = v.match(/^([a-zA-Z0-9._-]+\.(?:jpe?g|png|gif|webp|bmp))$/i);
+    if (file) {
+      // 常见：宏给出裸文件名 → User Avatars
+      return stOrigin() + '/User%20Avatars/' + encodeURIComponent(file[1]);
+    }
+    // 含路径但未匹配上面：拼到 origin
+    if (v.includes('/') || v.includes('\\')) {
+      const norm = v.replace(/\\/g, '/');
+      return stOrigin() + '/' + norm.split('/').map((seg) => encodeURIComponent(seg)).join('/');
+    }
+    return v;
+  }
+  function peekCtxUserAvatar(){
+    try {
+      const ctx = (typeof SillyTavern !== 'undefined' && SillyTavern.getContext)
+        ? SillyTavern.getContext()
+        : (window.parent && window.parent.SillyTavern && window.parent.SillyTavern.getContext)
+          ? window.parent.SillyTavern.getContext()
+          : null;
+      const pu = ctx?.powerUserSettings || {};
+      const cand = [
+        pu.user_avatar,
+        ctx?.user_avatar,
+        window.parent?.user_avatar,
+        window.user_avatar,
+      ];
+      for (const c of cand) {
+        const u = resolveAvatarUrl(c);
+        if (u) return u;
+      }
+    } catch (_) {}
+    return '';
+  }
+  function getUserAvatarUrl(){
+    return resolveAvatarUrl(userAvatarPath)
+      || peekCtxUserAvatar()
+      || resolveAvatarUrl(window.settingsState?.userAvatar)
+      || '';
+  }
+  function getCharAvatarUrl(name){
+    const n = String(name || '').trim();
+    if ((displayChar && n && n === displayChar) || (rawCharName && n === rawCharName) || !n) {
+      return resolveAvatarUrl(charAvatarPath) || '';
+    }
+    return '';
+  }
+  function tokenMeansChar(token){
+    const t = String(token || '').trim().toLowerCase();
+    return t === 'char' || t === 'char.png' || t === '{{charavatarpath}}' || t === String(charAvatarPath || '').trim().toLowerCase();
+  }
+  function tokenMeansUser(token){
+    const t = String(token || '').trim().toLowerCase();
+    return t === 'user' || t === 'user.png' || t === '{{useravatarpath}}' || t === String(userAvatarPath || '').trim().toLowerCase();
+  }
+  function uniqNames(list){
+    const out = [];
+    const seen = new Set();
+    (list || []).forEach((v) => {
+      const s = String(v ?? '').trim();
+      if (!s || /\{\{/.test(s) || seen.has(s)) return;
+      seen.add(s);
+      out.push(s);
+    });
+    return out;
+  }
+  function collectUserNameCandidates(){
+    const names = [
+      rawUserName,
+      userName,
+      displayName,
+      phoneSettings.userWeiboId,
+      '我',
+      ...(phoneSettings.userAliases || []),
+    ];
+    (state.posts || []).forEach((p) => {
+      if (tokenMeansUser(p.avatar) || isUserAuthor(p.author)) names.push(p.author);
+      (p.comments || []).forEach((c) => {
+        if (isUserAuthor(c.author)) names.push(c.author);
+        if (c.replyTo && isUserAuthor(c.replyTo)) names.push(c.replyTo);
+      });
+    });
+    return uniqNames(names);
+  }
+  function collectCharNameCandidates(){
+    const names = [
+      rawCharName,
+      charName,
+      displayChar,
+      phoneSettings.charWeiboId,
+      ...(phoneSettings.charAliases || []),
+    ];
+    (state.posts || []).forEach((p) => {
+      if (tokenMeansChar(p.avatar) || isCharAuthor(p.author)) names.push(p.author);
+      (p.comments || []).forEach((c) => {
+        if (isCharAuthor(c.author)) names.push(c.author);
+        if (c.replyTo && isCharAuthor(c.replyTo)) names.push(c.replyTo);
+      });
+    });
+    (state.threads || []).forEach((t) => {
+      if (isCharAuthor(t.name)) names.push(t.name);
+      (t.messages || []).forEach((m) => {
+        if (m.sender !== 'user' && isCharAuthor(m.author)) names.push(m.author);
+      });
+    });
+    return uniqNames(names);
+  }
+  function isUserAuthor(name){
+    const n = String(name || '').trim();
+    if (!n || n === '我' || n === '我方消息') return true;
+    if (n === displayName || n === rawUserName || (userName && n === String(userName))) return true;
+    return (phoneSettings.userAliases || []).includes(n);
+  }
+  function isCharAuthor(name){
+    const n = String(name || '').trim();
+    if (!n) return false;
+    if ((displayChar && n === displayChar) || (rawCharName && n === rawCharName)) return true;
+    if (charName && n === String(charName) && !/\{\{/.test(String(charName))) return true;
+    return (phoneSettings.charAliases || []).includes(n);
+  }
+  /** 保存新昵称时：把历史里属于 user/char 的作者名、replyTo、相关线程名全部改成新昵称 */
+  function remapIdentityNames(kind, fromNames, toName){
+    toName = String(toName || '').trim();
+    if (!toName) return 0;
+    const from = new Set(uniqNames(fromNames));
+    from.delete(toName);
+    const hit = (name) => from.has(String(name || '').trim());
+    let n = 0;
+
+    (state.posts || []).forEach((p) => {
+      const byAvatar = kind === 'user' ? tokenMeansUser(p.avatar) : tokenMeansChar(p.avatar);
+      if (hit(p.author) || byAvatar) {
+        if (p.author !== toName) { p.author = toName; n++; }
+        p.avatar = kind === 'user' ? defaultUserAvatarToken() : defaultCharAvatarToken();
+      }
+      (p.comments || []).forEach((c) => {
+        if (hit(c.author)) { c.author = toName; n++; }
+        if (c.replyTo && hit(c.replyTo)) { c.replyTo = toName; n++; }
+      });
+    });
+
+    (state.threads || []).forEach((t) => {
+      if (kind === 'char' && hit(t.name)) {
+        t.name = toName;
+        n++;
+      }
+      (t.messages || []).forEach((m) => {
+        if (kind === 'user') {
+          // 用户私信用 sender=user，不依赖昵称；若旧数据误写了用户名则纠正
+          if (m.sender === 'user') return;
+          if (hit(m.author)) {
+            m.sender = 'user';
+            delete m.author;
+            n++;
+          }
+        } else if (kind === 'char') {
+          if (m.sender === 'user') return;
+          if (hit(m.author)) {
+            m.author = toName;
+            m.avatar = defaultCharAvatarToken();
+            n++;
+          }
+        }
+      });
+    });
+    return n;
+  }
+  function rememberNameAliases(kind, fromNames, currentName){
+    const key = kind === 'user' ? 'userAliases' : 'charAliases';
+    const keep = uniqNames([...(phoneSettings[key] || []), ...(fromNames || [])])
+      .filter((x) => x !== currentName && x !== '我' && x !== '我方消息');
+    phoneSettings[key] = keep.slice(-20);
+    savePhoneSettings(phoneSettings);
+  }
+  /** 头像 HTML：用户默认 user 头像；角色绑定 char 头像；路人用 emoji */
+  function avatarInner(name, token){
+    const n = String(name || '').trim();
+    let url = '';
+    if (tokenMeansUser(token) || (!token && isUserAuthor(n))) url = getUserAvatarUrl();
+    else if (tokenMeansChar(token) || isCharAuthor(n)) url = getCharAvatarUrl(n || displayChar);
+    else url = resolveAvatarUrl(token);
+    if (!url && isUserAuthor(n)) url = getUserAvatarUrl();
+    if (!url && isCharAuthor(n)) url = getCharAvatarUrl(n);
+    if (url) return `<img src="${esc(url)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`;
+    if (isUserAuthor(n)) return esc((displayName || '我').slice(0, 1));
+    return emo(n || '?');
+  }
+  function defaultUserAvatarToken(){
+    const u = String(userAvatarPath || '').trim();
+    return (!isMacro(u) && u) ? u : 'user.png';
+  }
+  function defaultCharAvatarToken(){
+    const u = String(charAvatarPath || '').trim();
+    return (!isMacro(u) && u) ? u : 'char.png';
+  }
+
+  // ---- modal ----
+  function closeMask(){ document.getElementById('mask').classList.remove('show'); document.getElementById('mask').classList.remove('toast-mask'); }
+  let _toastTimer = null;
+  function showBubble(text, ms = 2200){
+    const el = document.getElementById('floatToast');
+    if (!el) return;
+    el.textContent = String(text || '');
+    el.classList.add('show');
+    clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(() => el.classList.remove('show'), ms);
+  }
+  function alertBox(title, text){
+    const mask=document.getElementById('mask');
+    mask.classList.add('toast-mask','show');
+    document.getElementById('sheet').innerHTML =
+      `<div class="toast-box"><h4 style="font-size:15px">${esc(title)}</h4><p>${esc(text)}</p><button type="button" id="okClose">知道了</button></div>`;
+    document.getElementById('okClose').onclick=closeMask;
+  }
+  function openWrite(){
+    hidePlus();
+    const mask=document.getElementById('mask');
+    mask.classList.remove('toast-mask');
+    mask.classList.add('show');
+    document.getElementById('sheet').innerHTML =
+      `<h4>写微博</h4>
+       <textarea id="wText" rows="5" placeholder="分享新鲜事…"></textarea>
+       <input type="text" id="wImg" placeholder="伪图片描述（可选，如：一张毕业证书）" />
+       <div class="btns"><button class="cancel" id="wCancel">取消</button><button class="ok" id="wOk">发送</button></div>`;
+    document.getElementById('wCancel').onclick=closeMask;
+    document.getElementById('wOk').onclick=()=>{
+      const text=document.getElementById('wText').value.trim();
+      const fakeImage=document.getElementById('wImg').value.trim();
+      if(!text) return alertBox('提示','先写点内容');
+      state.posts.unshift({
+        author: displayName, avatar: defaultUserAvatarToken(), text, fakeImage,
+        time: today(), likes:0, reposts:0, comments:[]
+      });
+      state.userHasSentNewMessage=true;
+      closeMask(); switchTab('home'); renderAll();
+      alertBox('已发送','请到该条微博点「生成评论」');
+    };
+  }
+  /** 角色主页：代发微博（可填提示词，或留空空 roll） */
+  function openCharCompose(){
+    hidePlus();
+    const mask=document.getElementById('mask');
+    mask.classList.remove('toast-mask');
+    mask.classList.add('show');
+    const who = displayChar || rawCharName || '角色';
+    document.getElementById('sheet').innerHTML =
+      `<h4>代 ${esc(who)} 发微博</h4>
+       <div style="font-size:12px;color:#999;line-height:1.55;margin:0 0 8px">可填提示词约束主题/语气；留空点「空 roll」让 AI 按人设与前文自由发一条。</div>
+       <textarea id="charPostHint" rows="4" placeholder="可选提示词，例如：发一条关于晚饭的碎碎念 / 抱怨加班…"></textarea>
+       <div class="btns" style="flex-wrap:wrap;gap:8px">
+         <button class="cancel" id="charPostCancel" style="flex:1;min-width:90px">取消</button>
+         <button class="ok" id="charPostRoll" style="flex:1;min-width:90px;background:#fff;color:var(--orange);border:1px solid #ffd4a8">空 roll</button>
+         <button class="ok" id="charPostHintBtn" style="flex:1.2;min-width:110px">按提示发博</button>
+       </div>`;
+    document.getElementById('charPostCancel').onclick = closeMask;
+    const run = (forceEmpty) => {
+      const hint = forceEmpty ? '' : String(document.getElementById('charPostHint')?.value || '').trim();
+      closeMask();
+      requestAiReply({ mode: 'char-post', prompt: hint });
+    };
+    document.getElementById('charPostRoll').onclick = () => run(true);
+    document.getElementById('charPostHintBtn').onclick = () => run(false);
+  }
+  /** 用户自己回复某条微博（可带回复对象） */
+  function openReplyComment(postIndex, replyTo){
+    const p = state.posts[postIndex];
+    if (!p) return alertBox('提示', '找不到该微博');
+    const mask = document.getElementById('mask');
+    mask.classList.remove('toast-mask');
+    mask.classList.add('show');
+    const hint = replyTo
+      ? `回复 @${replyTo}`
+      : `评论 ${p.author} 的微博`;
+    document.getElementById('sheet').innerHTML =
+      `<h4>${esc(hint)}</h4>
+       <div style="font-size:12px;color:#999;margin:0 0 6px;line-height:1.45;max-height:48px;overflow:hidden">${esc(String(p.text||'').slice(0,80))}${(p.text||'').length>80?'…':''}</div>
+       <textarea id="cText" rows="4" placeholder="${replyTo ? '回复内容…' : '说点什么…'}"></textarea>
+       <div class="btns"><button class="cancel" id="cCancel">取消</button><button class="ok" id="cOk">发送</button></div>`;
+    document.getElementById('cCancel').onclick = closeMask;
+    document.getElementById('cOk').onclick = ()=>{
+      const text = document.getElementById('cText').value.trim();
+      if (!text) return alertBox('提示', '先写点内容');
+      if (!Array.isArray(p.comments)) p.comments = [];
+      const cmt = { author: displayName, text, time: nowHM() };
+      if (replyTo) cmt.replyTo = String(replyTo);
+      p.comments.push(cmt);
+      state.userHasSentNewMessage = true;
+      closeMask();
+      renderAll();
+      openPost(postIndex, state.page?.fromNotices ? { fromNotices: true } : {});
+      showBubble(replyTo ? '已回复' : '评论已发送');
+    };
+    setTimeout(() => document.getElementById('cText')?.focus(), 30);
+  }
+  function openNewDm(){
+    hidePlus();
+    const mask=document.getElementById('mask');
+    mask.classList.remove('toast-mask');
+    mask.classList.add('show');
+    document.getElementById('sheet').innerHTML =
+      `<h4>发私信</h4>
+       <input type="text" id="dTo" placeholder="路人昵称" />
+       <textarea id="dText" rows="3" placeholder="说点什么…"></textarea>
+       <div class="btns"><button class="cancel" id="dCancel">取消</button><button class="ok" id="dOk">发送</button></div>`;
+    document.getElementById('dCancel').onclick=closeMask;
+    document.getElementById('dOk').onclick=()=>{
+      const to=document.getElementById('dTo').value.trim()||'路人朋友';
+      const text=document.getElementById('dText').value.trim();
+      if(!text) return alertBox('提示','先写内容');
+      let t=state.threads.find(x=>x.name===to);
+      if(!t){ t={name:to,messages:[]}; state.threads.unshift(t); }
+      t.messages.push({sender:'user', text, time:nowHM()});
+      state.userHasSentNewMessage=true;
+      closeMask(); switchTab('msg'); renderAll(); openDm(to);
+      alertBox('已发送','可在对话页点「本会话路人回复」，或回消息页「收路人私信」');
+    };
+  }
+
+  // ---- protocol ----
+  function serializeWeiboApp(){
+    ensureProfileStats();
+    const lines=['<weiboapp>'];
+    const meta = {
+      postsUnread: (state.posts || []).map((p) => Number(p.unread) || 0),
+      threadsUnread: {},
+      selectedLoreIds: readSelectedLoreIds(),
+      userFans: Number(state.userFans) || 0,
+      charFans: Number(state.charFans) || 0,
+      userFollowing: Number(state.userFollowing) || 0,
+      charFollowing: Number(state.charFollowing) || 0,
+    };
+    (state.threads || []).forEach((t) => {
+      const u = Number(t.unread) || 0;
+      if (u > 0) meta.threadsUnread[t.name] = u;
+    });
+    lines.push('<!--wb_ui:' + JSON.stringify(meta) + '-->');
+    // 明文账号行：楼层里肉眼可见，也方便回溯
+    lines.push(`[账号|user|${displayName}|粉丝:${formatFanNumber(state.userFans)}|关注:${Number(state.userFollowing)||0}]`);
+    lines.push(`[账号|char|${displayChar || rawCharName || 'char'}|粉丝:${formatFanNumber(state.charFans)}|关注:${Number(state.charFollowing)||0}]`);
+    // 仅「已确认来自 lore/设置/主存」才锁死；随机兜底粉量不锁，免得挡开场 [账号]
+    if (state.wbLore) {
+      lines.push('<wb_lore>');
+      lines.push(String(state.wbLore).trim());
+      lines.push('</wb_lore>');
+    }
+    if ((state.selectedLoreSnap || []).length) {
+      // 正文快照钉在楼层里：隐藏前文 / 世界书临时读失败也能用
+      const slim = state.selectedLoreSnap.map((x) => ({
+        id: x.id,
+        book: x.book,
+        name: x.name,
+        content: String(x.content || '').slice(0, 6000),
+      }));
+      lines.push('<!--wb_lore_pick:' + JSON.stringify(slim) + '-->');
+    }
+    lines.push('<weibo>');
+    state.posts.forEach((p,i)=>{
+      const n=i+1;
+      ensurePostEngagement(p);
+      lines.push(`<post:${n}>`);
+      lines.push(`[微博|${p.author}|${p.avatar||defaultUserAvatarToken()}|${p.text}|${p.time}|${p.likes||0}|${p.reposts||0}|${p.commentCount||0}]`);
+      if(p.fakeImage) lines.push(`[伪图|${p.fakeImage}]`);
+      (p.comments||[]).forEach(c=>{
+        scrubComment(c);
+        if(c.replyTo && !looksLikeAvatarToken(c.replyTo)) lines.push(`[评论|${c.author}|${c.replyTo}|${c.text}|${c.time}]`);
+        else lines.push(`[评论|${c.author}|${c.text}|${c.time}]`);
+      });
+      lines.push(`</post:${n}>`);
+    });
+    // 私信箱：用 <msg>/<chat:>（微博消息会话）。旧 <dm>/<thread:> 仅解析兼容，不再写出。
+    lines.push('</weibo>','<msg>');
+    state.threads.forEach(t=>{
+      lines.push(`<chat:${t.name}>`);
+      (t.messages||[]).forEach(m=>{
+        if(m.sender==='user') lines.push(`[私信|我方消息|${m.text}|${m.time}]`);
+        else lines.push(`[私信|${m.author}|${m.avatar||'npc.png'}|${m.text}|${m.time}]`);
+      });
+      lines.push(`</chat:${t.name}>`);
+    });
+    lines.push('</msg>','</weiboapp>');
+    return lines.join('\n');
+  }
+  function parseFanNumber(raw){
+    let s = String(raw == null ? '' : raw).trim();
+    if (!s) return 0;
+    s = s.replace(/,/g, '').replace(/，/g, '').replace(/\s+/g, '');
+    // 1087万 / 1.2亿 / 387 / 12k
+    const m = s.match(/^(\d+(?:\.\d+)?)(万|亿|w|W|k|K)?/);
+    if (!m) {
+      const n = parseInt(s, 10);
+      return Number.isFinite(n) && n > 0 ? n : 0;
+    }
+    let n = parseFloat(m[1]);
+    if (!Number.isFinite(n)) return 0;
+    const unit = m[2] || '';
+    if (unit === '万' || unit === 'w' || unit === 'W') n *= 10000;
+    else if (unit === '亿') n *= 1e8;
+    else if (unit === 'k' || unit === 'K') n *= 1000;
+    return Math.max(0, Math.round(n));
+  }
+  function formatFanNumber(n){
+    n = Number(n) || 0;
+    if (n >= 1e8) {
+      const v = n / 1e8;
+      return (v >= 10 ? String(Math.round(v)) : String(Math.round(v * 10) / 10)) + '亿';
+    }
+    if (n >= 10000) {
+      const v = n / 10000;
+      return (v >= 100 ? String(Math.round(v)) : String(Math.round(v * 10) / 10)) + '万';
+    }
+    return String(n);
+  }
+  /** 解析 [账号|user|昵称|粉丝:…|关注:…] */
+  function extractAccountInitFromLore(raw){
+    const text = String(raw || '');
+    if (!text.trim()) return null;
+    const out = {
+      userId: '', charId: '',
+      userFans: 0, charFans: 0,
+      userFollowing: -1, charFollowing: -1,
+      hit: false,
+    };
+    const reAcc = /\[\s*账号\s*\|\s*(user|char)\s*\|([^|\]]*)\|\s*粉丝\s*[:：]?\s*([^|\]]*)\|\s*关注\s*[:：]?\s*([^|\]]*)\s*\]/gi;
+    let m;
+    while ((m = reAcc.exec(text))) {
+      const who = String(m[1] || '').toLowerCase();
+      const id = String(m[2] || '').trim();
+      const fans = parseFanNumber(m[3]);
+      const following = parseFanNumber(m[4]);
+      out.hit = true;
+      if (who === 'user') {
+        if (id) out.userId = id;
+        if (fans > 0) out.userFans = fans;
+        if (following >= 0) out.userFollowing = following;
+      } else if (who === 'char') {
+        if (id) out.charId = id;
+        if (fans > 0) out.charFans = fans;
+        if (following >= 0) out.charFollowing = following;
+      }
+    }
+    // 自然语言粉丝（可带万）
+    const nat = [
+      { who: 'user', re: /(?:user|我|玩家)\s*(?:的)?\s*粉丝(?:数)?\s*[:：]?\s*([0-9.]+)\s*(万|亿|w|W|k|K)?/gi },
+      { who: 'char', re: /(?:char|角色|卡)\s*(?:的)?\s*粉丝(?:数)?\s*[:：]?\s*([0-9.]+)\s*(万|亿|w|W|k|K)?/gi },
+    ];
+    nat.forEach(({ who, re }) => {
+      let mm;
+      while ((mm = re.exec(text))) {
+        const fans = parseFanNumber(mm[1] + (mm[2] || ''));
+        if (!(fans > 0)) continue;
+        out.hit = true;
+        if (who === 'user') out.userFans = fans;
+        else out.charFans = fans;
+      }
+    });
+    const reFanTag = /\[\s*粉丝\s*\|\s*(user|char)\s*\|\s*([^|\]]+)\s*\]/gi;
+    while ((m = reFanTag.exec(text))) {
+      const who = String(m[1] || '').toLowerCase();
+      const fans = parseFanNumber(m[2]);
+      if (!(fans > 0)) continue;
+      out.hit = true;
+      if (who === 'user') out.userFans = fans;
+      else if (who === 'char') out.charFans = fans;
+    }
+    return out.hit ? out : null;
+  }
+  function parseAccountStatsFromText(raw){
+    const hit = extractAccountInitFromLore(raw);
+    if (!hit) return;
+    if (hit.userFans > 0) { state.userFans = hit.userFans; state.fansFromStore = true; }
+    if (hit.charFans > 0) { state.charFans = hit.charFans; state.fansFromStore = true; }
+    if (hit.userFollowing >= 0) state.userFollowing = hit.userFollowing;
+    if (hit.charFollowing >= 0) state.charFollowing = hit.charFollowing;
+  }
+  function extractFansFromLoreText(raw){
+    return extractAccountInitFromLore(raw);
+  }
+  /** 从 wb_lore 初始化粉丝 + 微博昵称（id） */
+  function applyFansFromWbLore(raw, opts={}){
+    const hit = extractAccountInitFromLore(raw == null ? state.wbLore : raw);
+    if (!hit) return false;
+    const force = !!opts.force;
+    let changed = false;
+
+    // 粉/关注：未锁死或 force 时写入
+    if (force || !state.fansFromStore) {
+      if (hit.userFans > 0) { state.userFans = hit.userFans; changed = true; }
+      if (hit.charFans > 0) { state.charFans = hit.charFans; changed = true; }
+      if (hit.userFollowing >= 0) { state.userFollowing = hit.userFollowing; changed = true; }
+      if (hit.charFollowing >= 0) { state.charFollowing = hit.charFollowing; changed = true; }
+      if (changed) state.fansFromStore = true;
+    }
+
+    // 昵称/id：force，或设置里还空时，用 lore 账号行（与粉量锁死无关，避免「粉随机锁死后 id 永远抓不到」）
+    const nextSettings = {};
+    if (hit.userId && (force || !(phoneSettings.userWeiboId || '').trim())) {
+      nextSettings.userWeiboId = hit.userId;
+    }
+    if (hit.charId && (force || !(phoneSettings.charWeiboId || '').trim())) {
+      nextSettings.charWeiboId = hit.charId;
+    }
+    if (Object.keys(nextSettings).length) {
+      savePhoneSettings(nextSettings);
+      changed = true;
+    }
+    return changed;
+  }
+  function parseWeiboApp(raw){
+    const text=normalizeAiText(raw);
+    // 先读楼层已存账号行 / wb_ui（二次及以后的真源）
+    parseAccountStatsFromText(text);
+    const uiMeta = extractUiMeta(text);
+    if (uiMeta) applyUiMeta(uiMeta);
+    // 仅当楼层还没有粉丝记录时，才用壳内 <wb_lore> 做第一次初始化
+    if (!state.fansFromStore) {
+      const loreBits = [];
+      text.replace(/<wb_lore>([\s\S]*?)<\/wb_lore>/gi, (_, inner) => { loreBits.push(inner); return ''; });
+      if (loreBits.length) applyFansFromWbLore(loreBits.join('\n'));
+    }
+    const posts=[], threads=[];
+    let m;
+    // 兼容 </post:1> / </post> / 编号不一致
+    const postRe=/<post:(\d+)>([\s\S]*?)(?:<\/post:\d+>|<\/post>)/gi;
+    while((m=postRe.exec(text))){
+      const post={author:displayName,avatar:defaultUserAvatarToken(),text:'',time:today(),likes:0,reposts:0,fakeImage:'',comments:[]};
+      String(m[2]).split(/\n/).map(l=>l.trim()).filter(Boolean).forEach(line=>{
+        const wb=line.match(/^\[微博\|([^|]*)\|([^|]*)\|([\s\S]*?)\|([^|]*)\|([^\]]*)\]$/);
+        if(wb){
+          post.author=wb[1]; post.avatar=wb[2]; post.text=wb[3]; post.time=wb[4];
+          // 兼容：…|赞数] / …|赞数|转发数] / …|赞数|转发数|评论数]
+          const tail = String(wb[5] || '').split('|').map((x) => String(x).trim());
+          post.likes = Number(tail[0]) || 0;
+          post.reposts = Number(tail[1]) || 0;
+          post.commentCount = Number(tail[2]) || 0;
+          return;
+        }
+        const img=line.match(/^\[伪图\|([\s\S]*?)\]$/);
+        if(img){ post.fakeImage=img[1]; return; }
+      });
+      post.comments = extractCommentsFromText(m[2]);
+      if(post.text || post.comments.length) posts.push(post);
+    }
+    // 无 <post> 时：整段里的评论仍可抽出
+    if(!posts.length){
+      const orphan=extractCommentsFromText(text);
+      if(orphan.length) posts.push({author:'',avatar:'',text:'',time:today(),likes:0,reposts:0,fakeImage:'',comments:orphan});
+    }
+    // 会话块：<chat:昵称>…</chat:昵称>（首选）；兼容旧 <thread:> / 中文 <会话:>
+    const chatRe=/<(?:chat|thread|会话):([^>]+)>([\s\S]*?)(?:<\/(?:chat|thread|会话):\1>|<\/(?:chat|thread|会话)>)/gi;
+    while((m=chatRe.exec(text))){
+      const name=m[1].trim();
+      if(!name) continue;
+      threads.push({name, messages:extractDmFromText(m[2], name)});
+    }
+    if(!threads.length){
+      // 无会话壳时：只从 <msg>/<dm>/<私信箱> 内抽 [私信|…]；再不行才扫全文
+      let msgScope = '';
+      const boxRe=/<(?:msg|dm|私信箱)>([\s\S]*?)<\/(?:msg|dm|私信箱)>/gi;
+      let bm;
+      while((bm=boxRe.exec(text))) msgScope += bm[1] + '\n';
+      const loose=extractDmFromText(msgScope || text);
+      const byName={};
+      loose.forEach(msg=>{
+        const n = msg.author || '路人';
+        if(!byName[n]) byName[n]=[];
+        byName[n].push(msg);
+      });
+      Object.keys(byName).forEach(n=>threads.push({name:n, messages:byName[n]}));
+    }
+    return {posts, threads};
+  }
+
+  function normalizeAiText(raw){
+    let s = '';
+    if (raw == null) s = '';
+    else if (typeof raw === 'string') s = raw;
+    else if (typeof raw === 'object') {
+      if (typeof raw.content === 'string') s = raw.content;
+      else if (typeof raw.message === 'string') s = raw.message;
+      else if (typeof raw.text === 'string') s = raw.text;
+      else if (typeof raw.result === 'string') s = raw.result;
+      else if (Array.isArray(raw)) {
+        s = raw.map((x) => {
+          if (typeof x === 'string') return x;
+          if (x && typeof x.content === 'string') return x.content;
+          if (x && typeof x.text === 'string') return x.text;
+          return '';
+        }).join('');
+      } else {
+        try { s = JSON.stringify(raw); } catch (_) { s = String(raw); }
+      }
+    } else s = String(raw);
+
+    s = s.replace(/\u｜/g, '|').replace(/｜/g, '|');
+    s = s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+    s = s.replace(/```[\w-]*\n?([\s\S]*?)```/g, '$1');
+    s = s.replace(/<think>[\s\S]*?<\/think>/gi, '');
+    s = s.replace(/<\/?thinking>/gi, '');
+    // 去掉协议块之前的英文思考/解释
+    const proto = s.search(/<(?:weiboapp|weibo|msg|dm|私信箱|post:\d+|chat:|thread:|会话:)/i);
+    if (proto > 0) s = s.slice(proto);
+    return s;
+  }
+
+  function looksLikeAvatarToken(s){
+    const t = String(s || '').trim();
+    if (!t) return false;
+    if (/^avatar[_\-]/i.test(t)) return true;
+    if (/\.(png|jpe?g|gif|webp|svg|bmp)$/i.test(t)) return true;
+    if (/^(char|user|npc)(\.(png|jpe?g|webp))?$/i.test(t)) return true;
+    // 纯技术 token：无中文、较短、含 avatar/img 等
+    if (!/[\u4e00-\u9fff]/.test(t) && /^[a-z0-9_\-.]{3,48}$/i.test(t) && /(avatar|img|icon|face|head|pic)/i.test(t)) {
+      return true;
+    }
+    return false;
+  }
+  function looksLikeTimeToken(s){
+    const t = String(s || '').trim();
+    if (!t) return false;
+    if (/刚刚|分钟前|小时前|昨天|前天|今天|周一|周二|周三|周四|周五|周六|周日/.test(t)) return true;
+    if (/^\d{1,2}:\d{2}$/.test(t)) return true;
+    if (/^\d{1,2}月\d{1,2}日/.test(t)) return true;
+    if (/^(今天|昨天)\s*\d{1,2}:\d{2}/.test(t)) return true;
+    return false;
+  }
+  /** 纠正 AI 误把头像字段写进评论协议导致的 replyTo=avatar_xxx */
+  function scrubComment(c){
+    if (!c || typeof c !== 'object') return c;
+    if (looksLikeAvatarToken(c.replyTo)) {
+      if (!c.avatar) c.avatar = c.replyTo;
+      delete c.replyTo;
+    }
+    if (looksLikeAvatarToken(c.text) && c.replyTo && !looksLikeAvatarToken(c.replyTo)) {
+      // 极少见错位：正文位是头像
+      if (!c.avatar) c.avatar = c.text;
+      c.text = c.replyTo;
+      delete c.replyTo;
+    }
+    if (looksLikeAvatarToken(c.time)) {
+      if (!c.avatar) c.avatar = c.time;
+      c.time = nowHM();
+    }
+    // 正文里误嵌「回复 avatar_xxx」时清掉
+    if (c.text && /回复\s*avatar[_\-]/i.test(c.text)) {
+      c.text = String(c.text).replace(/\s*回复\s*avatar[_-][a-z0-9_\-.]*/ig, '').trim();
+    }
+    return c;
+  }
+  function scrubAllComments(){
+    (state.posts || []).forEach((p) => {
+      if (!Array.isArray(p.comments)) return;
+      p.comments.forEach(scrubComment);
+    });
+  }
+  function extractCommentsFromText(text){
+    const comments=[];
+    const src=normalizeAiText(text);
+    const re=/\[\s*评论\s*\|([^\]]+)\]/g;
+    let m;
+    while((m=re.exec(src))){
+      const parts=m[1].split('|').map(x=>String(x).trim()).filter((x, i, arr) => !(x === '' && i === arr.length - 1));
+      let c = null;
+      if(parts.length===3){
+        // [作者|正文|时间]
+        c = {author:parts[0], text:parts[1], time:parts[2]||nowHM()};
+      }else if(parts.length===4){
+        // 歧义：
+        // A) [作者|被回复者|正文|时间]
+        // B) [作者|头像|正文|时间]  ← AI 常按私信格式多写头像
+        if (looksLikeAvatarToken(parts[1])) {
+          c = {author:parts[0], avatar:parts[1], text:parts[2], time:parts[3]||nowHM()};
+        } else {
+          c = {author:parts[0], replyTo:parts[1], text:parts[2], time:parts[3]||nowHM()};
+        }
+      }else if(parts.length>=5){
+        // [作者|头像|被回复者|正文|时间] 或 [作者|头像|正文|时间|多余]
+        if (looksLikeAvatarToken(parts[1])) {
+          if (looksLikeTimeToken(parts[3]) || looksLikeAvatarToken(parts[2])) {
+            c = {author:parts[0], avatar:parts[1], text:parts[2], time:parts[3]||nowHM()};
+          } else {
+            c = {author:parts[0], avatar:parts[1], replyTo:parts[2], text:parts[3], time:parts[4]||nowHM()};
+          }
+        } else {
+          c = {author:parts[0], replyTo:parts[1], text:parts[2], time:parts[3]||nowHM()};
+        }
+      }
+      if (c) comments.push(scrubComment(c));
+    }
+    return comments;
+  }
+
+  function extractDmFromText(text, fallbackName){
+    const msgs=[];
+    const src=normalizeAiText(text);
+    const re=/\[\s*私信\s*\|([^\]]+)\]/g;
+    let m;
+    while((m=re.exec(src))){
+      const parts=m[1].split('|').map(x=>String(x).trim());
+      if(parts[0]==='我方消息' && parts.length>=3){
+        msgs.push({sender:'user', text:parts[1], time:parts[2]||nowHM()});
+      }else if(parts.length>=4){
+        msgs.push({sender:'npc', author:parts[0], avatar:parts[1], text:parts[2], time:parts[3]||nowHM()});
+      }else if(parts.length===3){
+        msgs.push({sender:'npc', author:parts[0]||fallbackName||'路人', avatar:'npc.png', text:parts[1], time:parts[2]||nowHM()});
+      }
+    }
+    return msgs;
+  }
+
+  function serializeOnePost(p, n){
+    ensurePostEngagement(p);
+    const lines=[`<post:${n}>`];
+    lines.push(`[微博|${p.author}|${p.avatar||defaultUserAvatarToken()}|${p.text}|${p.time}|${p.likes||0}|${p.reposts||0}|${p.commentCount||0}]`);
+    if(p.fakeImage) lines.push(`[伪图|${p.fakeImage}]`);
+    (p.comments||[]).forEach(c=>{
+      scrubComment(c);
+      if(c.replyTo && !looksLikeAvatarToken(c.replyTo)) lines.push(`[评论|${c.author}|${c.replyTo}|${c.text}|${c.time}]`);
+      else lines.push(`[评论|${c.author}|${c.text}|${c.time}]`);
+    });
+    lines.push(`</post:${n}>`);
+    return lines.join('\n');
+  }
+  /** 该帖作者对应的粉丝基数（互动数 ≈ 粉/10） */
+  function engagementFansBase(p){
+    ensureProfileStats({ allowDefault: true });
+    if (isCharAuthor(p?.author) || tokenMeansChar(p?.avatar)) {
+      return Math.max(100, Number(state.charFans) || 10000);
+    }
+    if (isUserAuthor(p?.author) || tokenMeansUser(p?.avatar)) {
+      return Math.max(50, Number(state.userFans) || 300);
+    }
+    // 路人/热门博：挂在角色粉量附近，别跳出本卡世界观
+    const base = Math.max(1000, Number(state.charFans) || 20000);
+    const h = hashSeed(String(p?.author || '路人'));
+    return Math.max(300, Math.floor(base * (0.08 + (h % 55) / 100)));
+  }
+  /**
+   * 赞 / 转 / 评（展示虚数）≈ 粉丝数的 1/10，再小幅抖动。
+   * 真实 comments[] 仍只存几条热评，与展示数无关。
+   */
+  function fabricateEngagement(seedText, opts={}){
+    const fans = Math.max(100, Number(opts.fans) || Number(state.charFans) || 10000);
+    const h = hashSeed(String(seedText || '') + '|' + fans);
+    const center = Math.max(1, Math.round(fans / 10));
+    const likeMul = 0.5 + (h % 111) / 100; // 约 0.5x～1.6x · fans/10
+    const likes = Math.max(1, Math.round(center * likeMul));
+    const rpRatio = 0.25 + (h % 50) / 100;
+    const reposts = Math.max(0, Math.round(likes * rpRatio));
+    const cmRatio = 0.35 + (h % 55) / 100;
+    const comments = Math.max(1, Math.round(likes * cmRatio));
+    return { likes, reposts, comments, center };
+  }
+  function ensurePostEngagement(p){
+    if (!p) return p;
+    const fans = engagementFansBase(p);
+    const fab = fabricateEngagement((p.text || '') + '|' + (p.author || ''), { fans });
+    const center = Math.max(1, Math.round(fans / 10));
+    const outOfBand = (n) => {
+      n = Number(n) || 0;
+      return !(n > 0) || n < center / 5 || n > center * 5;
+    };
+    let likes = Number(p.likes) || 0;
+    let reposts = Number(p.reposts) || 0;
+    let cmt = Number(p.commentCount) || 0;
+    const real = (p.comments || []).length;
+    if (outOfBand(likes)) likes = fab.likes;
+    if (outOfBand(reposts) || reposts > likes) reposts = Math.min(fab.reposts, Math.max(0, likes));
+    // 展示评论数：跟赞同量级；实际列表可以只有 5 条
+    if (outOfBand(cmt) || cmt < real || (likes >= 20 && cmt < Math.floor(likes * 0.2))) {
+      cmt = Math.max(fab.comments, real);
+    }
+    p.likes = likes;
+    p.reposts = reposts;
+    p.commentCount = Math.max(cmt, real);
+    return p;
+  }
+  function displayCommentCount(p){
+    ensurePostEngagement(p);
+    return Math.max(Number(p.commentCount) || 0, (p.comments || []).length);
+  }
+  function bumpDisplayComments(p, added){
+    if (!p) return;
+    ensurePostEngagement(p);
+    const real = (p.comments || []).length;
+    let n = Number(p.commentCount) || 0;
+    if (n < real) n = real;
+    const add = Math.max(0, Number(added) || 0);
+    if (add > 0) {
+      const center = Math.max(1, Math.round(engagementFansBase(p) / 10));
+      const jump = Math.max(add, Math.floor(center * (0.01 + (hashSeed(String(p.text || '') + n) % 4) / 100)));
+      n += jump;
+    }
+    p.commentCount = Math.max(n, real);
+  }
+  /** 互动数展示：≥1万用「x.x万」，避免一长串 0 */
+  function formatEngNumber(n){
+    n = Number(n) || 0;
+    if (n >= 100000000) {
+      const v = n / 100000000;
+      return (v >= 10 ? String(Math.round(v)) : String(Math.round(v * 10) / 10)) + '亿';
+    }
+    if (n >= 10000) {
+      const v = n / 10000;
+      // 10万以上取整；不足 10 万保留一位小数（如 1.2万）
+      if (v >= 100) return String(Math.round(v)) + '万';
+      if (v >= 10) return String(Math.round(v)) + '万';
+      return (Math.round(v * 10) / 10).toFixed(1).replace(/\.0$/, '') + '万';
+    }
+    return String(Math.round(n));
+  }
+  function existingCommentAuthors(p){
+    return [...new Set((p.comments||[]).map(c=>c.author).filter(Boolean))];
+  }
+  function existingDmContacts(){
+    return state.threads.map(t=>t.name).filter(Boolean);
+  }
+  function recentWeiboTopics(limit=3){
+    return state.posts.slice(0, limit).map((p,i)=>(`${i+1}. ${p.text.slice(0,80)}`)).join('\n') || '（暂无微博）';
+  }
+
+  function mergeAiPayload(raw, opts={}){
+    const text = normalizeAiText(raw);
+    window.__weibo_last_ai_raw = text;
+    console.log('[同层微博] AI原文长度', text.length, '预览:', text.slice(0, 500));
+
+    const a=parseWeiboApp(text), b=parseWeiboApp(`<weiboapp>${text}</weiboapp>`);
+    const posts=a.posts.length?a.posts:b.posts;
+    const threads=a.threads.length?a.threads:b.threads;
+
+    if(opts.mode==='weibo' && typeof opts.postIndex==='number'){
+      const target=state.posts[opts.postIndex];
+      if(!target) return 0;
+      const exist=new Set((target.comments||[]).map(c=>c.author+'|'+c.text));
+      let allComments=[];
+      posts.forEach(incoming => (incoming.comments||[]).forEach(c => allComments.push(c)));
+      // 关键兜底：全文直接抠 [评论|...]
+      if(!allComments.length) allComments = extractCommentsFromText(text);
+      let added=0;
+      allComments.forEach(c=>{
+        const k=c.author+'|'+c.text;
+        if(!exist.has(k)){ target.comments.push(c); exist.add(k); added++; }
+      });
+      if (added > 0) bumpDisplayComments(target, added);
+      else ensurePostEngagement(target);
+      setUnreadOnTarget('comment', opts.postIndex, added);
+      console.log('[同层微博] 本帖新增评论', added, '/ 解析到', allComments.length);
+      return added;
+    }
+
+    if(opts.mode==='feed'){
+      let list = (posts || []).filter(p => String(p.text || '').trim());
+      if(!list.length){
+        // 兜底：尝试把全文按 post 块再解析一次已在 parseWeiboApp 做完
+        return 0;
+      }
+      list = list.slice(0, 5);
+      let addedPosts = 0;
+      // 倒序 unshift，使 AI 输出的第 1 条出现在最上方
+      for (let i = list.length - 1; i >= 0; i--) {
+        const incoming = list[i];
+        const comments = Array.isArray(incoming.comments) ? incoming.comments.slice() : [];
+        const post = {
+          author: incoming.author || '热门博主',
+          avatar: incoming.avatar || '',
+          text: incoming.text,
+          time: incoming.time || today(),
+          likes: Number(incoming.likes) || 0,
+          reposts: Number(incoming.reposts) || 0,
+          commentCount: Number(incoming.commentCount) || 0,
+          fakeImage: incoming.fakeImage || '',
+          comments: comments.slice(0, 5), // 实际只留最多 5 条热评
+          unread: Math.min(5, comments.length),
+          fromFeed: true,
+        };
+        ensurePostEngagement(post);
+        state.posts.unshift(post);
+        addedPosts++;
+      }
+      console.log('[同层微博] 推荐拉取新增微博', addedPosts);
+      return addedPosts;
+    }
+
+    if(opts.mode==='char-post'){
+      let list = (posts || []).filter(p => String(p.text || '').trim());
+      if (!list.length) return 0;
+      const who = displayChar || rawCharName || '角色';
+      let added = 0;
+      for (let i = list.length - 1; i >= 0; i--) {
+        const incoming = list[i];
+        const comments = Array.isArray(incoming.comments) ? incoming.comments.slice() : [];
+        const post = {
+          author: who,
+          avatar: defaultCharAvatarToken(),
+          text: incoming.text,
+          time: incoming.time || today(),
+          likes: Number(incoming.likes) || 0,
+          reposts: Number(incoming.reposts) || 0,
+          commentCount: Number(incoming.commentCount) || 0,
+          fakeImage: incoming.fakeImage || '',
+          comments: comments.slice(0, 5),
+          unread: Math.min(5, comments.length),
+          fromCharPost: true,
+        };
+        ensurePostEngagement(post);
+        state.posts.unshift(post);
+        added++;
+      }
+      // 发博后粉丝微增一点，写回楼层更像真账号
+      ensureProfileStats();
+      state.charFans = (Number(state.charFans) || 0) + (3 + (hashSeed(who + Date.now()) % 18));
+      console.log('[同层微博] 角色发博新增', added);
+      return added;
+    }
+
+    if(opts.mode==='dm-scatter' || opts.mode==='dm'){
+      let pool = threads;
+      if(!pool.length){
+        const loose=extractDmFromText(text);
+        const byName={};
+        loose.forEach(msg=>{
+          const n=msg.author||'路人';
+          if(!byName[n]) byName[n]=[];
+          byName[n].push(msg);
+        });
+        pool = Object.keys(byName).map(n=>({name:n, messages:byName[n]}));
+      }
+      let added=0;
+      pool.forEach(incoming=>{
+        let hit=state.threads.find(t=>t.name===incoming.name);
+        if(!hit){ hit={name:incoming.name,messages:[],unread:0}; state.threads.unshift(hit); }
+        const exist=new Set(hit.messages.map(m=>(m.sender||'')+'|'+(m.author||'')+'|'+m.text));
+        let round=0;
+        (incoming.messages||[]).forEach(m=>{
+          const k=(m.sender||'')+'|'+(m.author||'')+'|'+m.text;
+          if(exist.has(k)) return;
+          hit.messages.push(m);
+          exist.add(k);
+          added++;
+          if(m.sender !== 'user') round++;
+        });
+        setUnreadOnTarget('dm', incoming.name, round);
+      });
+      console.log('[同层微博] 新增私信条数', added);
+      return added;
+    }
+
+    if(opts.mode==='dm-thread' && opts.threadName){
+      let hit=state.threads.find(t=>t.name===opts.threadName);
+      if(!hit){ hit={name:opts.threadName,messages:[],unread:0}; state.threads.unshift(hit); }
+      const exist=new Set(hit.messages.map(m=>(m.sender||'')+'|'+(m.author||'')+'|'+m.text));
+      const matched=threads.find(t=>t.name===opts.threadName);
+      let pool=matched ? matched.messages : threads.flatMap(t=>t.messages||[]);
+      if(!pool.length) pool = extractDmFromText(text, opts.threadName);
+      let added=0;
+      pool.forEach(m=>{
+        const msg = m.sender==='user' ? m : {sender:'npc', author:m.author||opts.threadName, avatar:m.avatar, text:m.text, time:m.time};
+        const k=(msg.sender||'')+'|'+(msg.author||'')+'|'+msg.text;
+        if(!exist.has(k)){ hit.messages.push(msg); exist.add(k); added++; }
+      });
+      setUnreadOnTarget('dm', opts.threadName, added);
+      return added;
+    }
+
+    // fallback
+    posts.forEach(incoming=>{
+      const hit=state.posts.find(p=>p.text===incoming.text && p.author===incoming.author);
+      if(hit){
+        const exist=new Set(hit.comments.map(c=>c.author+'|'+c.text));
+        incoming.comments.forEach(c=>{ const k=c.author+'|'+c.text; if(!exist.has(k)) hit.comments.push(c); });
+      }else if(incoming.text) state.posts.unshift(incoming);
+    });
+    threads.forEach(incoming=>{
+      let hit=state.threads.find(t=>t.name===incoming.name);
+      if(!hit){ hit={name:incoming.name,messages:[]}; state.threads.unshift(hit); }
+      const exist=new Set(hit.messages.map(m=>(m.sender||'')+'|'+(m.author||'')+'|'+m.text));
+      incoming.messages.forEach(m=>{ const k=(m.sender||'')+'|'+(m.author||'')+'|'+m.text; if(!exist.has(k)) hit.messages.push(m); });
+    });
+    return 0;
+  }
+
+  // ---- render ----
+  function postHTML(p,i){
+    ensurePostEngagement(p);
+    const real=(p.comments||[]).length;
+    const show=displayCommentCount(p);
+    const showN = Math.min(5, real);
+    return `<div class="post" data-i="${i}">
+      <div class="hd">
+        <div class="av">${avatarInner(p.author, p.avatar)}</div>
+        <div>
+          <div class="nm">${esc(p.author)}</div>
+          <div class="sub">${esc(p.time)}</div>
+        </div>
+      </div>
+      <div class="txt">${fmt(p.text)}</div>
+      ${p.fakeImage?`<div class="fake-pic"><div><b>[图片]</b>${esc(p.fakeImage)}</div></div>`:''}
+      <div class="post-bar">
+        <div class="mini">${avatarInner(displayName, defaultUserAvatarToken())}</div>
+        <div class="inp" data-reply="${i}">写评论…</div>
+      </div>
+      <div class="acts">
+        <div data-act="rp">↻ ${formatEngNumber(p.reposts||0)}</div>
+        <div data-act="cm" data-open="${i}">💬 ${formatEngNumber(show)}</div>
+        <div data-act="lk">♡ ${formatEngNumber(p.likes||0)}</div>
+      </div>
+      <div class="acts" style="border-top:0">
+        <div class="ai-gen" data-ai-post="${i}">生成路人评</div>
+      </div>
+      ${real ? `<div class="feed-cmts" data-open="${i}">
+        ${(p.comments||[]).slice(0, showN).map(c=>`<div class="fc"><b>${esc(c.author)}</b>：${esc(c.text)}</div>`).join('')}
+        ${show > showN ? `<div class="more">共 ${formatEngNumber(show)} 条评论 · 点进正文看热评</div>` : ''}
+      </div>` : ''}
+    </div>`;
+  }
+  function renderFeed(){
+    const el=document.getElementById('feed');
+    if(!state.posts.length){ el.innerHTML='<div class="empty">还没有微博<br>点上方「刷新推荐」拉取，或右上角 + 自己发</div>'; return; }
+    el.innerHTML=state.posts.map((p,i)=>postHTML(p,i)).join('');
+  }
+  function renderDmList(){
+    const el=document.getElementById('dmList');
+    if(!state.threads.length){ el.innerHTML='<div class="empty" style="padding:24px">暂无私信，点 + → 发私信</div>'; return; }
+    el.innerHTML=state.threads.map(t=>{
+      const n=(t.messages||[]).length;
+      const ur=Number(t.unread)||0;
+      return `<div class="msg-row" data-dm="${esc(t.name)}">
+        <div class="ico" style="background:#ffd6c2;color:#333;overflow:hidden;padding:0;position:relative">${avatarInner(t.name, isCharAuthor(t.name) ? defaultCharAvatarToken() : '')}${ur?badgeHTML(ur):''}</div>
+        <div class="mid"><div class="t">${esc(t.name)}</div><div class="p">${n ? (ur ? `${ur} 条未读私信 · 点进查看` : `已生成 ${n} 条私信 · 点进查看`) : '暂无消息'}</div></div>
+        <div class="right">${ur?`<div class="dot"></div>`:''}</div>
+      </div>`;
+    }).join('');
+  }
+  function postsOfWho(who){
+    return (state.posts || [])
+      .map((p, i) => ({ p, i }))
+      .filter(({ p }) => {
+        if (who === 'user') return tokenMeansUser(p.avatar) || isUserAuthor(p.author);
+        return tokenMeansChar(p.avatar) || isCharAuthor(p.author);
+      });
+  }
+  function renderProfileHome(who){
+    const el = document.getElementById('profileHome');
+    if (!el) return;
+    const mode = (who === 'user' || who === 'char') ? who : (state.profileWho || 'char');
+    state.profileWho = mode;
+    const isUser = mode === 'user';
+    const name = isUser ? displayName : (displayChar || rawCharName || '角色');
+    const token = isUser ? defaultUserAvatarToken() : defaultCharAvatarToken();
+    const bio = isUser ? String(phoneSettings.userBio || '').trim() : '';
+    const list = postsOfWho(mode);
+    ensureProfileStats();
+    const fans = isUser ? (Number(state.userFans) || 0) : (Number(state.charFans) || 0);
+    const following = isUser ? (Number(state.userFollowing) || 0) : (Number(state.charFollowing) || 0);
+    el.innerHTML = `
+      <div class="pf-wrap">
+        <div class="pf-profile">
+          <div class="row">
+            <div class="pf-av">${avatarInner(name, token)}</div>
+            <div>
+              <div class="pf-name">${esc(name)}</div>
+              <div class="pf-uid">@${esc(name)}</div>
+            </div>
+          </div>
+          <div class="pf-bio">${bio ? esc(bio) : (isUser ? '简介：同层微博' : '角色微博主页 · 只看 TA 发过的微博')}</div>
+          <div class="pf-stats">
+            <div><b>${esc(formatFanNumber(following))}</b><span>关注</span></div>
+            <div><b>${esc(formatFanNumber(fans))}</b><span>粉丝</span></div>
+            <div><b>${list.length}</b><span>微博</span></div>
+          </div>
+          ${isUser
+            ? ''
+            : `<button type="button" class="pf-follow" id="pfFollowBtn">＋ 关 注</button>
+               <button type="button" class="pf-follow" id="pfCharCompose" style="margin-top:8px;background:#fff;color:var(--orange);border:1px solid #ffd4a8;letter-spacing:0">代发微博 · 提示词 / 空 roll</button>`}
+          <button type="button" class="pf-switch" id="pfSwitchWho">${isUser ? '查看角色主页 ›' : '查看我的主页 ›'}</button>
+        </div>
+        <div class="pf-tabs">
+          <div class="on" data-pf-tab="wb">微博</div>
+          <div data-pf-tab="vd">视频</div>
+          <div data-pf-tab="al">相册</div>
+        </div>
+        <div id="pfFeed">
+          ${list.length
+            ? list.map(({ p, i }) => postHTML(p, i)).join('')
+            : `<div class="empty">${isUser ? '你还没有发过微博' : '角色还没有发过微博'}<br>${isUser ? '去推荐页刷新，或右上角 + 发一条' : '点上方「代发微博」空 roll / 填提示词'}</div>`}
+        </div>
+        <div class="pf-end">— 没有更多了 —</div>
+      </div>`;
+
+    const followBtn = document.getElementById('pfFollowBtn');
+    if (followBtn) {
+      followBtn.onclick = () => {
+        const on = followBtn.classList.toggle('on');
+        followBtn.textContent = on ? '已关注' : '＋ 关 注';
+      };
+    }
+    document.getElementById('pfCharCompose')?.addEventListener('click', () => openCharCompose());
+    document.getElementById('pfSwitchWho')?.addEventListener('click', () => {
+      renderProfileHome(isUser ? 'char' : 'user');
+    });
+    el.querySelectorAll('[data-pf-tab]').forEach((tab) => {
+      tab.onclick = () => {
+        if (tab.dataset.pfTab === 'wb') return;
+        alertBox('提示', tab.dataset.pfTab === 'vd' ? '主页视频暂未开放' : '相册暂未开放');
+      };
+    });
+  }
+  function openUserProfileHome(){
+    state.profileWho = 'user';
+    switchTab('video');
+  }
+  function openCharProfileHome(){
+    state.profileWho = 'char';
+    switchTab('video');
+  }
+  function renderMe(){
+    ensureProfileStats();
+    document.getElementById('meName').textContent=displayName;
+    document.getElementById('meAv').innerHTML=avatarInner(displayName, defaultUserAvatarToken());
+    const bio = (phoneSettings.userBio || '').trim();
+    document.getElementById('meBio').textContent = bio ? ('简介：' + bio) : ('@' + displayName);
+    const mine = postsOfWho('user');
+    document.getElementById('stWb').textContent=String(mine.length);
+    document.getElementById('stFan').textContent=formatFanNumber(state.userFans);
+    const followEl = document.getElementById('stFollow');
+    if (followEl) followEl.textContent = String(Number(state.userFollowing) || 0);
+  }
+  function renderAll(){
+    scrubAllComments();
+    renderFeed(); renderDmList(); renderMe(); renderBadges();
+    if (state.tab === 'video') renderProfileHome(state.profileWho || 'char');
+    window.__weiboapp_serialized=serializeWeiboApp();
+    persistPhoneState();
+    if(state.page?.type==='post') openPost(state.page.i);
+    if(state.page?.type==='dm') openDm(state.page.name);
+  }
+  window.renderAll=renderAll; window.renderAllMessages=renderAll;
+
+  function openPost(i, opts={}){
+    const p=state.posts[i]; if(!p) return;
+    ensurePostEngagement(p);
+    const fromNotices = !!(opts.fromNotices || state.page?.fromNotices || state.page?.type === 'notices');
+    clearPostUnread(i);
+    renderBadges();
+    persistPhoneState();
+    const showCmt = displayCommentCount(p);
+    let cmts=(p.comments||[]).map((c,idx)=>{
+      scrubComment(c);
+      const replyHtml = (c.replyTo && !looksLikeAvatarToken(c.replyTo))
+        ? ` <span style="color:#999">回复 ${esc(c.replyTo)}</span>`
+        : '';
+      return `
+      <div class="cmt" data-reply-to="${esc(c.author)}"><div class="av">${avatarInner(c.author, c.avatar || (isCharAuthor(c.author) ? defaultCharAvatarToken() : ''))}</div><div style="flex:1;min-width:0">
+        <div class="u">${esc(c.author)}${idx===0?'<span class="hot">热评</span>':''}</div>
+        <div class="t">${fmt(c.text)}${replyHtml}</div>
+        <div class="meta">${esc(c.time||'刚刚')} · <span style="color:var(--orange);cursor:pointer" data-reply-to="${esc(c.author)}">回复</span></div>
+      </div></div>`;
+    }).join('') || '<div class="empty">暂无评论，可以自己先回一句，或点下方生成路人评</div>';
+    document.getElementById('pageBody').innerHTML=`
+      <div class="post" style="border:0">
+        <div class="hd"><div class="av">${avatarInner(p.author, p.avatar)}</div><div>
+          <div class="nm">${esc(p.author)}</div><div class="sub">${esc(p.time)}</div></div></div>
+        <div class="txt">${fmt(p.text)}</div>
+        ${p.fakeImage?`<div class="fake-pic"><div><b>[图片]</b>${esc(p.fakeImage)}</div></div>`:''}
+        <div class="acts" style="border-top:1px solid #f2f2f2;margin-top:8px">
+          <div>↻ ${formatEngNumber(p.reposts||0)}</div>
+          <div>💬 ${formatEngNumber(showCmt)}</div>
+          <div>♡ ${formatEngNumber(p.likes||0)}</div>
+        </div>
+      </div>
+      <div style="padding:10px 14px;font-weight:600;border-top:8px solid var(--bg);background:#fff">
+        评论 <span style="color:#999;font-weight:400;font-size:12px">共 ${formatEngNumber(showCmt)} 条 · 展示热评 ${(p.comments||[]).length} 条</span>
+      </div>${cmts}
+      <div class="page-ai-bar" style="display:flex;gap:8px;padding:8px 10px">
+        <button type="button" id="userReplyBtn" style="flex:1;background:#fff;color:var(--orange);border:1px solid #ffd4a8">写评论</button>
+        <button type="button" data-ai-post="${i}" style="flex:1.2">生成路人评</button>
+      </div>
+      <div class="chat-bar"><input id="cmtQuick" placeholder="快速评论…"/><button type="button" id="cmtQuickSend">发送</button></div>`;
+    document.getElementById('pageTitle').textContent='微博正文';
+    document.getElementById('page').classList.add('show');
+    state.page={type:'post', i, fromNotices};
+    document.querySelector('#pageBody [data-ai-post]')?.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      requestAiReply({mode:'weibo', postIndex:i});
+    });
+    document.getElementById('userReplyBtn')?.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      openReplyComment(i);
+    });
+    const sendQuick = ()=>{
+      const inp = document.getElementById('cmtQuick');
+      const v = (inp?.value || '').trim();
+      if (!v) return;
+      if (!Array.isArray(p.comments)) p.comments = [];
+      p.comments.push({ author: displayName, text: v, time: nowHM() });
+      state.userHasSentNewMessage = true;
+      renderAll();
+      openPost(i, fromNotices ? { fromNotices: true } : {});
+      showBubble('评论已发送');
+    };
+    document.getElementById('cmtQuickSend')?.addEventListener('click', sendQuick);
+    document.getElementById('cmtQuick')?.addEventListener('keydown', (e)=>{
+      if (e.key === 'Enter') { e.preventDefault(); sendQuick(); }
+    });
+    document.getElementById('pageBody').onclick = (e)=>{
+      const rt = e.target.closest('[data-reply-to]');
+      if (!rt) return;
+      e.stopPropagation();
+      openReplyComment(i, rt.dataset.replyTo);
+    };
+  }
+  function openDm(name){
+    const t=state.threads.find(x=>x.name===name); if(!t) return;
+    clearDmUnread(name);
+    renderBadges();
+    persistPhoneState();
+    let html='<div class="chat">';
+    (t.messages||[]).forEach(m=>{
+      if(m.sender==='user') html+=`<div class="bub me">${fmt(m.text)}<div class="tm">${esc(m.time)}</div></div>`;
+      else html+=`<div class="bub npc"><span style="color:#666a8c">${esc(m.author||name)}</span><br>${fmt(m.text)}<div class="tm">${esc(m.time)}</div></div>`;
+    });
+    html+=`</div>
+      <div class="page-ai-bar"><button type="button" id="dmThreadAi">本会话再收几句</button></div>
+      <div class="chat-bar"><input id="dmIn" placeholder="发送消息"/><button id="dmSend">发送</button></div>`;
+    document.getElementById('pageBody').innerHTML=html;
+    document.getElementById('pageTitle').textContent=name;
+    document.getElementById('page').classList.add('show');
+    state.page={type:'dm', name};
+    document.getElementById('dmSend').onclick=()=>{
+      const v=document.getElementById('dmIn').value.trim(); if(!v) return;
+      t.messages.push({sender:'user',text:v,time:nowHM()});
+      state.userHasSentNewMessage=true; renderAll(); openDm(name);
+    };
+    document.getElementById('dmThreadAi').onclick=()=>requestAiReply({mode:'dm-thread', threadName:name});
+  }
+  function closePage(){
+    if (state.page?.type === 'post' && state.page.fromNotices) {
+      openCommentNotices();
+      return;
+    }
+    document.getElementById('page').classList.remove('show');
+    state.page=null;
+  }
+
+  function switchTab(tab){
+    state.tab=tab;
+    ['home','video','discover','msg','me'].forEach(k=>{
+      document.getElementById('sc-'+k).classList.toggle('on', k===tab);
+    });
+    document.querySelectorAll('.tabbar button').forEach(b=>{
+      b.classList.toggle('on', b.dataset.tab===tab);
+    });
+    if (tab === 'video') renderProfileHome(state.profileWho || 'char');
+    hidePlus();
+  }
+
+  // ---- AI ----
+  async function requestAiReply(opts={}){
+    if(state.aiBusy) return alertBox('请稍候','AI 正在回复');
+    if(!AI_GENERATE && !AI_GENERATE_RAW) return alertBox('提示','需在酒馆同层环境使用 generate / generateRaw');
+
+    let mode = opts.mode;
+    if(!mode){
+      if(state.page?.type==='post') mode='weibo';
+      else if(state.page?.type==='dm') mode='dm-thread';
+      else if(state.tab==='msg') mode='dm-scatter';
+      else return alertBox('提示','请点某条微博的「生成评论」，或消息页「收路人私信」');
+    }
+    if(mode==='weibo' && typeof opts.postIndex!=='number'){
+      if(state.page?.type==='post') opts.postIndex=state.page.i;
+      else return alertBox('提示','请指定要生成评论的微博');
+    }
+    if(mode==='dm-thread' && !opts.threadName){
+      if(state.page?.type==='dm') opts.threadName=state.page.name;
+    }
+
+    const keyword = mode === 'feed' ? 'feed'
+      : mode === 'char-post' ? 'weibo'
+      : (mode.startsWith('dm') ? 'msg' : 'weibo');
+    let context = '';
+
+    if(mode==='feed'){
+      context = [
+        '【同层微博任务｜关键词 feed｜推荐页拉取】',
+        '剧情依据以快照中的「本局开场（当前聊天第 1 楼）」为准；禁止使用其它线路/其它备用开场的设定。',
+        '卡面 first_mes 若是占位句请忽略。',
+        '请结合人物关系与开场已知公开信息，生成与故事相关的推荐流；只输出微博协议，不要写正文剧情旁白。',
+        '硬性数量：',
+        '1. 恰好新增 5 条微博（post:1 … post:5），发布者多为路人/热门博主/相关路人号，也可偶有 {{char}}；禁止代替 {{user}} 发博。',
+        '2. 每条微博正文下实际评论行最多 5 条（热评）；评论者昵称全部不同。',
+        '3. 赞/转/评展示数都约等于「该发布者粉丝数的 1/10」（可在 0.5～1.6 倍间浮动）；转发 < 赞，评论展示数与赞同量级。不要写 0，也不要写成个位数热帖。',
+        '4. 微博行格式：[微博|发布者|头像|正文|时间|赞数|转发数|评论数]（评论数为展示总量，可远大于下面实际评论行数）。',
+        '5. 微博主题与评论都要能自然呼应前文已知信息（嗑点、称呼、公开关系等），勿剧透未发生情节。',
+        '6. 输出格式仅限：',
+        '<weibo>',
+        '<post:1>',
+        '[微博|发布者|头像|正文|时间|赞数|转发数|评论数]',
+        '[评论|路人|正文|时间]',
+        '…（恰好约 5 条评论行）',
+        '</post:1>',
+        '…共5个 post',
+        '</weibo>',
+        '当前已有微博主题（避免完全重复）：',
+        recentWeiboTopics(8),
+        '完整快照（参照，勿原样复制旧帖）：',
+        serializeWeiboApp(),
+      ].join('\n');
+    }else if(mode==='char-post'){
+      const who = displayChar || rawCharName || '角色';
+      const hint = String(opts.prompt || '').trim();
+      const fansHint = formatEngNumber(Number(state.charFans) || 0);
+      const engHint = formatEngNumber(Math.max(1, Math.round((Number(state.charFans) || 10000) / 10)));
+      context = [
+        '【同层微博任务｜关键词 weibo｜角色发博】',
+        `请以角色微博账号「${who}」的口吻发微博（作者必须是 ${who}，头像字段写 char）。`,
+        hint
+          ? ('用户提示词（必须紧扣）：' + hint)
+          : '用户未给提示词：请空 roll——结合人设、开场与最近剧情，发一条自然、可公开的角色碎碎念/动态（勿剧透未发生情节，勿替 {{user}} 发博）。',
+        '硬性：',
+        '1. 恰好输出 1 条微博（一个 <post:1>）。',
+        `2. 微博行格式：[微博|${who}|char|正文|时间|赞数|转发数|评论数]。当前角色粉丝约 ${fansHint}，赞/转/评展示数大约在 ${engHint} 量级（粉丝的约 1/10）。`,
+        '3. 可选附带最多 5 条路人评论（热评）；昵称勿固定复用。评论展示数可远大于实际评论行。',
+        '4. 可附 [伪图|描述]（可选）。',
+        '5. 只输出协议，不要剧情旁白。',
+        '角色近期已发主题（避免复读）：',
+        postsOfWho('char').slice(0, 5).map((x, i) => `${i+1}. ${String(x.p.text||'').slice(0,80)}`).join('\n') || '（暂无）',
+        '完整快照：',
+        serializeWeiboApp(),
+      ].join('\n');
+    }else if(mode==='weibo'){
+      const p=state.posts[opts.postIndex];
+      if(!p) return alertBox('提示','找不到该微博');
+      const n=opts.postIndex+1;
+      context = [
+        '【同层微博任务｜关键词 weibo】',
+        '请结合上方角色设定、场景与聊天前文来理解人物关系/语气/剧情，但输出必须仍是微博协议，不要写正文剧情。',
+        `目标帖子编号：${n}（只给这一条生成评论）`,
+        '要求：恰好新增 5 条随机路人评论（热评）；昵称全部不同；内容贴合该条微博主题，并可自然反映前文已知信息（勿剧透未发生情节）；禁止固定那几个路人。展示评论总数不必等于 5，界面会按粉丝量级显示虚数。',
+        '评论格式只能是：[评论|路人名|正文|时间] 或 [评论|路人名|被回复者|正文|时间]。禁止在评论行里写头像字段（不要写 avatar_xxx / xxx.png）。',
+        '已有评论者（请避开）：'+(existingCommentAuthors(p).join('、')||'无'),
+        '目标帖数据：',
+        '<weibo>',
+        serializeOnePost(p, n),
+        '</weibo>',
+        '完整微博App快照（供参照，勿重复旧评）：',
+        serializeWeiboApp(),
+      ].join('\n');
+    }else if(mode==='dm-scatter'){
+      context = [
+        '【同层微博任务｜关键词 msg｜协议 msg/chat】',
+        '本任务=微博「消息」私信，不是时间线微博，也不是 Threads/脆文。',
+        '请结合上方角色设定、场景与聊天前文理解剧情，但输出必须仍是私信协议。',
+        '请求类型：收路人私信（分散）',
+        '要求：恰好 10 条新私信，尽量 8～10 个不同随机路人各开 <chat:昵称>；内容贴合最近微博主题，并可呼应前文已知设定；禁止固定复用同一批人。',
+        '禁止输出 <weibo>/<post:> 与旧标签 <dm>/<thread:>。',
+        '已有私信联系人（请避开或少用）：'+(existingDmContacts().join('、')||'无'),
+        '用户最近微博主题：',
+        recentWeiboTopics(5),
+        '当前完整快照：',
+        serializeWeiboApp(),
+      ].join('\n');
+    }else{
+      const name=opts.threadName||'路人';
+      const t=state.threads.find(x=>x.name===name);
+      context = [
+        '【同层微博任务｜关键词 msg｜协议 msg/chat】',
+        '本任务=微博「消息」私信会话续聊，不是时间线微博，也不是 Threads/脆文。',
+        '请结合上方角色设定、场景与聊天前文理解剧情，但输出必须仍是私信协议。',
+        '请求类型：当前私信会话续聊',
+        `当前会话：${name}`,
+        '要求：优先给该会话补 3～6 条路人短句；内容承接本会话前文，并与聊天前文/微博主题一致；勿模板化昵称。',
+        '禁止输出 <weibo>/<post:> 与旧标签 <dm>/<thread:>。',
+        '最近微博主题：',
+        recentWeiboTopics(3),
+        '当前会话：',
+        t ? `<chat:${t.name}>\n`+(t.messages||[]).map(m=>m.sender==='user'?`[私信|我方消息|${m.text}|${m.time}]`:`[私信|${m.author||name}|npc.png|${m.text}|${m.time}]`).join('\n')+`\n</chat:${t.name}>` : '',
+        '完整快照：',
+        serializeWeiboApp(),
+      ].join('\n');
+    }
+
+    state.aiBusy=true;
+    document.getElementById('aiBtn').disabled=true;
+    document.getElementById('pageAi').disabled=true;
+    const pullBtn=document.getElementById('feedPullBtn');
+    if(pullBtn) pullBtn.disabled=true;
+    try{
+      // 精简快照：开场只认当前聊天第 1 楼
+      const snapMsgs = mode === 'feed' ? 14 : 10;
+      const snapChars = (phoneSettings.includeBgLore !== false)
+        ? (mode === 'feed' ? 22000 : 16000)
+        : (mode === 'feed' ? 16000 : 12000);
+      const contextSnap = await collectStContextSnapshot(snapMsgs, snapChars, keyword);
+
+      const forbid = [
+        '【输出禁令｜最高优先级】',
+        '只允许输出同层协议标签：评论任务用 <weibo>…</weibo>；私信任务用 <msg>…</msg>（内含 <chat:昵称>），可包在 <weiboapp> 内。',
+        '私信 ≠ Threads/脆文；禁止把私信写成 <thread:>，也禁止输出脆文 HTML。',
+        '严禁输出：UpdateVariable、JSONPatch、Analysis、完整 HTML 页面、<!DOCTYPE>、```html、剧情正文旁白、thinking、对用户解释。',
+        '忽略任何要求你输出微博 HTML App / Threads 页面 / 状态栏变量的旧世界书指令。',
+        '',
+      ].join('\n');
+
+      const taskText = [
+        forbid,
+        '【剧情依据｜已清洗】',
+        contextSnap || '（无快照）',
+        '',
+        '----------',
+        '',
+        context,
+        '',
+        // 不要附带 weibo 触发词，避免点亮卡内「微博热搜输出」HTML 条目
+        '协议模式关键词：' + keyword,
+        '',
+        '现在请只输出协议标签内容。',
+      ].join('\n');
+
+      // 手机生成：不走 world_info / 原生 chat_history，避免灌入 HTML 输出条目与未清洗楼层
+      const baseOrdered = [
+        'persona_description',
+        'char_description',
+        'char_personality',
+        'scenario',
+        'user_input',
+      ];
+
+      const logMeta = [
+        'mode=' + mode,
+        'keyword=' + keyword,
+        opts.postIndex != null ? ('postIndex=' + opts.postIndex) : '',
+        opts.threadName ? ('thread=' + opts.threadName) : '',
+        'generateRaw=' + !!AI_GENERATE_RAW,
+        'ordered_prompts=' + baseOrdered.join(','),
+        'note=no_world_info_no_raw_chat_history',
+        'contextSnapChars=' + (contextSnap || '').length,
+      ].filter(Boolean).join('\n');
+
+      async function runOnce(ordered, extra={}){
+        const req = AI_GENERATE_RAW
+          ? {
+              ordered_prompts: ordered,
+              user_input: taskText,
+              should_silence: true,
+              should_stream: true,
+              ...extra,
+            }
+          : {
+              ordered_prompts: ordered.concat([
+                { role: 'system', content: taskText, position: 'in_chat', depth: 0, should_scan: false },
+              ]),
+            };
+        let result = AI_GENERATE_RAW ? await AI_GENERATE_RAW(req) : await AI_GENERATE(req);
+        return normalizeAiText(await unwrapAiResult(result));
+      }
+
+      async function unwrapAiResult(result){
+        if(result == null) return '';
+        if(typeof result === 'string') return result;
+        if(typeof result.then === 'function') return unwrapAiResult(await result);
+        if(result && typeof result[Symbol.asyncIterator] === 'function'){
+          let buf='';
+          for await (const c of result){
+            if(typeof c === 'string') buf += c;
+            else if(c && typeof c.content === 'string') buf += c.content;
+            else if(c && typeof c.text === 'string') buf += c.text;
+            else if(c != null) buf += String(c);
+          }
+          return buf;
+        }
+        if(typeof result === 'object'){
+          if(typeof result.content === 'string') return result.content;
+          if(typeof result.message === 'string') return result.message;
+          if(typeof result.text === 'string') return result.text;
+          if(typeof result.result === 'string') return result.result;
+        }
+        return String(result);
+      }
+
+      let out = '';
+      let lastErr = null;
+      try {
+        out = await runOnce(baseOrdered);
+      } catch (e1) {
+        lastErr = e1;
+        console.warn('weibo AI primary failed, fallback minimal', e1);
+        try {
+          out = await runOnce(['user_input']);
+          lastErr = null;
+        } catch (e2) {
+          lastErr = e2;
+          console.warn('weibo AI fallback failed', e2);
+        }
+      }
+      if (lastErr) {
+        const msg = (lastErr && (lastErr.message || lastErr.msg || String(lastErr))) || '未知错误';
+        pushAiRawLog({ mode, ok:false, error: msg, input: taskText, context: contextSnap, output: out || '', meta: logMeta });
+        throw new Error(msg);
+      }
+      if (!String(out || '').trim()) {
+        out = tryReadLastAiMessage();
+        console.log('[同层微博] 返回为空，改读楼层消息，长度', (out||'').length);
+      }
+      pushAiRawLog({ mode, ok:true, input: taskText, context: contextSnap, output: out || '', meta: logMeta });
+      const added = mergeAiPayload(out, {...opts, mode});
+      state.userHasSentNewMessage=false;
+      renderAll();
+      if(!added){
+        alertBox('完成但未解析到内容', '原始输出已写入「我→🧾日志」');
+        return;
+      }
+      const tip = mode==='feed' ? `已拉取 ${added} 条推荐微博`
+        : mode==='char-post' ? `角色已发 ${added} 条微博`
+        : mode==='weibo' ? `已生成 ${added} 条评论`
+        : mode==='dm-scatter' ? `已生成 ${added} 条私信`
+        : `本会话已生成 ${added} 条回复`;
+      showBubble(tip + (mode==='feed' || mode==='char-post' ? '' : ' · 点进详情查看'));
+      if (mode === 'char-post') {
+        state.profileWho = 'char';
+        switchTab('video');
+      }
+    }catch(e){
+      console.warn(e);
+      const detail = (e && (e.message || e.msg)) ? String(e.message || e.msg) : '请检查 API / 世界书';
+      alertBox('失败', 'AI 回复失败：' + detail.slice(0, 180) + '（可打开 我→🧾 看原始日志）');
+    }
+    finally{
+      state.aiBusy=false;
+      document.getElementById('aiBtn').disabled=false;
+      document.getElementById('pageAi').disabled=false;
+      const pullBtn=document.getElementById('feedPullBtn');
+      if(pullBtn) pullBtn.disabled=false;
+    }
+  }
+
+  function tryReadLastAiMessage(){
+    try{
+      if (typeof getChatMessages === 'function') {
+        const msgs = getChatMessages(-1) || getChatMessages();
+        const list = Array.isArray(msgs) ? msgs : [];
+        for (let i = list.length - 1; i >= 0; i--) {
+          const m = list[i];
+          const role = m?.role || m?.is_user;
+          const isUser = role === 'user' || role === true || m?.is_user === true;
+          if (isUser) continue;
+          const t = m?.message || m?.mes || m?.content || '';
+          if (t && /评论|私信|<weibo|<dm|<post/i.test(t)) return String(t);
+          if (t) return String(t);
+        }
+      }
+    }catch(e){ console.warn('tryReadLastAiMessage', e); }
+    return '';
+  }
+
+  // ---- events ----
+  function hidePlus(){ document.getElementById('plusMenu').classList.remove('show'); }
+  document.getElementById('plusBtn').onclick=(e)=>{ e.stopPropagation(); document.getElementById('plusMenu').classList.toggle('show'); };
+  document.getElementById('plusMenu').onclick=(e)=>{
+    const act=e.target.closest('[data-act]')?.dataset.act;
+    if(act==='write') openWrite();
+    else if(act==='dm') openNewDm();
+    else if(act==='album'){ hidePlus(); alertBox('相册','暂未开放，发博时可填伪图片描述'); }
+  };
+  document.getElementById('app').addEventListener('click', (e)=>{
+    if(!e.target.closest('#plusBtn') && !e.target.closest('#plusMenu')) hidePlus();
+  });
+
+  document.querySelectorAll('.tabbar button').forEach(b=>{
+    b.onclick=()=>{
+      // 底栏「主页」固定进角色微博；「我」页头像区才进用户主页
+      if (b.dataset.tab === 'video') state.profileWho = 'char';
+      switchTab(b.dataset.tab);
+    };
+  });
+  document.getElementById('meHdOpen')?.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    openUserProfileHome();
+  });
+  document.getElementById('profileHome')?.addEventListener('click', (e)=>{
+    const ai=e.target.closest('[data-ai-post]');
+    if(ai){ e.stopPropagation(); requestAiReply({mode:'weibo', postIndex:Number(ai.dataset.aiPost)}); return; }
+    const reply=e.target.closest('[data-reply]');
+    if(reply){ e.stopPropagation(); openReplyComment(Number(reply.dataset.reply)); return; }
+    const open=e.target.closest('[data-open]');
+    if(open){ openPost(Number(open.dataset.open)); return; }
+    const act=e.target.closest('.acts [data-act]');
+    if(act?.dataset.act==='rp') alertBox('转发','已转发（演示）');
+    if(act?.dataset.act==='lk'){
+      const p=state.posts[Number(act.closest('.post').dataset.i)];
+      if(p){ p.likes=(p.likes||0)+1; renderProfileHome(state.profileWho); persistPhoneState(); }
+    }
+  });
+  document.getElementById('aiBtn').onclick=()=>{
+    if(state.tab==='msg') requestAiReply({mode:'dm-scatter'});
+    else alertBox('提示','请点某条微博下的「生成评论」；私信请到消息页点「收路人私信」');
+  };
+  document.getElementById('pageAi').onclick=()=>{
+    if(state.page?.type==='post') requestAiReply({mode:'weibo', postIndex:state.page.i});
+    else if(state.page?.type==='dm') requestAiReply({mode:'dm-thread', threadName:state.page.name});
+    else alertBox('提示','请打开某条微博或私信后再点');
+  };
+  document.getElementById('pageBack').onclick=closePage;
+  document.getElementById('dmScatterBtn').onclick=()=>requestAiReply({mode:'dm-scatter'});
+  document.getElementById('feedPullBtn').onclick=()=>{
+    switchTab('home');
+    requestAiReply({mode:'feed'});
+  };
+
+  document.getElementById('feed').addEventListener('click', (e)=>{
+    const ai=e.target.closest('[data-ai-post]');
+    if(ai){ e.stopPropagation(); requestAiReply({mode:'weibo', postIndex:Number(ai.dataset.aiPost)}); return; }
+    const reply=e.target.closest('[data-reply]');
+    if(reply){ e.stopPropagation(); openReplyComment(Number(reply.dataset.reply)); return; }
+    const open=e.target.closest('[data-open]');
+    if(open){ openPost(Number(open.dataset.open)); return; }
+    const act=e.target.closest('.acts [data-act]');
+    if(act?.dataset.act==='rp') alertBox('转发','已转发（演示）');
+    if(act?.dataset.act==='lk'){ const p=state.posts[Number(act.closest('.post').dataset.i)]; if(p){ p.likes=(p.likes||0)+1; renderFeed(); persistPhoneState(); } }
+  });
+  document.getElementById('dmList').addEventListener('click', (e)=>{
+    const row=e.target.closest('[data-dm]');
+    if(row) openDm(row.dataset.dm);
+  });
+  function openCommentNotices(){
+    const items = state.posts
+      .map((p, i) => ({ p, i, ur: Number(p.unread) || 0, cm: (p.comments || []).length }))
+      .filter(x => x.cm > 0)
+      .sort((a, b) => (b.ur - a.ur) || (b.i - a.i));
+    // 列表展示未读红点；点进正文后 clearPostUnread，红点消失
+    if (!items.length) {
+      showBubble('暂无评论通知');
+      return;
+    }
+    const list = items.map(({ p, i, ur, cm }) => `
+      <div class="msg-row" data-open-notice="${i}">
+        <div class="ico" style="background:#ffd6c2;overflow:hidden;padding:0;position:relative">${avatarInner(p.author, p.avatar)}${ur?badgeHTML(ur):''}</div>
+        <div class="mid">
+          <div class="t">${esc(p.author)} 的微博</div>
+          <div class="p">${ur ? `${ur} 条未读 · ` : ''}${cm} 条评论 · ${esc(String(p.text || '').slice(0, 28))}${(p.text || '').length > 28 ? '…' : ''}</div>
+        </div>
+        <div class="right">${ur?`<div class="dot"></div>`:''}</div>
+        <div class="chev">›</div>
+      </div>`).join('');
+    document.getElementById('pageBody').innerHTML = `
+      <div style="padding:10px 14px;font-size:12px;color:#999;background:#fff">未读条目带红点；点开后红点消失（列表不展示评论正文）</div>
+      ${list}`;
+    document.getElementById('pageTitle').textContent = '评论';
+    document.getElementById('page').classList.add('show');
+    state.page = { type: 'notices' };
+    document.getElementById('pageBody').onclick = (e) => {
+      const row = e.target.closest('[data-open-notice]');
+      if (!row) return;
+      openPost(Number(row.dataset.openNotice), { fromNotices: true });
+    };
+  }
+
+  document.querySelectorAll('[data-stub]').forEach(el=>{
+    el.onclick=()=>{
+      if (el.dataset.stub === '评论') openCommentNotices();
+      else alertBox(el.dataset.stub, '该入口暂为展示');
+    };
+  });
+  document.querySelector('.me-grid')?.addEventListener('click', (e)=>{
+    if(e.target.closest('[data-act=compose]')) openWrite();
+  });
+
+  document.getElementById('openLogBtn').onclick = openLogPanel;
+  document.getElementById('logBack').onclick = closeLogPanel;
+  document.getElementById('logClear').onclick = ()=>{
+    aiRawLogs.length = 0;
+    renderLogPanel();
+  };
+
+  function renderSlotSelect(){
+    const select = document.getElementById('setSlotSelect');
+    select.innerHTML = globalConfig.slots.map((slot) => `<option value="${esc(slot.id)}">${esc(slot.name || '未命名档位')}</option>`).join('');
+    select.value = activeSlotId;
+  }
+  function apiDraftFromForm(){
+    return {
+      mode: document.getElementById('setApiSide').checked ? 'side' : 'main',
+      source: document.getElementById('setApiSource').value || 'custom',
+      url: document.getElementById('setApiUrl').value.trim(),
+      model: document.getElementById('setApiModel').value.trim(),
+      temperature: Math.max(0, Math.min(2, Number(document.getElementById('setApiTemp').value) || 0)),
+      maxTokens: Math.max(256, Math.min(65535, Number(document.getElementById('setApiMax').value) || 4096)),
+    };
+  }
+  function updateApiVisibility(){
+    const side = document.getElementById('setApiSide').checked;
+    document.getElementById('sideApiFields').hidden = !side;
+    const status = document.getElementById('apiStatus');
+    let apiState = {};
+    try { apiState = WB_HOST?.getApiState?.() || {}; } catch (_) {}
+    status.textContent = side
+      ? `当前：独立副 API · ${apiState.unlocked ? 'Token 已解锁' : apiState.hasToken ? '已有加密 Token，尚未解锁' : '尚未保存 Token'}`
+      : '当前：跟随酒馆主 API（无需额外配置）';
+  }
+  function fillSettingsForm(){
+    globalConfig = readGlobalConfig();
+    chatBinding = readChatBinding();
+    activeSlotId = String(chatBinding.activeSlotId || activeSlotId || globalConfig.slots[0]?.id || 'default');
+    const slot = currentSlot() || globalConfig.slots[0];
+    phoneSettings = Object.assign(defaultPhoneSettings(), loadPhoneSettings(), slot?.account || {});
+    ensureProfileStats();
+    renderSlotSelect();
+    document.getElementById('setSlotName').value = slot?.name || '';
+    document.getElementById('setInitPrompt').value = slot?.initPrompt || '';
+    document.getElementById('slotStatus').textContent = `当前聊天已绑定「${slot?.name || '默认档位'}」；切入其它档位才会改写首楼。`;
+    document.getElementById('setUserId').value = phoneSettings.userWeiboId || '';
+    document.getElementById('setCharId').value = phoneSettings.charWeiboId || '';
+    document.getElementById('setUserBio').value = phoneSettings.userBio || '';
+    document.getElementById('setUserFans').value = formatFanNumber(Number(state.userFans) || Number(phoneSettings.userFans) || 0);
+    document.getElementById('setCharFans').value = formatFanNumber(Number(state.charFans) || Number(phoneSettings.charFans) || 0);
+    document.getElementById('setUserFollowing').value = String(Number(state.userFollowing) || Number(phoneSettings.userFollowing) || 0);
+    document.getElementById('setCharFollowing').value = String(Number(state.charFollowing) || Number(phoneSettings.charFollowing) || 0);
+    const context = globalConfig.context || {};
+    document.getElementById('setRecentMessages').value = String(context.recentMessages ?? 12);
+    document.getElementById('setIncludeChar').checked = context.includeChar !== false;
+    document.getElementById('setIncludePersona').checked = context.includePersona !== false;
+    document.getElementById('setIncludeScenario').checked = context.includeScenario !== false;
+    document.getElementById('setIncludeBg').checked = context.includeWorldInfo !== false;
+    document.getElementById('setInjectMain').checked = !!context.injectMain;
+    const api = globalConfig.api || {};
+    document.getElementById(api.mode === 'side' ? 'setApiSide' : 'setApiMain').checked = true;
+    document.getElementById('setApiSource').value = api.source || 'custom';
+    document.getElementById('setApiUrl').value = api.url || '';
+    document.getElementById('setApiModel').value = api.model || '';
+    document.getElementById('setApiTemp').value = String(api.temperature ?? 0.8);
+    document.getElementById('setApiMax').value = String(api.maxTokens || 4096);
+    document.getElementById('setApiToken').value = '';
+    document.getElementById('setApiPass').value = '';
+    updateApiVisibility();
+    state.wbLore = String(chatBinding?.phoneBundle?.wbLore || slot?.wbLore || state.wbLore || '');
+    fillWbLoreEditor(state.wbLore, { forceAccount: false });
+  }
+  function openSettingsPanel(){
+    fillSettingsForm();
+    document.getElementById('settingsPanel').classList.add('show');
+    _lorePickBookKey = null;
+    _lorePickPending = new Set(readSelectedLoreIds());
+    renderLorePickList(false);
+  }
+  function closeSettingsPanel(){
+    document.getElementById('settingsPanel').classList.remove('show');
+  }
+  document.getElementById('openSettingsBtn').onclick = openSettingsPanel;
+  document.getElementById('settingsBack').onclick = closeSettingsPanel;
+  async function persistSettingsForm(closeAfter = true){
+    const prevUser = collectUserNameCandidates();
+    const prevChar = collectCharNameCandidates();
+    const picks = collectCheckedLorePicks();
+    const userFans = Math.max(0, parseFanNumber(document.getElementById('setUserFans').value));
+    const charFans = Math.max(0, parseFanNumber(document.getElementById('setCharFans').value));
+    const userFollowing = Math.max(0, parseFanNumber(document.getElementById('setUserFollowing').value));
+    const charFollowing = Math.max(0, parseFanNumber(document.getElementById('setCharFollowing').value));
+    const settingsPatch = {
+      userWeiboId: document.getElementById('setUserId').value.trim(),
+      charWeiboId: document.getElementById('setCharId').value.trim(),
+      userBio: document.getElementById('setUserBio').value.trim(),
+      userFans,
+      charFans,
+      userFollowing,
+      charFollowing,
+      includeBgLore: !!document.getElementById('setIncludeBg').checked,
+      includeChar: !!document.getElementById('setIncludeChar').checked,
+      includePersona: !!document.getElementById('setIncludePersona').checked,
+      includeScenario: !!document.getElementById('setIncludeScenario').checked,
+      recentMessages: Math.max(0, Math.min(60, Number(document.getElementById('setRecentMessages').value) || 0)),
+      injectMain: !!document.getElementById('setInjectMain').checked,
+      selectedLoreIds: picks.ids,
+    };
+    savePhoneSettings(settingsPatch);
+    const slot = currentSlot();
+    if (slot) {
+      slot.name = document.getElementById('setSlotName').value.trim() || slot.name || '未命名档位';
+      slot.initPrompt = document.getElementById('setInitPrompt').value.trim();
+      slot.wbLore = String(document.getElementById('loreRawText').value || state.wbLore || '').trim();
+      slot.account = { ...(slot.account || {}), ...settingsPatch };
+    }
+    globalConfig.api = { ...globalConfig.api, ...apiDraftFromForm() };
+    globalConfig.context = {
+      recentMessages: settingsPatch.recentMessages,
+      includeChar: settingsPatch.includeChar,
+      includePersona: settingsPatch.includePersona,
+      includeScenario: settingsPatch.includeScenario,
+      includeWorldInfo: settingsPatch.includeBgLore,
+      injectMain: settingsPatch.injectMain,
+    };
+    writeGlobalConfig(globalConfig);
+    try { WB_HOST?.saveApiSettings?.(globalConfig.api); } catch (_) {}
+    if (userFans > 0) { state.userFans = userFans; state.fansFromStore = true; }
+    else if (!(Number(state.userFans) > 0)) state.userFans = defaultFansFor('user');
+    if (charFans > 0) { state.charFans = charFans; state.fansFromStore = true; }
+    else if (!(Number(state.charFans) > 0)) state.charFans = defaultFansFor('char');
+    state.userFollowing = userFollowing;
+    state.charFollowing = charFollowing;
+    phoneSettings.userFans = Number(state.userFans) || 0;
+    phoneSettings.charFans = Number(state.charFans) || 0;
+    phoneSettings.userFollowing = userFollowing;
+    phoneSettings.charFollowing = charFollowing;
+    savePhoneSettings(phoneSettings);
+    await persistLorePicks(picks.ids, picks.snap);
+    state.wbLore = String(slot?.wbLore || state.wbLore || '');
+    await saveChatBinding({ activeSlotId, phoneBundle: { ...(chatBinding.phoneBundle || {}), wbLore: state.wbLore } });
+    try { WB_HOST?.setMainInjection?.(state.wbLore, settingsPatch.injectMain); } catch (_) {}
+    const renamedUser = remapIdentityNames('user', prevUser, displayName);
+    const renamedChar = remapIdentityNames('char', prevChar, displayChar);
+    rememberNameAliases('user', prevUser, displayName);
+    rememberNameAliases('char', prevChar, displayChar);
+    renderAll();
+    if (closeAfter) closeSettingsPanel();
+    const total = renamedUser + renamedChar;
+    const pickTip = picks.ids.length ? `，已钉住 ${picks.ids.length} 条世界书` : '，世界书走自动扫描';
+    showBubble((total ? `设置已保存，已回溯 ${total} 处昵称` : '设置已保存') + pickTip);
+    return slot;
+  }
+  document.getElementById('settingsSave').onclick = ()=>persistSettingsForm(true);
+  document.querySelectorAll('input[name="apiMode"]').forEach((el) => el.onchange = updateApiVisibility);
+  document.getElementById('settingsActivateSlot').onclick = async ()=>{
+    await persistSettingsForm(false);
+    activeSlotId = String(document.getElementById('setSlotSelect').value || 'default');
+    const slot = currentSlot();
+    if (!slot) return showBubble('档位不存在');
+    state.wbLore = String(slot.wbLore || '');
+    phoneSettings = Object.assign(defaultPhoneSettings(), slot.account || {});
+    savePhoneSettings(phoneSettings);
+    await saveChatBinding({ activeSlotId, phoneBundle: { ...(chatBinding.phoneBundle || {}), wbLore: state.wbLore } });
+    try { await WB_HOST?.writeFirstFloor?.(slot); } catch (e) { return alertBox('首楼写入失败', String(e?.message || e)); }
+    try { WB_HOST?.setMainInjection?.(state.wbLore, !!globalConfig.context.injectMain); } catch (_) {}
+    fillSettingsForm();
+    renderAll();
+    showBubble(`已切入「${slot.name}」，初始化提示词与 wb_lore 已写入首楼`);
+  };
+  document.getElementById('settingsNewSlot').onclick = ()=>{
+    const id = 'slot_' + Date.now().toString(36);
+    globalConfig.slots.push({ id, name:'新档位', initPrompt:'', wbLore:'', account:{} });
+    writeGlobalConfig(globalConfig);
+    renderSlotSelect();
+    document.getElementById('setSlotSelect').value = id;
+    showBubble('已新建；点「切入」后绑定到本聊天');
+  };
+  document.getElementById('settingsReset').onclick = ()=>{
+    const prevUser = collectUserNameCandidates();
+    const prevChar = collectCharNameCandidates();
+    savePhoneSettings(defaultPhoneSettings());
+    const renamedUser = remapIdentityNames('user', prevUser, displayName);
+    const renamedChar = remapIdentityNames('char', prevChar, displayChar);
+    openSettingsPanel();
+    renderAll();
+    const total = renamedUser + renamedChar;
+    showBubble(total ? `已恢复默认，并回溯 ${total} 处昵称` : '已恢复默认');
+  };
+  document.getElementById('settingsSaveToken').onclick = async ()=>{
+    const status = document.getElementById('apiStatus');
+    try {
+      WB_HOST?.saveApiSettings?.(apiDraftFromForm());
+      await WB_HOST?.saveApiToken?.(document.getElementById('setApiToken').value.trim(), document.getElementById('setApiPass').value);
+      document.getElementById('setApiToken').value = '';
+      document.getElementById('setApiPass').value = '';
+      status.textContent = 'Token 已加密保存并在本次会话解锁。';
+    } catch (e) { status.textContent = String(e?.message || e); }
+  };
+  document.getElementById('settingsUnlockToken').onclick = async ()=>{
+    const status = document.getElementById('apiStatus');
+    try { await WB_HOST?.unlockApiToken?.(document.getElementById('setApiPass').value); document.getElementById('setApiPass').value=''; status.textContent='Token 已解锁。'; }
+    catch (e) { status.textContent = String(e?.message || e); }
+  };
+  document.getElementById('settingsTestApi').onclick = async ()=>{
+    const status = document.getElementById('apiStatus');
+    try { status.textContent='正在测试…'; const out = await WB_HOST?.testApi?.(apiDraftFromForm()); status.textContent='连接成功：' + String(out || 'OK'); }
+    catch (e) { status.textContent='连接失败：' + String(e?.message || e); }
+  };
+  document.getElementById('settingsPreviewContext').onclick = async ()=>{
+    await persistSettingsForm(false);
+    const pre = document.getElementById('contextPreview');
+    pre.textContent = '正在拼装上下文…'; pre.classList.add('show');
+    try { pre.textContent = await collectStContextSnapshot(phoneSettings.recentMessages, 24000, 'weibo'); }
+    catch (e) { pre.textContent = '预览失败：' + String(e?.message || e); }
+  };
+  document.getElementById('settingsRefreshLore').onclick = ()=>{
+    _loreCatalogCache = null; // 丢掉旧列表，避免角色书/世界书重名残留
+    _lorePickBookKey = null;
+    renderLorePickList(true);
+  };
+  document.getElementById('settingsClearLorePick').onclick = async ()=>{
+    syncLorePendingFromDom();
+    _lorePickPending.clear();
+    await persistLorePicks([], []);
+    _lorePickBookKey = null;
+    renderLorePickList(false);
+    showBubble('已清空勾选，改回自动扫描');
+  };
+  document.getElementById('settingsClearData').onclick = ()=>{
+    if (!confirm('清空当前聊天里的微博、评论、私信？此操作不可撤销。')) return;
+    clearPhoneData();
+    closePage();
+    renderAll();
+    showBubble('本聊天微博数据已清空');
+  };
+  document.getElementById('settingsHarvestLore').onclick = async ()=>{
+    const lore = await harvestWbLore({ force: true });
+    const applied = applyFansFromWbLore(lore || state.wbLore, { force: true });
+    ensureProfileStats({ allowDefault: true });
+    persistPhoneState();
+    renderAll();
+    openSettingsPanel();
+    if (lore) {
+      fillWbLoreEditor(lore, { forceAccount: true });
+      showBubble(applied ? `已钉住设定 ${lore.length} 字，并强制同步账号行` : `已钉住设定 ${lore.length} 字`);
+    } else showBubble('未在当前聊天找到 <wb_lore>');
+  };
+  document.getElementById('settingsClearLore').onclick = async ()=>{
+    if (!confirm('清除钉住的 wb_lore？之后生成将不再强制注入这段设定。')) return;
+    await persistWbLore('');
+    fillWbLoreEditor('', { forceAccount: false });
+    openSettingsPanel();
+    showBubble('钉住设定已清除');
+  };
+  document.getElementById('settingsPullPrevLore').onclick = ()=>{
+    const text = findPreviousWbLoreFromChat();
+    if (!text) {
+      showBubble('聊天里没找到更早的 <wb_lore> 楼层');
+      return;
+    }
+    fillWbLoreEditor(text, { forceAccount: true });
+    showBubble(`已填入上一次楼层设定（${text.length} 字），确认后点「写入本楼层」`);
+  };
+  document.getElementById('settingsFillPinnedLore').onclick = ()=>{
+    fillWbLoreEditor(state.wbLore || '', { forceAccount: true });
+    showBubble(state.wbLore ? `已填入当前钉住（${state.wbLore.length} 字）` : '当前还没有钉住内容');
+  };
+  document.getElementById('settingsParseLoreRaw').onclick = ()=>{
+    const raw = String(document.getElementById('loreRawText')?.value || '').trim();
+    fillWbLoreEditor(raw, { forceAccount: true });
+    showBubble(raw ? '已按原文拆分到分栏' : '原文为空');
+  };
+  document.getElementById('settingsWriteLoreFloor').onclick = async ()=>{
+    const raw = String(document.getElementById('loreRawText')?.value || '').trim();
+    const sectionsHaveBody = readLoreSectionsFromDom().some((s) => s.body);
+    const rest = String(document.getElementById('loreRestText')?.value || '').trim();
+    let text = composeWbLoreFromEditor();
+    // 只改了完整原文、分栏还是空：直接按原文写入
+    if (raw && !sectionsHaveBody && !rest && raw.length >= text.length) {
+      text = raw;
+      fillWbLoreEditor(raw, { forceAccount: true });
+      text = composeWbLoreFromEditor() || raw;
+    }
+    const rawEl = document.getElementById('loreRawText');
+    if (rawEl) rawEl.value = text;
+    await persistWbLore(text);
+    const slot = currentSlot();
+    if (slot) {
+      slot.wbLore = text;
+      slot.initPrompt = document.getElementById('setInitPrompt').value.trim();
+      slot.name = document.getElementById('setSlotName').value.trim() || slot.name;
+      writeGlobalConfig(globalConfig);
+      await saveChatBinding({ activeSlotId, phoneBundle: { ...(chatBinding.phoneBundle || {}), wbLore: text } });
+      try { await WB_HOST?.writeFirstFloor?.(slot); } catch (e) { return alertBox('首楼写入失败', String(e?.message || e)); }
+    }
+    applyFansFromWbLore(text, { force: true });
+    const acc = readLoreAccountFromSettingsForm();
+    savePhoneSettings({
+      userWeiboId: acc.userId,
+      charWeiboId: acc.charId,
+      userFans: acc.userFans,
+      charFans: acc.charFans,
+      userFollowing: acc.userFollowing,
+      charFollowing: acc.charFollowing,
+    });
+    if (acc.userFans > 0) state.userFans = acc.userFans;
+    if (acc.charFans > 0) state.charFans = acc.charFans;
+    if (acc.userFollowing >= 0) state.userFollowing = acc.userFollowing;
+    if (acc.charFollowing >= 0) state.charFollowing = acc.charFollowing;
+    state.fansFromStore = true;
+    persistPhoneState();
+    renderAll();
+    const hint = document.getElementById('wbLoreHint');
+    if (hint) hint.textContent = `已写入首楼并保存当前档位，共 ${text.length} 字。`;
+    showBubble(text ? `已写入首楼 wb_lore（${text.length} 字）` : '已清空当前档位 wb_lore');
+  };
+  document.getElementById('logCopy').onclick = async ()=>{
+    const latest = aiRawLogs[0];
+    if(!latest) return alertBox('提示','暂无日志');
+    const text = [
+      '# 同层微博 AI 原始日志',
+      'time: ' + latest.time,
+      'mode: ' + latest.mode,
+      'meta:\n' + latest.meta,
+      latest.error ? ('error: ' + latest.error) : '',
+      '',
+      '## CONTEXT',
+      latest.context || '(empty)',
+      '',
+      '## INPUT',
+      latest.input,
+      '',
+      '## OUTPUT',
+      latest.output || '(empty)',
+    ].filter((x) => x !== '').join('\n');
+    try{
+      await navigator.clipboard.writeText(text);
+      alertBox('已复制','最近一条原始 INPUT/OUTPUT 已复制到剪贴板');
+    }catch(_){
+      alertBox('复制失败','请手动从日志面板选中复制');
+    }
+  };
+
+  // 优先从酒馆楼层恢复（跟聊天走）；否则本地缓存并回写楼层
+  const restored = restorePhoneState();
+  // metadata 主存：藏楼后再开壳也能灌回 lore / 勾选 / 帖
+  harvestWbLore().then((lore) => {
+    if (lore) console.log('[同层微博] wb_lore(metadata)', lore.length, '字');
+    // 粉量：未锁死才灌；昵称空位也会补（见 applyFansFromWbLore）
+    applyFansFromWbLore(lore || state.wbLore);
+    ensureProfileStats({ allowDefault: true });
+    writePhoneBundleToMetadata().catch(() => {});
+    persistPhoneState();
+    renderAll();
+  }).catch(() => {
+    ensureProfileStats({ allowDefault: true });
+    renderAll();
+  });
+  // 先画壳；粉量/昵称等 lore 异步抓完再刷
+  renderAll();
+  if (WB_HOST) {
+    const slot = currentSlot();
+    if (!chatBinding.activeSlotId) {
+      saveChatBinding({ activeSlotId, phoneBundle: { ...(chatBinding.phoneBundle || {}), wbLore: state.wbLore || slot?.wbLore || '' } })
+        .then(() => (slot?.initPrompt || slot?.wbLore) ? WB_HOST.writeFirstFloor?.(slot) : null)
+        .catch(() => {});
+    }
+    try { WB_HOST.setMainInjection?.(state.wbLore || slot?.wbLore || '', !!globalConfig.context.injectMain); } catch (_) {}
+  }
+  if (restored) console.log('[同层微博] 已从' + restored + '恢复', state.posts.length, '帖 /', state.threads.length, '私信 / lore', (state.wbLore || '').length);
+})();
+</script>
+</body>
+</html>
