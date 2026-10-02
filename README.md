@@ -12,7 +12,7 @@
 
 - 全局设置：写入 SillyTavern `extension_settings.jiang_weibo_oneframe_v2`，跟随酒馆服务器配置。
 - 当前聊天记录：写入 `chatMetadata.jiang_weibo_oneframe_v2.slotRecords[档位ID]`，不同聊天、不同档位都有独立微博记录。
-- 档位初始化：切入档位时，将初始化提示词与 `wb_lore` 写入首楼，并同步当前 swipe。不再扫描旧楼/前楼层。
+- 档位初始化：`wb_lore` 只写入当前档位；可手动从首楼读取并覆盖，不再向正文楼层回写。
 - 微博、评论、私信不写入正文楼层；`localStorage` 只作旧数据兼容和离线镜像。
 
 ## API 与上下文
@@ -25,6 +25,9 @@
 - “微博预设”将微博提示词、初始化 `wb_lore`、角色/User Personality、聊天前文、世界书、信息隔离和自定义条目分组管理。
 - 角色卡、User Persona 与世界书在微博内只读，可单独决定是否注入；信息隔离规则始终注入。
 - 「防止重复」固定注入当前聊天×当前档位的已有微博/评论/私信摘要，并锁定 user/char 微博 ID 为本档位设置值。
+- 预设条目可独立设置 depth（0 最靠近本次任务），并显示每条估算 Token；内置「热梗预设」和可选「正文 NPC 私信」。
+- 每个档位可注册 NPC 微博账号，绑定独立世界书条目，并在主页中切换角色/NPC 账号。
+- user 发博支持公开、仅自己可见、指定 char/NPC 分组可见；私信联系人可分享自己有权看到的已有信息流微博。
 - “全部拉取”用一次模型请求同时返回推荐流、路人私信和角色微博。
 
 设计参考了 [ST-BaiBai-Book](https://github.com/baibai-git/ST-BaiBai-Book) 的 `extension_settings`、`chatMetadata`、主 API 回退与上下文构建方式。
