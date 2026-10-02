@@ -638,8 +638,12 @@ body{display:grid;place-items:center;overflow:hidden}
             <div class="preset-entry-editor"><div class="set-row"><label for="setInitPrompt">档位初始化提示词</label><textarea id="setInitPrompt" rows="5" placeholder="这一档微博生成时始终优先遵守的设定……"></textarea></div><div class="set-row"><label for="loreRawText">完整 wb_lore</label><textarea id="loreRawText" rows="8" placeholder="&lt;wb_lore&gt; 内部全文…"></textarea></div><details style="margin-top:10px"><summary style="font-size:12px;color:#777;cursor:pointer">按章节拆分编辑（可选）</summary><div class="field-note">将账号行、【微博撰写要求】等拆开编辑，保存时重新合成。</div><div id="loreSecList" class="lore-sec-box"></div><div class="set-row"><label for="loreRestText">其它正文</label><textarea id="loreRestText" rows="4"></textarea></div></details><label class="settings-switch"><input type="checkbox" id="setInjectMain"><span>同时把当前 wb_lore 注入酒馆主对话（默认关闭）</span></label><div class="settings-inline"><button type="button" class="mini-action" id="settingsReadFirstLore">从首楼读取</button><button type="button" class="mini-action" id="settingsParseLoreRaw">从原文拆分</button><button type="button" class="mini-action primary" id="settingsWriteLoreFloor">写入首楼</button><button type="button" class="mini-action" id="settingsClearLore">清空</button></div><div class="field-note" id="wbLoreHint">wb_lore 只保存在本档位与当前聊天首楼。</div></div>
           </article>
           <article class="preset-entry" data-preset-entry="character">
-            <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">角</div><div class="preset-entry-copy"><div class="preset-entry-title">角色 / User Personality</div><div class="preset-entry-note">可选择是否注入，内容来自角色卡与 Persona，不在微博中改写</div></div><span class="preset-entry-state on" id="characterPresetState">已启用</span><span class="preset-entry-chev">⌄</span></div>
-            <div class="preset-entry-editor"><label class="settings-switch"><input type="checkbox" id="setIncludeChar" checked><span>注入角色描述与性格</span></label><label class="settings-switch"><input type="checkbox" id="setIncludePersona" checked><span>注入用户 Persona</span></label><label class="settings-switch"><input type="checkbox" id="setIncludeScenario" checked><span>注入当前场景</span></label><div class="preset-readonly" id="presetCharacterPreview">打开设置后读取…</div></div>
+            <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">角</div><div class="preset-entry-copy"><div class="preset-entry-title">角色卡</div><div class="preset-entry-note">可选择是否注入，内容只读取自当前角色卡</div></div><span class="preset-entry-state on" id="characterPresetState">已启用</span><span class="preset-entry-chev">⌄</span></div>
+            <div class="preset-entry-editor"><label class="settings-switch"><input type="checkbox" id="setIncludeChar" checked><span>注入角色描述与性格</span></label><label class="settings-switch"><input type="checkbox" id="setIncludeScenario" checked><span>注入当前场景</span></label><div class="preset-readonly" id="presetCharacterPreview">打开设置后读取…</div></div>
+          </article>
+          <article class="preset-entry" data-preset-entry="persona">
+            <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">人</div><div class="preset-entry-copy"><div class="preset-entry-title">User Personality</div><div class="preset-entry-note">可选择是否注入，内容只读取自酒馆当前 Persona</div></div><span class="preset-entry-state on" id="personaPresetState">已启用</span><span class="preset-entry-chev">⌄</span></div>
+            <div class="preset-entry-editor"><label class="settings-switch"><input type="checkbox" id="setIncludePersona" checked><span>注入用户 Persona</span></label><div class="preset-readonly" id="presetPersonaPreview">打开设置后读取…</div></div>
           </article>
           <article class="preset-entry" data-preset-entry="history">
             <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">前</div><div class="preset-entry-copy"><div class="preset-entry-title">聊天前文</div><div class="preset-entry-note" id="historyPresetSummary">最近 3 条</div></div><span class="preset-entry-state on">可配置</span><span class="preset-entry-chev">⌄</span></div>
@@ -2037,16 +2041,16 @@ body{display:grid;place-items:center;overflow:hidden}
         const charId = ctx.characterId;
         const ch = (ctx.characters && charId != null) ? ctx.characters[charId] : null;
         const data = ch?.data || ch || {};
-        push('角色名', ch?.name || data.name || displayChar || charName);
-        if (ctx.name1 || ctx.name2) push('user/char 显示名', `user=${ctx.name1 || ''} | char=${ctx.name2 || ''}`);
         // description 太长只留身份/关系相关头一段
         if (phoneSettings.includeChar !== false) {
+          push('角色名', ch?.name || data.name || displayChar || charName);
           push('角色摘要 description', clip(data.description || ch?.description || '', 2200));
           if (data.personality || ch?.personality) push('性格', clip(data.personality || ch.personality, 800));
         }
         if (phoneSettings.includeScenario !== false && (data.scenario || ch?.scenario)) push('场景', clip(data.scenario || ch.scenario, 800));
         if (phoneSettings.includePersona !== false) {
           const persona = ctx?.powerUserSettings?.persona_description || ctx?.powerUserSettings?.persona || '';
+          if (ctx.name1) push('用户显示名', String(ctx.name1));
           if (persona) push('用户 Persona', clip(persona, 1400));
         }
 
@@ -4246,17 +4250,23 @@ Do not wrap output in Markdown code fences.
         if (data.description || ch?.description) lines.push('【角色描述】\n' + String(data.description || ch.description));
         if (data.personality || ch?.personality) lines.push('【角色性格】\n' + String(data.personality || ch.personality));
       }
-      if (document.getElementById('setIncludePersona')?.checked) {
-        const persona = ctx?.powerUserSettings?.persona_description || ctx?.powerUserSettings?.persona || '';
-        lines.push('【User Personality】\n' + (String(persona).trim() || '（当前 Persona 为空）'));
-      }
       if (document.getElementById('setIncludeScenario')?.checked && (data.scenario || ch?.scenario)) {
         lines.push('【当前场景】\n' + String(data.scenario || ch.scenario));
       }
     } catch (e) {
       lines.push('读取失败：' + String(e?.message || e));
     }
-    return lines.join('\n\n').trim() || '（没有已启用的角色 / User Personality 内容）';
+    return lines.join('\n\n').trim() || '（当前未启用角色卡注入，或角色卡为空）';
+  }
+  function readPersonaPresetSource(){
+    try {
+      const ctx = getSillyContextSafe();
+      const persona = ctx?.powerUserSettings?.persona_description || ctx?.powerUserSettings?.persona || '';
+      if (!document.getElementById('setIncludePersona')?.checked) return '（当前已关闭 User Personality 注入）';
+      return '【User Personality】\n' + (String(persona).trim() || '（当前 Persona 为空）');
+    } catch (e) {
+      return '读取失败：' + String(e?.message || e);
+    }
   }
 
   function bindPresetEntryToggles(scope=document){
@@ -4312,14 +4322,15 @@ Do not wrap output in Markdown code fences.
   }
 
   function splitSnapshotForPresetPreview(snapshot){
-    const groups = { init:[], character:[], history:[], worldbook:[], custom:[], other:[] };
+    const groups = { init:[], character:[], persona:[], history:[], worldbook:[], custom:[], other:[] };
     const re = /^### ([^\n]+)\n([\s\S]*?)(?=\n\n### |$)/gm;
     let match;
     while ((match = re.exec(String(snapshot || '')))) {
       const title = match[1].trim();
       const block = `### ${title}\n${match[2].trim()}`;
       if (/初始化|wb_lore|钉住设定/.test(title)) groups.init.push(block);
-      else if (/角色|性格|Persona|场景|显示名/.test(title)) groups.character.push(block);
+      else if (/用户 Persona|User Personality|用户显示名/.test(title)) groups.persona.push(block);
+      else if (/角色|性格|场景|显示名/.test(title)) groups.character.push(block);
       else if (/世界书|手机相关设定/.test(title)) groups.worldbook.push(block);
       else if (/自定义条目/.test(title)) groups.custom.push(block);
       else if (/聊天|开场|前文/.test(title)) groups.history.push(block);
@@ -4346,9 +4357,12 @@ Do not wrap output in Markdown code fences.
     const history = document.getElementById('historyPresetSummary');
     const contextMode = document.getElementById('setContextMode')?.value || 'recent';
     if (history) history.textContent = contextMode === 'recent' ? `最近 ${document.getElementById('setRecentMessages')?.value || 3} 条` : (contextMode === 'summary' ? '手动前文总结' : '不注入聊天前文');
-    const charEnabled = !!(document.getElementById('setIncludeChar')?.checked || document.getElementById('setIncludePersona')?.checked || document.getElementById('setIncludeScenario')?.checked);
+    const charEnabled = !!(document.getElementById('setIncludeChar')?.checked || document.getElementById('setIncludeScenario')?.checked);
     const charState = document.getElementById('characterPresetState');
     if (charState) { charState.textContent = charEnabled ? '已启用' : '已停用'; charState.classList.toggle('on', charEnabled); }
+    const personaEnabled = !!document.getElementById('setIncludePersona')?.checked;
+    const personaState = document.getElementById('personaPresetState');
+    if (personaState) { personaState.textContent = personaEnabled ? '已启用' : '已停用'; personaState.classList.toggle('on', personaEnabled); }
     const wbEnabled = !!document.getElementById('setIncludeBg')?.checked;
     const wbState = document.getElementById('worldbookPresetState');
     if (wbState) { wbState.textContent = wbEnabled ? '已启用' : '已停用'; wbState.classList.toggle('on', wbEnabled); }
@@ -4356,6 +4370,8 @@ Do not wrap output in Markdown code fences.
     if (wbSummary && _loreCatalogCache) wbSummary.textContent = `已扫描到 ${(_loreCatalogCache.books || []).length} 本世界书 · 已启用条目 ${wbEnabled ? _lorePickPending.size : 0}`;
     const characterPreview = document.getElementById('presetCharacterPreview');
     if (characterPreview) characterPreview.textContent = readCharacterPresetSource();
+    const personaPreview = document.getElementById('presetPersonaPreview');
+    if (personaPreview) personaPreview.textContent = readPersonaPresetSource();
     const boundary = document.getElementById('presetBoundaryPreview');
     if (boundary) boundary.textContent = WEIBO_INFORMATION_BOUNDARY;
   }
@@ -4686,7 +4702,8 @@ Do not wrap output in Markdown code fences.
       renderPresetPreviewCards([
         { title:'微博提示词', text:selectedNativePrompt() },
         { title:'wblore 初始化', text:groups.init.join('\n\n') || [currentSlot()?.initPrompt, state.wbLore].filter(Boolean).join('\n\n') || '（未填写）' },
-        { title:'角色 / User Personality', text:groups.character.join('\n\n') || readCharacterPresetSource() },
+        { title:'角色卡', text:groups.character.join('\n\n') || readCharacterPresetSource() },
+        { title:'User Personality', text:groups.persona.join('\n\n') || readPersonaPresetSource() },
         { title:'聊天前文', text:groups.history.join('\n\n') || '（当前未注入聊天前文）' },
         { title:'世界书', text:groups.worldbook.join('\n\n') || '（已启用条目 0）' },
         { title:'自定义条目', text:groups.custom.join('\n\n') || '（无已启用的自定义条目）' },
