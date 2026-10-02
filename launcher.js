@@ -95,9 +95,9 @@ function jwr2SafeContext() {
 
 function jwr2DefaultStore() {
   return {
-    version: 3,
+    version: 4,
     api: { mode: 'main', source: 'custom', url: '', model: '', models: [], temperature: 0.8, maxTokens: 4096, token: '' },
-    context: { mode: 'recent', recentMessages: 3, manualSummary: '', includeChar: true, includePersona: true, includeScenario: true, includeWorldInfo: true, loreScanKeyword: '🩶', nativePrompt: 'detailed', injectMain: false },
+    context: { mode: 'recent', recentMessages: 3, manualSummary: '', includeChar: true, includePersona: true, includeScenario: true, includeWorldInfo: true, loreScanKeyword: '🩶', nativePrompt: 'detailed', nativePromptText: '', customEntries: [], injectMain: false },
     slots: [{ id: 'default', name: '默认档位', initPrompt: '', wbLore: '' }],
   };
 }
@@ -110,9 +110,11 @@ function jwr2ReadSettings() {
   const out = { ...base, ...jwr2Clone(raw, {}) };
   out.api = { ...base.api, ...(raw.api || {}) };
   out.context = { ...base.context, ...(raw.context || {}) };
+  out.context.customEntries = Array.isArray(out.context.customEntries) ? out.context.customEntries : [];
   out.slots = Array.isArray(raw.slots) && raw.slots.length ? jwr2Clone(raw.slots, base.slots) : base.slots;
+  out.slots = out.slots.map((slot) => ({ ...slot, context: { ...base.context, ...(slot?.context || {}), customEntries: Array.isArray(slot?.context?.customEntries) ? slot.context.customEntries : [] } }));
   if (Number(raw.version || 0) < 3 && Number(raw.context?.recentMessages) === 12) out.context.recentMessages = 3;
-  out.version = 3;
+  out.version = 4;
   return out;
 }
 

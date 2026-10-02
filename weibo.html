@@ -202,9 +202,11 @@ body{display:grid;place-items:center;overflow:hidden}
 }
 .lore-pick-nav .tt{flex:1;font-size:12px;font-weight:600;color:#333;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lore-book-row{
-  display:flex;align-items:center;gap:8px;padding:10px 6px;border-bottom:1px solid #f0f0f0;cursor:pointer
+  display:flex;align-items:center;gap:8px;padding:10px 6px;border-bottom:1px solid #f0f0f0;cursor:pointer;
+  transition:background .16s ease,color .16s ease,transform .16s ease
 }
-.lore-book-row:active{background:#fff3ea}
+@media(hover:hover){.lore-book-row:hover{background:#fffaf6;color:#d85f0b;transform:translateX(2px)}}
+.lore-book-row:active{background:#ffe9d8;transform:translateX(0)}
 .lore-book-row .meta{flex:1;min-width:0}
 .lore-book-row .nm{font-weight:600;font-size:13px;color:#222}
 .lore-book-row .bk{color:#999;font-size:11px;margin-top:2px}
@@ -388,9 +390,30 @@ body{display:grid;place-items:center;overflow:hidden}
 .settings-footer button{height:42px;border:0;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer}
 .settings-footer .reset{background:#f1f1f1;color:#666}.settings-footer .save{background:var(--orange);color:#fff}
 .slot-status{margin-top:10px;padding:10px 11px;border-left:3px solid var(--orange);background:#fff8f1;color:#6f5b49;font-size:11px;line-height:1.55}
-.context-preview{max-height:210px;overflow:auto;white-space:pre-wrap;word-break:break-word;font-size:10px;line-height:1.55;
-  padding:10px;border-radius:9px;background:#191c22;color:#dce3ed;margin-top:10px;display:none}
-.context-preview.show{display:block}
+.preset-toolbar{display:flex;gap:8px;margin-top:12px}.preset-toolbar .mini-action{flex:1}
+.preset-stack{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.preset-entry{border:1px solid #ececec;border-radius:13px;background:#fff;overflow:hidden;transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease}
+@media(hover:hover){.preset-entry:not(.open):hover{border-color:#ffd8ba;box-shadow:0 6px 18px rgba(210,108,30,.08);transform:translateY(-1px)}}
+.preset-entry.open{border-color:#f1a46b;box-shadow:inset 3px 0 0 var(--orange),0 8px 22px rgba(210,108,30,.09)}
+.preset-entry-head{display:grid;grid-template-columns:34px minmax(0,1fr) auto 18px;gap:9px;align-items:center;padding:11px 12px;cursor:pointer;user-select:none}
+.preset-entry-head:active{background:#fff3ea}.preset-entry.open .preset-entry-head{background:#fffaf6}
+.preset-entry-icon{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:#f5f5f5;color:#666;font-size:13px;font-weight:800}
+.preset-entry.open .preset-entry-icon{background:#fff0e4;color:#dc650e}
+.preset-entry-copy{min-width:0}.preset-entry-title{font-size:13px;font-weight:700;color:#222}.preset-entry-note{font-size:10px;color:#999;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.preset-entry-state{font-size:10px;padding:3px 7px;border-radius:999px;background:#f3f3f3;color:#777;white-space:nowrap}.preset-entry-state.on{background:#fff0e5;color:#d6630d}
+.preset-entry-chev{color:#aaa;font-size:15px;transition:transform .18s ease}.preset-entry.open .preset-entry-chev{transform:rotate(180deg);color:#dd6811}
+.preset-entry-editor{display:none;padding:0 12px 13px;border-top:1px solid #f2f2f2;background:#fff}.preset-entry.open .preset-entry-editor{display:block}
+.preset-entry-editor .set-row:first-child{margin-top:12px}
+.preset-readonly{max-height:210px;overflow:auto;white-space:pre-wrap;word-break:break-word;font-size:10px;line-height:1.58;padding:10px;border-radius:9px;background:#f7f7f7;color:#555;margin-top:10px;border:1px solid #eee}
+.preset-entry-switch{display:flex;align-items:center;gap:6px}.preset-entry-switch input{accent-color:var(--orange)}
+.preset-preview-list{display:none;margin-top:11px;padding-top:3px}.preset-preview-list.show{display:flex;flex-direction:column;gap:7px}
+.preset-preview-card{border:1px solid #2b3039;border-radius:11px;background:#191c22;color:#dce3ed;overflow:hidden}
+.preset-preview-card button{all:unset;box-sizing:border-box;width:100%;display:flex;align-items:center;gap:8px;padding:10px 11px;cursor:pointer}
+.preset-preview-card button:hover{background:#20242c}.preset-preview-card .pv-title{flex:1;font-size:11px;font-weight:700}.preset-preview-card .pv-meta{font-size:9px;color:#8f99a8}
+.preset-preview-card pre{display:none;margin:0;padding:10px 11px;border-top:1px solid #2b3039;white-space:pre-wrap;word-break:break-word;font-size:9px;line-height:1.6;color:#cbd3df;max-height:220px;overflow:auto}.preset-preview-card.open pre{display:block}.preset-preview-card.open .pv-chev{transform:rotate(180deg)}
+.custom-entry-empty{padding:11px;text-align:center;color:#aaa;font-size:11px;border:1px dashed #ddd;border-radius:10px}
+.custom-entry-actions{display:flex;gap:7px;margin-top:9px}.custom-entry-actions button{flex:1}
+.slot-record-id{display:block;margin-top:4px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9px;color:#9a765c;word-break:break-all}
 .pull-bar{display:grid;grid-template-columns:1fr 1fr;gap:7px}
 .pull-bar #allPullBtn{background:var(--orange);border-color:var(--orange);color:#fff}
 .field-note{margin-top:5px;color:#9a9a9a;font-size:10px;line-height:1.5}
@@ -556,8 +579,7 @@ body{display:grid;place-items:center;overflow:hidden}
           <button type="button" class="mini-action" id="settingsNewSlot">新建</button>
         </div>
         <div class="set-row"><label for="setSlotName">档位名称</label><input type="text" id="setSlotName" placeholder="例如：主线 / 娱乐圈后期" /></div>
-        <div class="set-row"><label for="setInitPrompt">初始化提示词（wblore）</label><textarea id="setInitPrompt" rows="5" placeholder="这一档微博生成时始终优先遵守的设定……"></textarea></div>
-        <label class="settings-switch"><input type="checkbox" id="setPullPrevLore"><span>本次切入时，先拉取当前聊天里上一份 wb_lore</span></label>
+        <label class="settings-switch"><input type="checkbox" id="setPullPrevLore"><span>本次切入时，从当前聊天首楼读取 wb_lore（若有）</span></label>
         <div class="slot-status" id="slotStatus">正在读取当前聊天档…</div>
       </section>
 
@@ -602,31 +624,35 @@ body{display:grid;place-items:center;overflow:hidden}
         <div class="api-status" id="apiStatus">当前：跟随酒馆主 API</div>
       </section>
 
-      <section class="settings-section">
-        <h3>上下文注入</h3>
-        <div class="section-note">只拼装给微博生成请求，微博记录不写入正文楼层。固定原生提示与信息隔离规则会自动加入。</div>
-        <div class="set-row"><label for="setNativePrompt">原生微博提示词</label><select id="setNativePrompt"><option value="detailed">详细原生版</option><option value="compact">简约格式版</option></select></div>
-        <div class="set-row"><label for="setContextMode">前文方式</label><select id="setContextMode"><option value="recent">注入最近聊天</option><option value="summary">使用手动总结</option><option value="none">不注入聊天前文</option></select></div>
-        <div class="settings-subbox" id="recentContextBox"><div class="set-row" style="margin-top:0"><label for="setRecentMessages">最近聊天条数（默认 3）</label><input type="number" id="setRecentMessages" min="0" max="60" step="1" /></div></div>
-        <div class="settings-subbox" id="summaryContextBox" hidden><div class="set-row" style="margin-top:0"><label for="setManualSummary">粘贴前文总结</label><textarea id="setManualSummary" rows="6" placeholder="只会用这段总结代替聊天前文……"></textarea></div></div>
-        <label class="settings-switch"><input type="checkbox" id="setIncludeChar" checked><span>注入角色描述与性格</span></label>
-        <label class="settings-switch"><input type="checkbox" id="setIncludePersona" checked><span>注入用户 Persona</span></label>
-        <label class="settings-switch"><input type="checkbox" id="setIncludeScenario" checked><span>注入当前场景</span></label>
-        <label class="settings-switch"><input type="checkbox" id="setIncludeBg" checked><span>注入世界书勾选条目</span></label>
-        <label class="settings-switch"><input type="checkbox" id="setInjectMain"><span>同时把当前档位 wb_lore 注入酒馆主对话（默认关闭）</span></label>
-        <div class="set-row"><label for="setLoreScanKeyword">世界书标题自动扫描词</label><input type="text" id="setLoreScanKeyword" value="🩶" placeholder="🩶" /><div class="field-note">只有标题含该字样的条目会在“自动扫描”时勾选；其它条目需手动勾选并保存才生效。</div></div>
-        <div class="settings-inline"><button type="button" class="mini-action primary" id="settingsPreviewContext">查看注入预览</button><button type="button" class="mini-action" id="settingsRefreshLore">刷新并自动扫描</button><button type="button" class="mini-action" id="settingsClearLorePick">清空勾选</button></div>
-        <pre class="context-preview" id="contextPreview"></pre>
-        <div id="lorePickList" class="lore-pick-list"><div class="lore-empty">打开设置时自动加载…</div></div>
-      </section>
-
-      <section class="settings-section">
-        <h3>wb_lore</h3>
-        <div class="section-note" id="wbLoreHint">切入档位后会自动写入首楼；这里可从旧楼层提取或手动编辑。</div>
-        <div class="settings-inline"><button type="button" class="mini-action" id="settingsPullPrevLore">拉取旧楼</button><button type="button" class="mini-action" id="settingsFillPinnedLore">填入当前档</button><button type="button" class="mini-action" id="settingsHarvestLore">重新抓取</button></div>
-        <div class="set-row"><label for="loreRawText">完整 wb_lore</label><textarea id="loreRawText" rows="8" placeholder="&lt;wb_lore&gt; 内部全文…"></textarea></div>
-        <details style="margin-top:10px"><summary style="font-size:12px;color:#777;cursor:pointer">按章节拆分编辑（可选）</summary><div class="field-note">把账号行、【微博撰写要求】等分开改，保存时会重新合成完整 wb_lore。</div><div id="loreSecList" class="lore-sec-box"></div><div class="set-row"><label for="loreRestText">其它正文</label><textarea id="loreRestText" rows="4"></textarea></div></details>
-        <div class="settings-inline"><button type="button" class="mini-action" id="settingsParseLoreRaw">从原文拆分</button><button type="button" class="mini-action primary" id="settingsWriteLoreFloor">写入首楼并保存档位</button><button type="button" class="mini-action" id="settingsClearLore">清空</button></div>
+      <section class="settings-section" id="weiboPresetSection">
+        <h3>微博预设</h3>
+        <div class="section-note">微博生成时的所有注入统一在这里管理。条目默认收起，点击后才展开详情；角色卡和世界书正文只读。</div>
+        <div class="preset-toolbar"><button type="button" class="mini-action primary" id="settingsPreviewContext">生成分组注入预览</button><button type="button" class="mini-action" id="settingsAddPresetEntry">+新增自定义条目</button></div>
+        <div class="preset-stack" id="presetStack">
+          <article class="preset-entry" data-preset-entry="native">
+            <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">规</div><div class="preset-entry-copy"><div class="preset-entry-title">微博原生提示词</div><div class="preset-entry-note" id="nativePromptSummary">详细原生版 · 含 ID 生成指导</div></div><span class="preset-entry-state on">必定注入</span><span class="preset-entry-chev">⌄</span></div>
+            <div class="preset-entry-editor"><div class="set-row"><label for="setNativePrompt">默认版本</label><select id="setNativePrompt"><option value="detailed">详细原生版（含 ID 指导）</option><option value="compact">简约格式版</option></select></div><div class="set-row"><label for="setNativePromptText">实际注入文本（可直接修改）</label><textarea id="setNativePromptText" rows="14"></textarea></div><div class="settings-inline"><button type="button" class="mini-action" id="settingsResetNativePrompt">恢复所选版本默认</button></div></div>
+          </article>
+          <article class="preset-entry" data-preset-entry="init">
+            <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">初</div><div class="preset-entry-copy"><div class="preset-entry-title">档位初始化与 wb_lore</div><div class="preset-entry-note" id="wbLoreSummary">只从首楼读写，不扫描其它楼层</div></div><span class="preset-entry-state on">首楼</span><span class="preset-entry-chev">⌄</span></div>
+            <div class="preset-entry-editor"><div class="set-row"><label for="setInitPrompt">档位初始化提示词</label><textarea id="setInitPrompt" rows="5" placeholder="这一档微博生成时始终优先遵守的设定……"></textarea></div><div class="set-row"><label for="loreRawText">完整 wb_lore</label><textarea id="loreRawText" rows="8" placeholder="&lt;wb_lore&gt; 内部全文…"></textarea></div><details style="margin-top:10px"><summary style="font-size:12px;color:#777;cursor:pointer">按章节拆分编辑（可选）</summary><div class="field-note">将账号行、【微博撰写要求】等拆开编辑，保存时重新合成。</div><div id="loreSecList" class="lore-sec-box"></div><div class="set-row"><label for="loreRestText">其它正文</label><textarea id="loreRestText" rows="4"></textarea></div></details><label class="settings-switch"><input type="checkbox" id="setInjectMain"><span>同时把当前 wb_lore 注入酒馆主对话（默认关闭）</span></label><div class="settings-inline"><button type="button" class="mini-action" id="settingsReadFirstLore">从首楼读取</button><button type="button" class="mini-action" id="settingsParseLoreRaw">从原文拆分</button><button type="button" class="mini-action primary" id="settingsWriteLoreFloor">写入首楼</button><button type="button" class="mini-action" id="settingsClearLore">清空</button></div><div class="field-note" id="wbLoreHint">wb_lore 只保存在本档位与当前聊天首楼。</div></div>
+          </article>
+          <article class="preset-entry" data-preset-entry="character">
+            <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">角</div><div class="preset-entry-copy"><div class="preset-entry-title">角色 / User Personality</div><div class="preset-entry-note">可选择是否注入，内容来自角色卡与 Persona，不在微博中改写</div></div><span class="preset-entry-state on" id="characterPresetState">已启用</span><span class="preset-entry-chev">⌄</span></div>
+            <div class="preset-entry-editor"><label class="settings-switch"><input type="checkbox" id="setIncludeChar" checked><span>注入角色描述与性格</span></label><label class="settings-switch"><input type="checkbox" id="setIncludePersona" checked><span>注入用户 Persona</span></label><label class="settings-switch"><input type="checkbox" id="setIncludeScenario" checked><span>注入当前场景</span></label><div class="preset-readonly" id="presetCharacterPreview">打开设置后读取…</div></div>
+          </article>
+          <article class="preset-entry" data-preset-entry="history">
+            <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">前</div><div class="preset-entry-copy"><div class="preset-entry-title">聊天前文</div><div class="preset-entry-note" id="historyPresetSummary">最近 3 条</div></div><span class="preset-entry-state on">可配置</span><span class="preset-entry-chev">⌄</span></div>
+            <div class="preset-entry-editor"><div class="set-row"><label for="setContextMode">前文方式</label><select id="setContextMode"><option value="recent">注入最近聊天</option><option value="summary">使用手动总结</option><option value="none">不注入聊天前文</option></select></div><div class="settings-subbox" id="recentContextBox"><div class="set-row" style="margin-top:0"><label for="setRecentMessages">最近聊天条数（默认 3）</label><input type="number" id="setRecentMessages" min="0" max="60" step="1" /></div></div><div class="settings-subbox" id="summaryContextBox" hidden><div class="set-row" style="margin-top:0"><label for="setManualSummary">粘贴前文总结</label><textarea id="setManualSummary" rows="6" placeholder="只会用这段总结代替聊天前文……"></textarea></div></div></div>
+          </article>
+          <article class="preset-entry" data-preset-entry="worldbook">
+            <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">书</div><div class="preset-entry-copy"><div class="preset-entry-title">世界书</div><div class="preset-entry-note" id="worldbookPresetSummary">尚未扫描</div></div><label class="preset-entry-switch"><input type="checkbox" id="setIncludeBg" checked><span class="preset-entry-state on" id="worldbookPresetState">已启用</span></label><span class="preset-entry-chev">⌄</span></div>
+            <div class="preset-entry-editor"><div class="set-row"><label for="setLoreScanKeyword">条目标题自动扫描词</label><input type="text" id="setLoreScanKeyword" value="🩶" placeholder="🩶" /><div class="field-note">只自动勾选标题命中的条目；其它条目需手动勾选后保存。</div></div><div class="settings-inline"><button type="button" class="mini-action" id="settingsRefreshLore">刷新并自动扫描</button><button type="button" class="mini-action" id="settingsClearLorePick">清空勾选</button></div><div id="lorePickList" class="lore-pick-list"><div class="lore-empty">打开设置时自动加载…</div></div></div>
+          </article>
+          <article class="preset-entry" data-preset-entry="boundary"><div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">隔</div><div class="preset-entry-copy"><div class="preset-entry-title">信息隔离</div><div class="preset-entry-note">非公开信息不得被路人、粉丝、媒体或其它账号随意得知</div></div><span class="preset-entry-state on">必定注入</span><span class="preset-entry-chev">⌄</span></div><div class="preset-entry-editor"><div class="preset-readonly" id="presetBoundaryPreview"></div></div></article>
+          <div id="customPresetEntries"></div>
+        </div>
+        <div class="preset-preview-list" id="contextPreview"></div>
       </section>
 
       <section class="settings-section">
@@ -666,9 +692,9 @@ body{display:grid;place-items:center;overflow:hidden}
 
   function defaultGlobalConfig(){
     return {
-      version: 3,
+      version: 4,
       api: { mode:'main', source:'custom', url:'', model:'', models:[], temperature:0.8, maxTokens:4096 },
-      context: { mode:'recent', recentMessages:3, manualSummary:'', includeChar:true, includePersona:true, includeScenario:true, includeWorldInfo:true, loreScanKeyword:'🩶', nativePrompt:'detailed', injectMain:false },
+      context: { mode:'recent', recentMessages:3, manualSummary:'', includeChar:true, includePersona:true, includeScenario:true, includeWorldInfo:true, loreScanKeyword:'🩶', nativePrompt:'detailed', nativePromptText:'', customEntries:[], injectMain:false },
       slots: [{ id:'default', name:'默认档位', initPrompt:'', wbLore:'' }],
     };
   }
@@ -683,7 +709,16 @@ body{display:grid;place-items:center;overflow:hidden}
       slots: Array.isArray(value.slots) && value.slots.length ? value.slots : base.slots,
     };
     if (Number(value.version || 0) < 3 && Number(value.context?.recentMessages) === 12) out.context.recentMessages = 3;
-    out.version = 3;
+    out.context.customEntries = Array.isArray(out.context.customEntries) ? out.context.customEntries : [];
+    out.slots = out.slots.map((slot) => ({
+      ...slot,
+      context: {
+        ...base.context,
+        ...(slot?.context || {}),
+        customEntries: Array.isArray(slot?.context?.customEntries) ? slot.context.customEntries : [],
+      },
+    }));
+    out.version = 4;
     return out;
   }
   function readGlobalConfig(){
@@ -741,6 +776,8 @@ body{display:grid;place-items:center;overflow:hidden}
       manualSummary: String(ctxSet.manualSummary || ''),
       loreScanKeyword: String(ctxSet.loreScanKeyword || '🩶'),
       nativePrompt: ctxSet.nativePrompt === 'compact' ? 'compact' : 'detailed',
+      nativePromptText: String(ctxSet.nativePromptText || ''),
+      customEntries: Array.isArray(ctxSet.customEntries) ? ctxSet.customEntries : [],
       injectMain: !!ctxSet.injectMain,
       selectedLoreIds: [],
       userAliases: [],
@@ -780,6 +817,8 @@ body{display:grid;place-items:center;overflow:hidden}
         manualSummary: String(cur.manualSummary || ''),
         loreScanKeyword: String(cur.loreScanKeyword || '🩶'),
         nativePrompt: cur.nativePrompt === 'compact' ? 'compact' : 'detailed',
+        nativePromptText: String(cur.nativePromptText || ''),
+        customEntries: Array.isArray(cur.customEntries) ? cur.customEntries : [],
         injectMain: !!cur.injectMain,
       };
       slot.context = { ...globalConfig.context };
@@ -1311,6 +1350,9 @@ body{display:grid;place-items:center;overflow:hidden}
       const id = inp.getAttribute('data-lore-id');
       if (inp.checked) _lorePickPending.add(id);
       else _lorePickPending.delete(id);
+      const summary = document.getElementById('worldbookPresetSummary');
+      const enabledCount = document.getElementById('setIncludeBg')?.checked ? _lorePickPending.size : 0;
+      if (summary) summary.textContent = `已扫描到 ${(_loreCatalogCache?.books || []).length} 本世界书 · 已启用条目 ${enabledCount}`;
     };
   }
   async function renderLorePickList(forceReload){
@@ -1336,7 +1378,9 @@ body{display:grid;place-items:center;overflow:hidden}
         if (marker) flat.filter((item) => !item.disabled && String(item.name || '').includes(marker)).forEach((item) => _lorePickPending.add(item.id));
       }
       if (!books.length && !flat.length) {
-        box.innerHTML = '<div class="lore-empty">未读到已启动世界书。<br>请确认已启用世界书，或点「刷新世界书列表」。</div>';
+        box.innerHTML = '<div class="lore-empty">未扫描到当前聊天可读的世界书。<br>请确认已挂载世界书，或点「刷新并自动扫描」。</div>';
+        const summary = document.getElementById('worldbookPresetSummary');
+        if (summary) summary.textContent = '已扫描到 0 本世界书 · 已启用条目 0';
         bindLorePickListEvents(box);
         return;
       }
@@ -1344,9 +1388,12 @@ body{display:grid;place-items:center;overflow:hidden}
       // —— 第一层：世界书列表 ——
       if (_lorePickBookKey == null) {
         const totalSel = _lorePickPending.size;
+        const enabledCount = document.getElementById('setIncludeBg')?.checked ? totalSel : 0;
+        const summary = document.getElementById('worldbookPresetSummary');
+        if (summary) summary.textContent = `已扫描到 ${books.length} 本世界书 · 已启用条目 ${enabledCount}`;
         box.innerHTML = `
           <div class="lore-empty" style="padding:6px 4px 10px;text-align:left">
-            已启动 ${books.length} 本世界书 · 共 ${flat.length} 条${totalSel ? ` · 已勾选 ${totalSel}` : ''}<br>
+            已扫描到 ${books.length} 本世界书 · 共 ${flat.length} 条 · 已启用条目 ${enabledCount}${!document.getElementById('setIncludeBg')?.checked && totalSel ? `（保留已选 ${totalSel}）` : ''}<br>
             点进某一本再勾选条目
           </div>` + books.map((b) => {
           const nSel = b.entries.filter((e) => _lorePickPending.has(e.id)).length;
@@ -1530,27 +1577,25 @@ body{display:grid;place-items:center;overflow:hidden}
     if (rawEl) rawEl.value = String(raw || '').trim();
     return model;
   }
-  /** 从上到下扫描聊天，取「最近一次出现 wb_lore 的楼层」；优先跳过当前微博壳 */
-  function findPreviousWbLoreFromChat(){
-    const hits = [];
-    let curMsgId = null;
-    try { curMsgId = ensureWeiboMsgId(); } catch (_) {}
-    const pushEntry = (entry, idxHint) => {
-      const raw = extractRawMessageText(entry);
-      const blocks = extractWbLoreBlocks(raw);
-      if (!blocks.length) return;
-      const text = joinWbLoreChunks(blocks);
-      if (!text) return;
-      let mid = entry?.message_id ?? entry?.mesId ?? entry?.id ?? idxHint;
-      if (typeof mid === 'string' && /^\d+$/.test(mid)) mid = Number(mid);
-      const isCurrent = curMsgId != null && Number(mid) === Number(curMsgId);
-      // 当前微博壳里也可能嵌了旧 lore：标出来，优先用更早楼层
-      hits.push({ text, mid, isCurrent, idx: hits.length });
+  /** wb_lore 的楼层唯一来源是当前聊天首楼，不再扫描旧楼/前楼层。 */
+  function readFirstFloorWbLoreFromChat(){
+    const stripLauncherEnvelope = (text) => {
+      let out = String(text || '').trim().replace(/^\[微博档位\|[^\]]*\]\s*/i, '');
+      const prompts = (globalConfig.slots || []).map((slot) => String(slot?.initPrompt || '').trim()).filter(Boolean).sort((a, b) => b.length - a.length);
+      for (const prompt of prompts) {
+        const prefix = '[初始化提示词]\n' + prompt;
+        if (out.startsWith(prefix)) { out = out.slice(prefix.length).trim(); break; }
+      }
+      return out;
+    };
+    const pickFirst = (list) => {
+      if (!Array.isArray(list) || !list.length) return '';
+      return stripLauncherEnvelope(joinWbLoreChunks(extractWbLoreBlocks(extractRawMessageText(list[0]))));
     };
     try {
       const ctx = getSillyContextSafe();
-      const chat = Array.isArray(ctx?.chat) ? ctx.chat : [];
-      chat.forEach((entry, i) => pushEntry(entry, i));
+      const hit = pickFirst(ctx?.chat);
+      if (hit) return hit;
     } catch (_) {}
     try {
       if (typeof getChatMessages === 'function') {
@@ -1559,21 +1604,10 @@ body{display:grid;place-items:center;overflow:hidden}
         if (!Array.isArray(list) || !list.length) {
           try { list = getChatMessages() || []; } catch (_) {}
         }
-        (list || []).forEach((entry, i) => pushEntry(entry, i));
+        return pickFirst(list);
       }
     } catch (_) {}
-    // 去重后按「新→旧」；优先非当前微博壳
-    const seen = new Set();
-    const newestFirst = [];
-    for (let i = hits.length - 1; i >= 0; i--) {
-      const h = hits[i];
-      if (!h?.text || seen.has(h.text)) continue;
-      seen.add(h.text);
-      newestFirst.push(h);
-    }
-    const nonCur = newestFirst.filter((h) => !h.isCurrent);
-    const pick = nonCur[0] || newestFirst[0];
-    return pick ? pick.text : '';
+    return '';
   }
   function readChatMetadataLore(){
     return String(readPhoneBundleFromMetadata()?.wbLore || '').trim();
@@ -1594,26 +1628,6 @@ body{display:grid;place-items:center;overflow:hidden}
       return false;
     }
   }
-  function scanChatForWbLore(){
-    const chunks = [];
-    const take = (raw) => extractWbLoreBlocks(raw).forEach((t) => chunks.push(t));
-    try {
-      const ctx = getSillyContextSafe();
-      const chat = Array.isArray(ctx?.chat) ? ctx.chat : [];
-      chat.forEach((entry) => take(extractRawMessageText(entry)));
-    } catch (_) {}
-    try {
-      if (typeof getChatMessages === 'function') {
-        let list = [];
-        try { list = getChatMessages(-99999) || []; } catch (_) {}
-        if (!Array.isArray(list) || !list.length) {
-          try { list = getChatMessages() || []; } catch (_) {}
-        }
-        (list || []).forEach((entry) => take(extractRawMessageText(entry)));
-      }
-    } catch (_) {}
-    return joinWbLoreChunks(chunks);
-  }
   async function persistWbLore(text){
     text = String(text || '').trim();
     state.wbLore = text;
@@ -1623,7 +1637,7 @@ body{display:grid;place-items:center;overflow:hidden}
     savePhoneData();
     return text;
   }
-  /** 抓取 wb_lore：优先 chatMetadata（藏楼也在），再当前壳/本地/仍可见的聊天 */
+  /** 读取 wb_lore：档位/chatMetadata 为主存，只允许从首楼补入。 */
   async function harvestWbLore(opts = {}){
     const force = !!opts.force;
     if (state.wbLore && !force) {
@@ -1634,15 +1648,10 @@ body{display:grid;place-items:center;overflow:hidden}
     let found = '';
     // 1) 主存：本聊天 metadata（与楼层无关）
     found = readChatMetadataLore() || String(readPhoneBundleFromMetadata()?.wbLore || '').trim();
-    // 2) 当前微博壳（可能是新 QR，也可能旧壳还在）
+    // 2) 当前聊天首楼（唯一楼层来源）
     if (!found || force) {
-      try {
-        const msgId = ensureWeiboMsgId();
-        if (msgId != null) {
-          const fromFloor = joinWbLoreChunks(extractWbLoreBlocks(getChatMessageText(msgId, '')));
-          if (fromFloor) found = force ? fromFloor : (found || fromFloor);
-        }
-      } catch (_) {}
+      const fromFloor = readFirstFloorWbLoreFromChat();
+      if (fromFloor) found = force ? fromFloor : (found || fromFloor);
     }
     // 3) 同浏览器 localStorage
     if (!found) {
@@ -1651,12 +1660,6 @@ body{display:grid;place-items:center;overflow:hidden}
         found = String(all[phoneDataBucketId()]?.wbLore || '').trim();
       } catch (_) {}
     }
-    // 只有用户明确点「重新抓取」/切入勾选拉取时才扫楼层
-    if (force || opts.fromChat) {
-      const scanned = scanChatForWbLore();
-      if (scanned) found = scanned;
-    }
-
     if (found) await persistWbLore(found);
     else if (force) await persistWbLore('');
     else if (!state.fansFromStore) applyFansFromWbLore(state.wbLore);
@@ -1922,6 +1925,11 @@ body{display:grid;place-items:center;overflow:hidden}
         push('同层微博钉住设定（wb_lore｜不受隐藏前文影响）', String(state.wbLore).slice(0, 8000));
       }
     } catch (_) {}
+
+    const customEntries = Array.isArray(currentSlotContext().customEntries) ? currentSlotContext().customEntries : [];
+    customEntries.filter((item) => item && item.enabled !== false && String(item.content || '').trim()).forEach((item, index) => {
+      push('微博预设自定义条目｜' + (String(item.title || '').trim() || ('条目 ' + (index + 1))), String(item.content || '').slice(0, 8000));
+    });
 
     const _ejsOpen = '<' + '%';
     const _ejsClose = '%' + '>';
@@ -3541,6 +3549,38 @@ Different account types must sound distinct:
 
 Do not model “微博网友” as one collective mind. Different circles may hold conflicting information, attitudes, and narratives. A loud or highly liked opinion is not automatically majority opinion.
 
+<ID生成指导>
+
+微博饭圈、竞圈用户的ID应先像真实网名，再体现圈层属性。不要把“嬷嬷、公公、梦女、串子、竞丝、唯粉”等标签直接塞进大名，身份更多通过语气、梗、人物关联和发言内容体现。
+
+1. 互联网忧郁文案：像歌词、伤感短句、暧昧碎片或没说完的话。例：直到落下温热的吻、心怎么是冰冰的、没人陪我私奔、爱意死在昨天、今晚不要想我。
+
+2. 抽象 / 无厘头：像口癖、生活废话、烂梗或莫名其妙的句子。例：圆圆你要往哪儿桃、怎么还有我的事、别叫我我在装死、睡醒再说吧。
+
+3. 抽象身份：用妈、姐、老师、委员、保安、家属、主唱等身份制造荒谬感。例：无可奈何男宝妈、互联网风纪委员、放学后当喵队主唱、全网唯一正常人。
+
+4. 食物 / 动物 / 日用品：随意拼接小狗、猫、鱼、桃、粥、奶、饼、电饭锅、洗碗机等低信息量词。例：瘦肉粥、呆呆椰丝饼、凌晨三点小狗、薄巧莓咕。
+
+5. 梦女 / 嬷嬷 / 公公：通常通过婚恋、家属、宝宝、老婆、老公、妹宝、女儿、女婿等语感暗示，不直接写属性。例：没人陪我私奔、某某未公开家属、无可奈何男宝妈、女婿禁止入内、老婆今晚回家吗。
+
+6. 串子 / 乐子人：偏反串、欠揍、装客观、装路人。例：今天也很客观、联盟唯一正常人、输了怪我行了吧、冠军皮肤设计师、纯路人不懂就问。
+
+7. 战队 / 竞丝：常把战队城市、队名、主场、黑梗和职业、身份、日用品结合，把“粉籍”写成一种虚构户籍或生活状态。例如VEX粉丝：宁州流浪女、宁州洗碗机、宁州夜班保安、宁州失业人口、VEX食堂临时工、VEX门口卖烤肠的。
+
+8. 某位选手 / 明星粉丝：ID不固定为“名字+身份”结构。可以直接用姓名、昵称、姓氏、名字中的某个字、代表梗，也可以只保留一点隐约关联，再与忧郁文案、抽象短句、食物、身份、地点混合。
+
+例如江清让相关：清让家洗碗工、江门编外人员、小让今天吃饭了吗、替小江交水电费、让让别看手机；也可以是：等小让回头、清让不知道的冬天、江边没有第二场雪、今晚也没等到让让、爱意绕过江面、和小江错过末班车。
+
+核心不是固定句式，而是让ID和人物之间存在某种只有圈内人能看出的联系。
+
+9. 黑粉 / 串子人物ID：同样可以围绕名字、黑梗或经典事件取名，并保持“像粉又像黑”的暧昧感。例：江清让今天退役吗、替小江写检讨、清让失误统计局、小让冠军皮肤监工。
+
+10. 网络昵称感：允许中英混搭、拼音、数字、大小写、奇怪后缀和不规范语法。例：qingrang.zip、xinoOO7、鱼少在此ovo、vex今天赢了吗。
+
+核心：不要先想“这个人是什么属性”，再机械命名；先生成一个像真实微博用户会取的ID，再让战队、人物、CP或粉籍自然渗进去。很多ID单看并不能准确判断她是梦女、嬷嬷、竞丝还是串子。
+
+</ID生成指导>
+
 【信息传播】
 
 Information spreads unevenly.
@@ -3736,8 +3776,12 @@ Do not wrap output in Markdown code fences.
 只有上下文明确说明已公开、泄露、被目击、被转发，或由知情者发布时，才能沿合理链路传播。不同账号的知情范围必须分层，不得全知。
 </weibo_information_boundary>`;
 
+  function nativePromptDefault(mode){
+    return mode === 'compact' ? WEIBO_NATIVE_COMPACT : WEIBO_NATIVE_DETAILED;
+  }
   function selectedNativePrompt(){
-    return phoneSettings.nativePrompt === 'compact' ? WEIBO_NATIVE_COMPACT : WEIBO_NATIVE_DETAILED;
+    const custom = String(phoneSettings.nativePromptText || currentSlotContext().nativePromptText || '').trim();
+    return custom || nativePromptDefault(phoneSettings.nativePrompt);
   }
 
   async function requestAiReply(opts={}){
@@ -3924,13 +3968,11 @@ Do not wrap output in Markdown code fences.
       ].join('\n');
 
       // 手机生成：不走 world_info / 原生 chat_history，避免灌入 HTML 输出条目与未清洗楼层
-      const baseOrdered = [
-        'persona_description',
-        'char_description',
-        'char_personality',
-        'scenario',
-        'user_input',
-      ];
+      const baseOrdered = [];
+      if (phoneSettings.includePersona !== false) baseOrdered.push('persona_description');
+      if (phoneSettings.includeChar !== false) baseOrdered.push('char_description', 'char_personality');
+      if (phoneSettings.includeScenario !== false) baseOrdered.push('scenario');
+      baseOrdered.push('user_input');
 
       const logMeta = [
         'mode=' + mode,
@@ -4194,10 +4236,142 @@ Do not wrap output in Markdown code fences.
     renderLogPanel();
   };
 
+  function readCharacterPresetSource(){
+    const lines = [];
+    try {
+      const ctx = getSillyContextSafe();
+      const ch = ctx?.characters?.[ctx?.characterId];
+      const data = ch?.data || ch || {};
+      if (document.getElementById('setIncludeChar')?.checked) {
+        if (data.description || ch?.description) lines.push('【角色描述】\n' + String(data.description || ch.description));
+        if (data.personality || ch?.personality) lines.push('【角色性格】\n' + String(data.personality || ch.personality));
+      }
+      if (document.getElementById('setIncludePersona')?.checked) {
+        const persona = ctx?.powerUserSettings?.persona_description || ctx?.powerUserSettings?.persona || '';
+        lines.push('【User Personality】\n' + (String(persona).trim() || '（当前 Persona 为空）'));
+      }
+      if (document.getElementById('setIncludeScenario')?.checked && (data.scenario || ch?.scenario)) {
+        lines.push('【当前场景】\n' + String(data.scenario || ch.scenario));
+      }
+    } catch (e) {
+      lines.push('读取失败：' + String(e?.message || e));
+    }
+    return lines.join('\n\n').trim() || '（没有已启用的角色 / User Personality 内容）';
+  }
+
+  function bindPresetEntryToggles(scope=document){
+    scope.querySelectorAll('[data-preset-toggle]').forEach((head) => {
+      head.onclick = (event) => {
+        if (event.target.closest('input,button,select,textarea,label')) return;
+        const card = head.closest('.preset-entry');
+        if (!card) return;
+        const willOpen = !card.classList.contains('open');
+        document.querySelectorAll('#presetStack .preset-entry.open').forEach((item) => item.classList.remove('open'));
+        if (willOpen) card.classList.add('open');
+      };
+    });
+  }
+
+  function renderCustomPresetEntries(entries){
+    const box = document.getElementById('customPresetEntries');
+    if (!box) return;
+    const list = Array.isArray(entries) ? entries : [];
+    if (!list.length) {
+      box.innerHTML = '<div class="custom-entry-empty">还没有自定义条目</div>';
+      return;
+    }
+    box.innerHTML = list.map((item, index) => `
+      <article class="preset-entry" data-custom-entry="${esc(item.id || ('custom_' + index))}">
+        <div class="preset-entry-head" data-preset-toggle>
+          <div class="preset-entry-icon">自</div>
+          <div class="preset-entry-copy"><div class="preset-entry-title">${esc(item.title || '未命名条目')}</div><div class="preset-entry-note">${esc(String(item.content || '').slice(0, 48) || '点击编辑内容')}</div></div>
+          <label class="preset-entry-switch"><input type="checkbox" data-custom-enabled ${item.enabled === false ? '' : 'checked'}><span class="preset-entry-state ${item.enabled === false ? '' : 'on'}">${item.enabled === false ? '已停用' : '已启用'}</span></label><span class="preset-entry-chev">⌄</span>
+        </div>
+        <div class="preset-entry-editor"><div class="set-row"><label>条目名称</label><input type="text" data-custom-title value="${esc(item.title || '')}" placeholder="例如：赛事时间线" /></div><div class="set-row"><label>提示词内容</label><textarea rows="7" data-custom-content placeholder="这段会作为独立条目注入微博生成请求……">${esc(item.content || '')}</textarea></div><div class="custom-entry-actions"><button type="button" class="mini-action" data-custom-delete>删除条目</button></div></div>
+      </article>`).join('');
+    bindPresetEntryToggles(box);
+    box.querySelectorAll('[data-custom-enabled]').forEach((input) => input.onchange = () => {
+      const badge = input.parentElement?.querySelector('.preset-entry-state');
+      if (badge) { badge.textContent = input.checked ? '已启用' : '已停用'; badge.classList.toggle('on', input.checked); }
+    });
+    box.querySelectorAll('[data-custom-delete]').forEach((button) => button.onclick = () => {
+      const card = button.closest('[data-custom-entry]');
+      if (!card || !confirm('删除这条自定义微博预设？')) return;
+      card.remove();
+      if (!box.querySelector('[data-custom-entry]')) box.innerHTML = '<div class="custom-entry-empty">还没有自定义条目</div>';
+    });
+  }
+
+  function readCustomPresetEntries(){
+    return [...document.querySelectorAll('#customPresetEntries [data-custom-entry]')].map((card, index) => ({
+      id: String(card.getAttribute('data-custom-entry') || ('custom_' + index)),
+      title: String(card.querySelector('[data-custom-title]')?.value || '').trim() || ('自定义条目 ' + (index + 1)),
+      content: String(card.querySelector('[data-custom-content]')?.value || '').trim(),
+      enabled: !!card.querySelector('[data-custom-enabled]')?.checked,
+    }));
+  }
+
+  function splitSnapshotForPresetPreview(snapshot){
+    const groups = { init:[], character:[], history:[], worldbook:[], custom:[], other:[] };
+    const re = /^### ([^\n]+)\n([\s\S]*?)(?=\n\n### |$)/gm;
+    let match;
+    while ((match = re.exec(String(snapshot || '')))) {
+      const title = match[1].trim();
+      const block = `### ${title}\n${match[2].trim()}`;
+      if (/初始化|wb_lore|钉住设定/.test(title)) groups.init.push(block);
+      else if (/角色|性格|Persona|场景|显示名/.test(title)) groups.character.push(block);
+      else if (/世界书|手机相关设定/.test(title)) groups.worldbook.push(block);
+      else if (/自定义条目/.test(title)) groups.custom.push(block);
+      else if (/聊天|开场|前文/.test(title)) groups.history.push(block);
+      else groups.other.push(block);
+    }
+    return groups;
+  }
+
+  function renderPresetPreviewCards(items){
+    const box = document.getElementById('contextPreview');
+    if (!box) return;
+    box.innerHTML = items.filter((item) => String(item.text || '').trim()).map((item) => {
+      const text = String(item.text || '').trim();
+      return `<div class="preset-preview-card"><button type="button"><span class="pv-title">${esc(item.title)}</span><span class="pv-meta">${text.length} 字</span><span class="pv-chev">⌄</span></button><pre>${esc(text)}</pre></div>`;
+    }).join('') || '<div class="custom-entry-empty">当前没有可预览的注入内容</div>';
+    box.classList.add('show');
+    box.querySelectorAll('.preset-preview-card button').forEach((button) => button.onclick = () => button.closest('.preset-preview-card')?.classList.toggle('open'));
+  }
+
+  function refreshPresetUiSummaries(){
+    const mode = document.getElementById('setNativePrompt')?.value === 'compact' ? 'compact' : 'detailed';
+    const nativeSummary = document.getElementById('nativePromptSummary');
+    if (nativeSummary) nativeSummary.textContent = mode === 'compact' ? '简约格式版 · 可自编辑' : '详细原生版 · 含 ID 生成指导 · 可自编辑';
+    const history = document.getElementById('historyPresetSummary');
+    const contextMode = document.getElementById('setContextMode')?.value || 'recent';
+    if (history) history.textContent = contextMode === 'recent' ? `最近 ${document.getElementById('setRecentMessages')?.value || 3} 条` : (contextMode === 'summary' ? '手动前文总结' : '不注入聊天前文');
+    const charEnabled = !!(document.getElementById('setIncludeChar')?.checked || document.getElementById('setIncludePersona')?.checked || document.getElementById('setIncludeScenario')?.checked);
+    const charState = document.getElementById('characterPresetState');
+    if (charState) { charState.textContent = charEnabled ? '已启用' : '已停用'; charState.classList.toggle('on', charEnabled); }
+    const wbEnabled = !!document.getElementById('setIncludeBg')?.checked;
+    const wbState = document.getElementById('worldbookPresetState');
+    if (wbState) { wbState.textContent = wbEnabled ? '已启用' : '已停用'; wbState.classList.toggle('on', wbEnabled); }
+    const wbSummary = document.getElementById('worldbookPresetSummary');
+    if (wbSummary && _loreCatalogCache) wbSummary.textContent = `已扫描到 ${(_loreCatalogCache.books || []).length} 本世界书 · 已启用条目 ${wbEnabled ? _lorePickPending.size : 0}`;
+    const characterPreview = document.getElementById('presetCharacterPreview');
+    if (characterPreview) characterPreview.textContent = readCharacterPresetSource();
+    const boundary = document.getElementById('presetBoundaryPreview');
+    if (boundary) boundary.textContent = WEIBO_INFORMATION_BOUNDARY;
+  }
+
   function renderSlotSelect(){
     const select = document.getElementById('setSlotSelect');
     select.innerHTML = globalConfig.slots.map((slot) => `<option value="${esc(slot.id)}">${esc(slot.name || '未命名档位')}</option>`).join('');
     select.value = activeSlotId;
+  }
+  function updateSlotStatusForSelection(slotId){
+    const selectedId = String(slotId || document.getElementById('setSlotSelect')?.value || activeSlotId || 'default');
+    const selectedSlot = globalConfig.slots.find((item) => item.id === selectedId) || currentSlot() || globalConfig.slots[0];
+    const liveChatId = currentChatId() || '未读到';
+    const recordedChatId = String(chatBinding.slotRecordIds?.[selectedId] || liveChatId);
+    const isActive = selectedId === activeSlotId;
+    document.getElementById('slotStatus').innerHTML = `${isActive ? '当前聊天已绑定' : '待切入档位'}「${esc(selectedSlot?.name || '默认档位')}」；本档位只显示自己的微博记录。<span class="slot-record-id">聊天记录 ID：${esc(recordedChatId)}<br>档位记录键：${esc(recordedChatId)}::slot:${esc(selectedId)}</span>`;
   }
   function apiDraftFromForm(){
     return {
@@ -4244,7 +4418,7 @@ Do not wrap output in Markdown code fences.
     renderSlotSelect();
     document.getElementById('setSlotName').value = slot?.name || '';
     document.getElementById('setInitPrompt').value = slot?.initPrompt || '';
-    document.getElementById('slotStatus').textContent = `当前聊天已绑定「${slot?.name || '默认档位'}」；切入其它档位才会改写首楼。`;
+    updateSlotStatusForSelection(slot?.id || activeSlotId);
     document.getElementById('setUserId').value = phoneSettings.userWeiboId || '';
     document.getElementById('setCharId').value = phoneSettings.charWeiboId || '';
     document.getElementById('setUserBio').value = phoneSettings.userBio || '';
@@ -4258,6 +4432,7 @@ Do not wrap output in Markdown code fences.
     document.getElementById('setManualSummary').value = String(context.manualSummary || '');
     document.getElementById('setLoreScanKeyword').value = String(context.loreScanKeyword || '🩶');
     document.getElementById('setNativePrompt').value = context.nativePrompt === 'compact' ? 'compact' : 'detailed';
+    document.getElementById('setNativePromptText').value = String(context.nativePromptText || '').trim() || nativePromptDefault(context.nativePrompt === 'compact' ? 'compact' : 'detailed');
     document.getElementById('setIncludeChar').checked = context.includeChar !== false;
     document.getElementById('setIncludePersona').checked = context.includePersona !== false;
     document.getElementById('setIncludeScenario').checked = context.includeScenario !== false;
@@ -4276,6 +4451,8 @@ Do not wrap output in Markdown code fences.
     updateApiVisibility();
     state.wbLore = String(readPhoneBundleFromMetadata()?.wbLore || slot?.wbLore || state.wbLore || '');
     fillWbLoreEditor(state.wbLore, { forceAccount: false });
+    renderCustomPresetEntries(context.customEntries || []);
+    refreshPresetUiSummaries();
   }
   function openSettingsPanel(){
     fillSettingsForm();
@@ -4283,6 +4460,7 @@ Do not wrap output in Markdown code fences.
     _lorePickBookKey = null;
     _lorePickPending = new Set(readSelectedLoreIds());
     renderLorePickList(false);
+    document.getElementById('contextPreview')?.classList.remove('show');
   }
   function closeSettingsPanel(){
     document.getElementById('settingsPanel').classList.remove('show');
@@ -4297,6 +4475,9 @@ Do not wrap output in Markdown code fences.
     const charFans = Math.max(0, parseFanNumber(document.getElementById('setCharFans').value));
     const userFollowing = Math.max(0, parseFanNumber(document.getElementById('setUserFollowing').value));
     const charFollowing = Math.max(0, parseFanNumber(document.getElementById('setCharFollowing').value));
+    const nativePromptMode = document.getElementById('setNativePrompt').value === 'compact' ? 'compact' : 'detailed';
+    const nativePromptDraft = document.getElementById('setNativePromptText').value.trim();
+    const customEntries = readCustomPresetEntries();
     const settingsPatch = {
       userWeiboId: document.getElementById('setUserId').value.trim(),
       charWeiboId: document.getElementById('setCharId').value.trim(),
@@ -4313,7 +4494,9 @@ Do not wrap output in Markdown code fences.
       recentMessages: Math.max(0, Math.min(60, Number(document.getElementById('setRecentMessages').value) || 0)),
       manualSummary: document.getElementById('setManualSummary').value.trim(),
       loreScanKeyword: document.getElementById('setLoreScanKeyword').value.trim() || '🩶',
-      nativePrompt: document.getElementById('setNativePrompt').value === 'compact' ? 'compact' : 'detailed',
+      nativePrompt: nativePromptMode,
+      nativePromptText: nativePromptDraft === nativePromptDefault(nativePromptMode) ? '' : nativePromptDraft,
+      customEntries,
       injectMain: !!document.getElementById('setInjectMain').checked,
       selectedLoreIds: picks.ids,
     };
@@ -4330,6 +4513,8 @@ Do not wrap output in Markdown code fences.
         manualSummary: settingsPatch.manualSummary,
         loreScanKeyword: settingsPatch.loreScanKeyword,
         nativePrompt: settingsPatch.nativePrompt,
+        nativePromptText: settingsPatch.nativePromptText,
+        customEntries: settingsPatch.customEntries,
         includeChar: settingsPatch.includeChar,
         includePersona: settingsPatch.includePersona,
         includeScenario: settingsPatch.includeScenario,
@@ -4344,6 +4529,8 @@ Do not wrap output in Markdown code fences.
       manualSummary: settingsPatch.manualSummary,
       loreScanKeyword: settingsPatch.loreScanKeyword,
       nativePrompt: settingsPatch.nativePrompt,
+      nativePromptText: settingsPatch.nativePromptText,
+      customEntries: settingsPatch.customEntries,
       includeChar: settingsPatch.includeChar,
       includePersona: settingsPatch.includePersona,
       includeScenario: settingsPatch.includeScenario,
@@ -4364,6 +4551,8 @@ Do not wrap output in Markdown code fences.
     phoneSettings.charFollowing = charFollowing;
     savePhoneSettings(phoneSettings);
     await persistLorePicks(picks.ids, picks.snap);
+    const slotRecordIds = { ...(chatBinding.slotRecordIds || {}), [activeSlotId]: currentChatId() || '' };
+    await saveChatBinding({ slotRecordIds });
     state.wbLore = String(slot?.wbLore || state.wbLore || '');
     await writePhoneBundleToMetadata();
     try { WB_HOST?.setMainInjection?.(state.wbLore, settingsPatch.injectMain); } catch (_) {}
@@ -4380,7 +4569,33 @@ Do not wrap output in Markdown code fences.
   }
   document.getElementById('settingsSave').onclick = ()=>persistSettingsForm(true);
   document.querySelectorAll('input[name="apiMode"]').forEach((el) => el.onchange = updateApiVisibility);
-  document.getElementById('setContextMode').onchange = updateContextModeVisibility;
+  bindPresetEntryToggles(document);
+  document.getElementById('setSlotSelect').onchange = (event)=> updateSlotStatusForSelection(event.target.value);
+  document.getElementById('setContextMode').onchange = ()=>{ updateContextModeVisibility(); refreshPresetUiSummaries(); };
+  document.getElementById('setRecentMessages').oninput = refreshPresetUiSummaries;
+  ['setIncludeChar','setIncludePersona','setIncludeScenario','setIncludeBg'].forEach((id) => {
+    document.getElementById(id).onchange = refreshPresetUiSummaries;
+  });
+  document.getElementById('setNativePrompt').onchange = ()=>{
+    const ta = document.getElementById('setNativePromptText');
+    const old = String(ta.value || '').trim();
+    if (!old || old === WEIBO_NATIVE_DETAILED.trim() || old === WEIBO_NATIVE_COMPACT.trim()) ta.value = nativePromptDefault(document.getElementById('setNativePrompt').value);
+    refreshPresetUiSummaries();
+  };
+  document.getElementById('settingsResetNativePrompt').onclick = ()=>{
+    document.getElementById('setNativePromptText').value = nativePromptDefault(document.getElementById('setNativePrompt').value);
+    showBubble('已恢复所选版本的默认微博提示词');
+  };
+  document.getElementById('settingsAddPresetEntry').onclick = ()=>{
+    const list = readCustomPresetEntries();
+    const id = 'custom_' + Date.now().toString(36);
+    list.push({ id, title:'新的微博预设条目', content:'', enabled:true });
+    renderCustomPresetEntries(list);
+    const card = document.querySelector(`[data-custom-entry="${id}"]`);
+    document.querySelectorAll('#presetStack .preset-entry.open').forEach((item) => item.classList.remove('open'));
+    card?.classList.add('open');
+    card?.querySelector('[data-custom-title]')?.focus();
+  };
   document.getElementById('settingsActivateSlot').onclick = async ()=>{
     await persistSettingsForm(false);
     const pullPreviousLore = !!document.getElementById('setPullPrevLore').checked;
@@ -4390,7 +4605,7 @@ Do not wrap output in Markdown code fences.
     resetPhoneStateForSlot();
     if (!hydrateFromChatMetadata()) loadPhoneData();
     if (pullPreviousLore) {
-      const previousLore = findPreviousWbLoreFromChat();
+      const previousLore = readFirstFloorWbLoreFromChat();
       if (previousLore) {
         state.wbLore = previousLore;
         slot.wbLore = previousLore;
@@ -4398,20 +4613,22 @@ Do not wrap output in Markdown code fences.
     }
     phoneSettings = Object.assign(defaultPhoneSettings(), slot.account || {});
     savePhoneSettings(phoneSettings);
-    await saveChatBinding({ activeSlotId });
+    const slotRecordIds = { ...(chatBinding.slotRecordIds || {}), [activeSlotId]: currentChatId() || '' };
+    await saveChatBinding({ activeSlotId, slotRecordIds });
     await writePhoneBundleToMetadata();
     try { await WB_HOST?.writeFirstFloor?.(slot); } catch (e) { return alertBox('首楼写入失败', String(e?.message || e)); }
     try { WB_HOST?.setMainInjection?.(state.wbLore, !!globalConfig.context.injectMain); } catch (_) {}
     fillSettingsForm();
     renderAll();
-    showBubble(`已切入「${slot.name}」，已显示本档独立记录${pullPreviousLore ? '，并尝试拉取前文 wb_lore' : ''}`);
+    showBubble(`已切入「${slot.name}」，已显示本档独立记录${pullPreviousLore ? '，并尝试从首楼读取 wb_lore' : ''}`);
   };
   document.getElementById('settingsNewSlot').onclick = ()=>{
     const id = 'slot_' + Date.now().toString(36);
-    globalConfig.slots.push({ id, name:'新档位', initPrompt:'', wbLore:'', account:{}, context:{ mode:'recent', recentMessages:3, manualSummary:'', loreScanKeyword:'🩶', nativePrompt:'detailed' } });
+    globalConfig.slots.push({ id, name:'新档位', initPrompt:'', wbLore:'', account:{}, context:{ mode:'recent', recentMessages:3, manualSummary:'', loreScanKeyword:'🩶', nativePrompt:'detailed', nativePromptText:'', customEntries:[] } });
     writeGlobalConfig(globalConfig);
     renderSlotSelect();
     document.getElementById('setSlotSelect').value = id;
+    updateSlotStatusForSelection(id);
     showBubble('已新建；点「切入」后绑定到本聊天');
   };
   document.getElementById('settingsReset').onclick = ()=>{
@@ -4461,13 +4678,23 @@ Do not wrap output in Markdown code fences.
   };
   document.getElementById('settingsPreviewContext').onclick = async ()=>{
     await persistSettingsForm(false);
-    const pre = document.getElementById('contextPreview');
-    pre.textContent = '正在拼装上下文…'; pre.classList.add('show');
+    const preview = document.getElementById('contextPreview');
+    preview.innerHTML = '<div class="custom-entry-empty">正在拼装分组注入预览…</div>'; preview.classList.add('show');
     try {
       const snapshot = await collectStContextSnapshot(phoneSettings.recentMessages, 24000, 'weibo');
-      pre.textContent = [selectedNativePrompt(), WEIBO_INFORMATION_BOUNDARY, snapshot].join('\n\n');
+      const groups = splitSnapshotForPresetPreview(snapshot);
+      renderPresetPreviewCards([
+        { title:'微博提示词', text:selectedNativePrompt() },
+        { title:'wblore 初始化', text:groups.init.join('\n\n') || [currentSlot()?.initPrompt, state.wbLore].filter(Boolean).join('\n\n') || '（未填写）' },
+        { title:'角色 / User Personality', text:groups.character.join('\n\n') || readCharacterPresetSource() },
+        { title:'聊天前文', text:groups.history.join('\n\n') || '（当前未注入聊天前文）' },
+        { title:'世界书', text:groups.worldbook.join('\n\n') || '（已启用条目 0）' },
+        { title:'自定义条目', text:groups.custom.join('\n\n') || '（无已启用的自定义条目）' },
+        { title:'信息隔离', text:WEIBO_INFORMATION_BOUNDARY },
+        { title:'其它快照', text:groups.other.join('\n\n') },
+      ]);
     }
-    catch (e) { pre.textContent = '预览失败：' + String(e?.message || e); }
+    catch (e) { preview.innerHTML = '<div class="custom-entry-empty">预览失败：' + esc(String(e?.message || e)) + '</div>'; }
   };
   document.getElementById('settingsRefreshLore').onclick = ()=>{
     _loreCatalogCache = null; // 丢掉旧列表，避免角色书/世界书重名残留
@@ -4493,18 +4720,6 @@ Do not wrap output in Markdown code fences.
     renderAll();
     showBubble('本档位微博数据已清空');
   };
-  document.getElementById('settingsHarvestLore').onclick = async ()=>{
-    const lore = await harvestWbLore({ force: true });
-    const applied = applyFansFromWbLore(lore || state.wbLore, { force: true });
-    ensureProfileStats({ allowDefault: true });
-    persistPhoneState();
-    renderAll();
-    openSettingsPanel();
-    if (lore) {
-      fillWbLoreEditor(lore, { forceAccount: true });
-      showBubble(applied ? `已钉住设定 ${lore.length} 字，并强制同步账号行` : `已钉住设定 ${lore.length} 字`);
-    } else showBubble('未在当前聊天找到 <wb_lore>');
-  };
   document.getElementById('settingsClearLore').onclick = async ()=>{
     if (!confirm('清除钉住的 wb_lore？之后生成将不再强制注入这段设定。')) return;
     await persistWbLore('');
@@ -4512,18 +4727,11 @@ Do not wrap output in Markdown code fences.
     openSettingsPanel();
     showBubble('钉住设定已清除');
   };
-  document.getElementById('settingsPullPrevLore').onclick = ()=>{
-    const text = findPreviousWbLoreFromChat();
-    if (!text) {
-      showBubble('聊天里没找到更早的 <wb_lore> 楼层');
-      return;
-    }
+  document.getElementById('settingsReadFirstLore').onclick = ()=>{
+    const text = readFirstFloorWbLoreFromChat();
+    if (!text) return showBubble('当前聊天首楼没有 <wb_lore>');
     fillWbLoreEditor(text, { forceAccount: true });
-    showBubble(`已填入上一次楼层设定（${text.length} 字），确认后点「写入本楼层」`);
-  };
-  document.getElementById('settingsFillPinnedLore').onclick = ()=>{
-    fillWbLoreEditor(state.wbLore || '', { forceAccount: true });
-    showBubble(state.wbLore ? `已填入当前钉住（${state.wbLore.length} 字）` : '当前还没有钉住内容');
+    showBubble(`已从首楼读取 wb_lore（${text.length} 字）`);
   };
   document.getElementById('settingsParseLoreRaw').onclick = ()=>{
     const raw = String(document.getElementById('loreRawText')?.value || '').trim();
