@@ -1,6 +1,6 @@
 /** 江清让同层微博 v2：单轮廓远程前端启动器 */
 const JWR2_TAG = '[江清让微博v2]';
-const JWR2_FRONTEND_URL = 'https://fchris1219-del.github.io/jiang-weibo-oneframe-v2/weibo.html';
+const JWR2_FRONTEND_URL = 'https://fchris1219-del.github.io/jiang-weibo-oneframe-v2/weibo.html?v=ee68adb';
 const JWR2_ROOT_ID = 'jwr2-root';
 const JWR2_BRIDGE_KEY = '__JWR2_BRIDGE__';
 const JWR2_INSTANCE_KEY = '__JWR2_CLEANUP__';
