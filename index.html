@@ -424,7 +424,7 @@ body{display:grid;place-items:center;overflow:hidden}
 .preset-entry-switch{display:flex;align-items:center;gap:6px}.preset-entry-switch input{accent-color:var(--orange)}
 .preset-token{display:inline-flex;align-items:center;margin-left:7px;padding:2px 6px;border-radius:999px;background:#f5f5f5;color:#8a8a8a;font-size:9px;font-weight:600;vertical-align:middle;white-space:nowrap}
 .preset-depth-row{display:grid;grid-template-columns:minmax(0,1fr) 112px;gap:10px;align-items:center;margin-top:12px;padding:9px 10px;border-radius:9px;background:#fff8f1;border:1px solid #ffe3cc}
-.preset-depth-row label{font-size:11px;font-weight:700;color:#805a3d}.preset-depth-row select{height:34px;border:1px solid #ebd4c1;border-radius:8px;background:#fff;padding:0 8px;font:inherit;color:#744b2e}
+.preset-depth-row label{font-size:11px;font-weight:700;color:#805a3d}.preset-depth-row input[type=number]{width:112px;height:34px;border:1px solid #ebd4c1;border-radius:8px;background:#fff;padding:0 8px;font:inherit;font-weight:700;color:#744b2e;text-align:center;outline:none}.preset-depth-row input[type=number]:focus{border-color:#e9843c;box-shadow:0 0 0 3px rgba(233,132,60,.12)}
 .preset-depth-help{grid-column:1/-1;margin-top:-4px;color:#a17859;font-size:9px;line-height:1.45}
 .preset-preview-list{display:none;margin-top:11px;padding-top:3px}.preset-preview-list.show{display:flex;flex-direction:column;gap:7px}
 .preset-preview-card{border:1px solid #2b3039;border-radius:11px;background:#191c22;color:#dce3ed;overflow:hidden}
@@ -683,8 +683,8 @@ body{display:grid;place-items:center;overflow:hidden}
             <div class="preset-entry-editor"><div class="field-note">每次拉取都会注入当前聊天×当前档位已有的微博、评论和私信摘要。除非出现新事件、新角度或新的有趣反应，不得重复旧帖主题、句式、梗和互动套路。user/char 账号 ID 必须严格使用本档位设置值。</div><div class="preset-readonly" id="presetDedupePreview">打开设置后读取当前档位记录…</div></div>
           </article>
           <article class="preset-entry" data-preset-entry="hotMeme">
-            <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">梗</div><div class="preset-entry-copy"><div class="preset-entry-title">热梗预设</div><div class="preset-entry-note">控制梗的使用方式，不强行追热度</div></div><label class="preset-entry-switch"><input type="checkbox" id="setHotMemeEnabled" checked><span class="preset-entry-state on" id="hotMemePresetState">已启用</span></label><span class="preset-entry-chev">⌄</span></div>
-            <div class="preset-entry-editor"><div class="set-row"><label for="setHotMemePrompt">热梗提示词（可编辑）</label><textarea id="setHotMemePrompt" rows="7"></textarea><div class="field-note">用于约束热梗、黑梗、圈内梗的使用。它不会联网搜索实时热点；只根据当前前文、wb_lore 和本档位已有生成记录来判断。</div></div><div class="settings-inline"><button type="button" class="mini-action" id="settingsResetHotMeme">恢复默认</button></div></div>
+            <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">梗</div><div class="preset-entry-copy"><div class="preset-entry-title">热梗注入</div><div class="preset-entry-note" id="hotMemePresetSummary">提供可用梗库；合适时请 AI 多用</div></div><label class="preset-entry-switch"><input type="checkbox" id="setHotMemeEnabled" checked><span class="preset-entry-state on" id="hotMemePresetState">已启用</span></label><span class="preset-entry-chev">⌄</span></div>
+            <div class="preset-entry-editor"><div class="set-row"><label for="setHotMemePrompt">热梗注入说明（可编辑）</label><textarea id="setHotMemePrompt" rows="7"></textarea><div class="field-note">这里声明哪些梗可以使用，并鼓励 AI 在身份、语境与时机合适时积极玩梗；不会要求生硬复读或强行追热点。</div></div><div class="set-row"><label>绑定世界书条目（可多选）</label><div class="field-note">绑定条目会作为本档位的可用梗库注入，只服务于热梗判断，不会自动变成所有账号都知道的公开事实。</div><div id="hotMemeLoreList" class="lore-pick-list"><div class="lore-empty">打开设置后读取世界书条目…</div></div></div><div class="settings-inline"><button type="button" class="mini-action" id="settingsRefreshHotMemeLore">刷新世界书选项</button><button type="button" class="mini-action" id="settingsResetHotMeme">恢复默认</button></div></div>
           </article>
           <article class="preset-entry" data-preset-entry="npcDm">
             <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">信</div><div class="preset-entry-copy"><div class="preset-entry-title">正文 NPC 私信</div><div class="preset-entry-note">允许剧情中的 NPC 按身份主动私信 user</div></div><label class="preset-entry-switch"><input type="checkbox" id="setNpcDmEnabled"><span class="preset-entry-state" id="npcDmPresetState">已停用</span></label><span class="preset-entry-chev">⌄</span></div>
@@ -752,7 +752,7 @@ body{display:grid;place-items:center;overflow:hidden}
     return {
       version: 5,
       api: { mode:'main', source:'custom', url:'', model:'', models:[], temperature:0.8, maxTokens:4096 },
-      context: { mode:'recent', recentMessages:3, manualSummary:'', includeChar:true, includePersona:true, includeScenario:true, includeWorldInfo:true, loreScanKeyword:'🩶', nativePrompt:'detailed', nativePromptText:'', hotMemeEnabled:true, hotMemePrompt:'', npcDmEnabled:false, npcDmPrompt:'', npcAccounts:[], presetDepths:{ ...DEFAULT_PRESET_DEPTHS }, customEntries:[], injectMain:false },
+      context: { mode:'recent', recentMessages:3, manualSummary:'', includeChar:true, includePersona:true, includeScenario:true, includeWorldInfo:true, loreScanKeyword:'🩶', nativePrompt:'detailed', nativePromptText:'', hotMemeEnabled:true, hotMemePrompt:'', hotMemeLoreIds:[], hotMemeLoreSnap:[], npcDmEnabled:false, npcDmPrompt:'', npcAccounts:[], presetDepths:{ ...DEFAULT_PRESET_DEPTHS }, customEntries:[], injectMain:false },
       slots: [{ id:'default', name:'默认档位', initPrompt:'', wbLore:'' }],
     };
   }
@@ -769,6 +769,8 @@ body{display:grid;place-items:center;overflow:hidden}
     if (Number(value.version || 0) < 3 && Number(value.context?.recentMessages) === 12) out.context.recentMessages = 3;
     out.context.customEntries = Array.isArray(out.context.customEntries) ? out.context.customEntries : [];
     out.context.npcAccounts = Array.isArray(out.context.npcAccounts) ? out.context.npcAccounts : [];
+    out.context.hotMemeLoreIds = Array.isArray(out.context.hotMemeLoreIds) ? out.context.hotMemeLoreIds.map(String) : [];
+    out.context.hotMemeLoreSnap = Array.isArray(out.context.hotMemeLoreSnap) ? out.context.hotMemeLoreSnap : [];
     out.context.presetDepths = normalizePresetDepths(out.context.presetDepths);
     out.slots = out.slots.map((slot) => ({
       ...slot,
@@ -777,6 +779,8 @@ body{display:grid;place-items:center;overflow:hidden}
         ...(slot?.context || {}),
         presetDepths: normalizePresetDepths(slot?.context?.presetDepths || out.context.presetDepths),
         npcAccounts: Array.isArray(slot?.context?.npcAccounts) ? slot.context.npcAccounts : [],
+        hotMemeLoreIds: Array.isArray(slot?.context?.hotMemeLoreIds) ? slot.context.hotMemeLoreIds.map(String) : [],
+        hotMemeLoreSnap: Array.isArray(slot?.context?.hotMemeLoreSnap) ? slot.context.hotMemeLoreSnap : [],
         customEntries: Array.isArray(slot?.context?.customEntries) ? slot.context.customEntries : [],
       },
     }));
@@ -841,6 +845,8 @@ body{display:grid;place-items:center;overflow:hidden}
       nativePromptText: String(ctxSet.nativePromptText || ''),
       hotMemeEnabled: ctxSet.hotMemeEnabled !== false,
       hotMemePrompt: String(ctxSet.hotMemePrompt || ''),
+      hotMemeLoreIds: Array.isArray(ctxSet.hotMemeLoreIds) ? ctxSet.hotMemeLoreIds.map(String) : [],
+      hotMemeLoreSnap: Array.isArray(ctxSet.hotMemeLoreSnap) ? ctxSet.hotMemeLoreSnap : [],
       npcDmEnabled: !!ctxSet.npcDmEnabled,
       npcDmPrompt: String(ctxSet.npcDmPrompt || ''),
       npcAccounts: Array.isArray(ctxSet.npcAccounts) ? ctxSet.npcAccounts : [],
@@ -888,6 +894,8 @@ body{display:grid;place-items:center;overflow:hidden}
         nativePromptText: String(cur.nativePromptText || ''),
         hotMemeEnabled: cur.hotMemeEnabled !== false,
         hotMemePrompt: String(cur.hotMemePrompt || ''),
+        hotMemeLoreIds: Array.isArray(cur.hotMemeLoreIds) ? cur.hotMemeLoreIds.map(String) : [],
+        hotMemeLoreSnap: Array.isArray(cur.hotMemeLoreSnap) ? cur.hotMemeLoreSnap : [],
         npcDmEnabled: !!cur.npcDmEnabled,
         npcDmPrompt: String(cur.npcDmPrompt || ''),
         npcAccounts: Array.isArray(cur.npcAccounts) ? cur.npcAccounts : [],
@@ -1439,9 +1447,11 @@ body{display:grid;place-items:center;overflow:hidden}
     box.innerHTML = '<div class="lore-empty">正在读取酒馆世界书…</div>';
     try {
       if (forceReload || !_loreCatalogCache) {
+        const hotMemeLoreIds = typeof hotMemeLoreSelectionFromForm === 'function' ? hotMemeLoreSelectionFromForm().ids : [];
         _loreCatalogCache = await listWorldLoreCatalog();
         _lorePickBookKey = null;
         if (document.querySelector('#npcAccountList [data-npc-key]')) refreshNpcLoreOptions();
+        if (typeof renderHotMemeLoreOptions === 'function') renderHotMemeLoreOptions(hotMemeLoreIds.length ? hotMemeLoreIds : undefined);
       }
       const selected = new Set(readSelectedLoreIds());
       if (!_lorePickPending.size && selected.size) {
@@ -4000,7 +4010,8 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
 </weibo_anti_repeat>`;
 
   const WEIBO_HOT_MEME_DEFAULT = String.raw`<weibo_hot_meme>
-热梗、黑梗、圈内梗必须从当前前文、wb_lore、已有微博或可合理推断的圈层文化中生长，不得为了显得“冲浪”而生硬堆叠过期热词。
+本条目与其绑定的世界书内容是「本档位允许使用的梗库」。请主动留意适合玩梗的位置，在账号身份、语境、时机和知情范围都合适时优先、多使用这些梗，让微博更有真实圈层感；但不得为了显得“冲浪”而生硬堆叠、机械复读或强塞无关热词。
+热梗、黑梗、圈内梗应从本梗库、当前前文、wb_lore、已有微博或可合理推断的圈层文化中生长。绑定条目只说明梗可以用，不代表其中所有信息已经公开，也不代表所有账号都知道。
 不同账号只使用其身份和立场会用的梗；本人、官方、梦女、唯粉、黑粉、串子、路人的玩梗方式必须有差别。夸人与骂人的用词也必须符合账号身份；例如梦女可以抱怨对方“直男”，但不会无来由地使用黑粉式的“超雄”。
 已经玩过的梗除非出现新进展、新角度或二次创作价值，不得反复复读。对不确定是否适合当前圈层的现实热梗，宁可不用，不得硬造“全网都在玩”的假共识。
 </weibo_hot_meme>`;
@@ -4092,6 +4103,15 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     const custom = String(phoneSettings.hotMemePrompt || currentSlotContext().hotMemePrompt || '').trim();
     return custom || WEIBO_HOT_MEME_DEFAULT;
   }
+  function hotMemeBoundLore(){
+    const ids = new Set((phoneSettings.hotMemeLoreIds || currentSlotContext().hotMemeLoreIds || []).map(String));
+    if (!ids.size) return '';
+    const live = _loreCatalogCache?.flat || [];
+    const snap = Array.isArray(phoneSettings.hotMemeLoreSnap) ? phoneSettings.hotMemeLoreSnap : (currentSlotContext().hotMemeLoreSnap || []);
+    const map = new Map([...live, ...snap].map((item) => [String(item.id), item]));
+    const blocks = [...ids].map((id) => map.get(id)).filter(Boolean).map((item) => `【${item.name || item.id}】\n${item.content || ''}`);
+    return blocks.length ? `<weibo_meme_library>\n以下是本档位允许使用的梗。请在合适时积极使用，但继续遵守账号身份与信息隔离：\n\n${blocks.join('\n\n')}\n</weibo_meme_library>` : '';
+  }
   function buildPresetInjectionEntries(snapshot, generationMemory, forbid){
     const groups = splitSnapshotForPresetPreview(snapshot);
     const depths = normalizePresetDepths(phoneSettings.presetDepths || currentSlotContext().presetDepths);
@@ -4108,7 +4128,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     add('history', '聊天前文', groups.history.join('\n\n'), phoneSettings.contextMode !== 'none');
     add('init', '档位初始化、wb_lore 与 NPC 账号', [groups.init.join('\n\n'), buildNpcRegistryPrompt()].filter(Boolean).join('\n\n'));
     (phoneSettings.customEntries || []).forEach((item, index) => add('custom', String(item.title || ('自定义条目 ' + (index + 1))), item.content, item.enabled !== false, item.depth ?? 4));
-    add('hotMeme', '热梗预设', selectedHotMemePrompt(), phoneSettings.hotMemeEnabled !== false);
+    add('hotMeme', '热梗注入', [selectedHotMemePrompt(), hotMemeBoundLore()].filter(Boolean).join('\n\n'), phoneSettings.hotMemeEnabled !== false);
     add('npcDm', '正文 NPC 私信', String(phoneSettings.npcDmPrompt || '').trim() || WEIBO_NPC_DM_DEFAULT, !!phoneSettings.npcDmEnabled);
     add('dedupe', '防止重复', WEIBO_ANTI_REPEAT_RULES + '\n\n' + generationMemory);
     add('boundary', '信息隔离', WEIBO_INFORMATION_BOUNDARY);
@@ -4627,9 +4647,9 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     });
   }
 
-  function depthOptions(value){
+  function depthNumberInput(attribute, value){
     const current = Math.max(0, Math.min(20, Number(value) || 0));
-    return Array.from({ length:21 }, (_, depth) => `<option value="${depth}" ${depth === current ? 'selected' : ''}>${depth}${depth === 0 ? ' · 最靠近任务' : ''}</option>`).join('');
+    return `<input type="number" ${attribute} min="0" max="20" step="1" inputmode="numeric" value="${current}" aria-label="注入深度">`;
   }
   function presetDepthFromForm(key){
     const el = document.querySelector(`[data-preset-depth="${key}"]`);
@@ -4648,7 +4668,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       if (title && !title.querySelector('.preset-token')) title.insertAdjacentHTML('beforeend', `<span class="preset-token" data-preset-token="${key}">≈0 tokens</span>`);
       const editor = card.querySelector('.preset-entry-editor');
       if (editor && !editor.querySelector(`[data-preset-depth="${key}"]`)) {
-        editor.insertAdjacentHTML('afterbegin', `<div class="preset-depth-row"><label>注入深度</label><select data-preset-depth="${key}">${depthOptions(DEFAULT_PRESET_DEPTHS[key] ?? 4)}</select><div class="preset-depth-help">与酒馆 in-chat depth 一致：0 最靠近本次生成任务，数字越大越早注入。</div></div>`);
+        editor.insertAdjacentHTML('afterbegin', `<div class="preset-depth-row"><label>注入深度</label>${depthNumberInput(`data-preset-depth="${key}"`, DEFAULT_PRESET_DEPTHS[key] ?? 4)}<div class="preset-depth-help">与酒馆 in-chat depth 一致：0 最靠近本次生成任务，数字越大越早注入。可点上下箭头或直接输入 0–20。</div></div>`);
       }
     });
   }
@@ -4677,6 +4697,38 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     const map = new Map([...(state.selectedLoreSnap || []), ...(_loreCatalogCache?.flat || [])].map((item) => [String(item.id), item]));
     return selected.map((id) => map.get(String(id))).filter(Boolean).map((item) => String(item.content || '')).join('\n\n');
   }
+  function hotMemeLoreSelectionFromForm(){
+    const inputs = [...document.querySelectorAll('#hotMemeLoreList [data-hot-meme-lore-id]')];
+    const fallbackIds = phoneSettings.hotMemeLoreIds || currentSlotContext().hotMemeLoreIds || [];
+    const ids = inputs.length ? inputs.filter((input) => input.checked).map((input) => String(input.dataset.hotMemeLoreId || '')) : fallbackIds.map(String);
+    const oldSnap = new Map((phoneSettings.hotMemeLoreSnap || currentSlotContext().hotMemeLoreSnap || []).map((item) => [String(item.id), item]));
+    const catalog = new Map((_loreCatalogCache?.flat || []).map((item) => [String(item.id), item]));
+    const snap = ids.map((id) => catalog.get(id) || oldSnap.get(id)).filter(Boolean).map((item) => ({ id:item.id, book:item.book, name:item.name, content:String(item.content || '').slice(0, 12000) }));
+    return { ids:[...new Set(ids.filter(Boolean))], snap };
+  }
+  function hotMemeLoreFromForm(){
+    const selection = hotMemeLoreSelectionFromForm();
+    if (!selection.ids.length) return '';
+    const map = new Map(selection.snap.map((item) => [String(item.id), item]));
+    const blocks = selection.ids.map((id) => map.get(String(id))).filter(Boolean).map((item) => `【${item.name || item.id}】\n${item.content || ''}`);
+    return blocks.length ? `<weibo_meme_library>\n以下是本档位允许使用的梗。请在合适时积极使用，但继续遵守账号身份与信息隔离：\n\n${blocks.join('\n\n')}\n</weibo_meme_library>` : '';
+  }
+  function hotMemeLoreOptionsHtml(selectedIds){
+    const selected = new Set((selectedIds || []).map(String));
+    const live = _loreCatalogCache?.flat || [];
+    const snap = phoneSettings.hotMemeLoreSnap || currentSlotContext().hotMemeLoreSnap || [];
+    const map = new Map([...snap, ...live].map((item) => [String(item.id), item]));
+    const items = [...map.values()];
+    if (!items.length) return '<div class="lore-empty">尚未读取到世界书条目。点“刷新世界书选项”后再绑定。</div>';
+    return items.map((item) => `<label class="lore-pick-item"><input type="checkbox" data-hot-meme-lore-id="${esc(item.id)}" ${selected.has(String(item.id)) ? 'checked' : ''}><div class="meta"><div class="nm">${esc(item.name || item.id)}</div><div class="bk">${esc(item.book || '')}</div><div class="pv">${esc(String(item.preview || item.content || '').slice(0, 100))}</div></div></label>`).join('');
+  }
+  function renderHotMemeLoreOptions(selectedIds){
+    const box = document.getElementById('hotMemeLoreList');
+    if (!box) return;
+    const ids = selectedIds || hotMemeLoreSelectionFromForm().ids;
+    box.innerHTML = hotMemeLoreOptionsHtml(ids);
+    box.onchange = () => { refreshPresetUiSummaries(); };
+  }
   function presetContentForToken(key){
     if (key === 'native') return String(document.getElementById('setNativePromptText')?.value || selectedNativePrompt());
     if (key === 'init') return [document.getElementById('setInitPrompt')?.value, document.getElementById('loreRawText')?.value, buildNpcRegistryPrompt()].filter(Boolean).join('\n\n');
@@ -4684,7 +4736,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     if (key === 'persona') return document.getElementById('setIncludePersona')?.checked ? readPersonaPresetSource() : '';
     if (key === 'history') return recentHistoryForTokenEstimate();
     if (key === 'dedupe') return WEIBO_ANTI_REPEAT_RULES + '\n\n' + buildSlotGenerationMemory();
-    if (key === 'hotMeme') return document.getElementById('setHotMemeEnabled')?.checked ? String(document.getElementById('setHotMemePrompt')?.value || WEIBO_HOT_MEME_DEFAULT) : '';
+    if (key === 'hotMeme') return document.getElementById('setHotMemeEnabled')?.checked ? [String(document.getElementById('setHotMemePrompt')?.value || WEIBO_HOT_MEME_DEFAULT), hotMemeLoreFromForm()].filter(Boolean).join('\n\n') : '';
     if (key === 'npcDm') return document.getElementById('setNpcDmEnabled')?.checked ? String(document.getElementById('setNpcDmPrompt')?.value || WEIBO_NPC_DM_DEFAULT) : '';
     if (key === 'worldbook') return worldbookForTokenEstimate();
     if (key === 'boundary') return WEIBO_INFORMATION_BOUNDARY;
@@ -4780,7 +4832,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
           <div class="preset-entry-copy"><div class="preset-entry-title">${esc(item.title || '未命名条目')}<span class="preset-token" data-custom-token>≈${item.enabled === false ? 0 : estimateTokens(item.content || '')} tokens</span></div><div class="preset-entry-note">${esc(String(item.content || '').slice(0, 48) || '点击编辑内容')}</div></div>
           <label class="preset-entry-switch"><input type="checkbox" data-custom-enabled ${item.enabled === false ? '' : 'checked'}><span class="preset-entry-state ${item.enabled === false ? '' : 'on'}">${item.enabled === false ? '已停用' : '已启用'}</span></label><span class="preset-entry-chev">⌄</span>
         </div>
-        <div class="preset-entry-editor"><div class="preset-depth-row"><label>注入深度</label><select data-custom-depth>${depthOptions(item.depth ?? 4)}</select><div class="preset-depth-help">0 最靠近本次生成任务，数字越大越早注入。</div></div><div class="set-row"><label>条目名称</label><input type="text" data-custom-title value="${esc(item.title || '')}" placeholder="例如：赛事时间线" /></div><div class="set-row"><label>提示词内容</label><textarea rows="7" data-custom-content placeholder="这段会作为独立条目注入微博生成请求……">${esc(item.content || '')}</textarea></div><div class="custom-entry-actions"><button type="button" class="mini-action" data-custom-delete>删除条目</button></div></div>
+        <div class="preset-entry-editor"><div class="preset-depth-row"><label>注入深度</label>${depthNumberInput('data-custom-depth', item.depth ?? 4)}<div class="preset-depth-help">0 最靠近本次生成任务，数字越大越早注入。可点上下箭头或直接输入 0–20。</div></div><div class="set-row"><label>条目名称</label><input type="text" data-custom-title value="${esc(item.title || '')}" placeholder="例如：赛事时间线" /></div><div class="set-row"><label>提示词内容</label><textarea rows="7" data-custom-content placeholder="这段会作为独立条目注入微博生成请求……">${esc(item.content || '')}</textarea></div><div class="custom-entry-actions"><button type="button" class="mini-action" data-custom-delete>删除条目</button></div></div>
       </article>`).join('');
     bindPresetEntryToggles(box);
     box.querySelectorAll('[data-custom-enabled]').forEach((input) => input.onchange = () => {
@@ -4789,6 +4841,9 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       refreshPresetTokenCounts();
     });
     box.querySelectorAll('[data-custom-content]').forEach((input) => input.oninput = refreshPresetTokenCounts);
+    box.querySelectorAll('[data-custom-depth]').forEach((input) => input.oninput = () => {
+      input.value = String(Math.max(0, Math.min(20, Number(input.value) || 0)));
+    });
     box.querySelectorAll('[data-custom-delete]').forEach((button) => button.onclick = () => {
       const card = button.closest('[data-custom-entry]');
       if (!card || !confirm('删除这条自定义微博预设？')) return;
@@ -4868,6 +4923,11 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     const hotEnabled = !!document.getElementById('setHotMemeEnabled')?.checked;
     const hotState = document.getElementById('hotMemePresetState');
     if (hotState) { hotState.textContent = hotEnabled ? '已启用' : '已停用'; hotState.classList.toggle('on', hotEnabled); }
+    const hotSummary = document.getElementById('hotMemePresetSummary');
+    if (hotSummary) {
+      const count = hotMemeLoreSelectionFromForm().ids.length;
+      hotSummary.textContent = hotEnabled ? `可用梗库 · 已绑定 ${count} 条世界书` : `已停用 · 保留绑定 ${count} 条`;
+    }
     const npcDmEnabled = !!document.getElementById('setNpcDmEnabled')?.checked;
     const npcDmState = document.getElementById('npcDmPresetState');
     if (npcDmState) { npcDmState.textContent = npcDmEnabled ? '已启用' : '已停用'; npcDmState.classList.toggle('on', npcDmEnabled); }
@@ -4949,6 +5009,9 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     document.getElementById('setNativePromptText').value = String(context.nativePromptText || '').trim() || nativePromptDefault(context.nativePrompt === 'compact' ? 'compact' : 'detailed');
     document.getElementById('setHotMemeEnabled').checked = context.hotMemeEnabled !== false;
     document.getElementById('setHotMemePrompt').value = String(context.hotMemePrompt || '').trim() || WEIBO_HOT_MEME_DEFAULT;
+    phoneSettings.hotMemeLoreIds = Array.isArray(context.hotMemeLoreIds) ? context.hotMemeLoreIds.map(String) : [];
+    phoneSettings.hotMemeLoreSnap = Array.isArray(context.hotMemeLoreSnap) ? context.hotMemeLoreSnap : [];
+    renderHotMemeLoreOptions(phoneSettings.hotMemeLoreIds);
     document.getElementById('setNpcDmEnabled').checked = !!context.npcDmEnabled;
     document.getElementById('setNpcDmPrompt').value = String(context.npcDmPrompt || '').trim() || WEIBO_NPC_DM_DEFAULT;
     const presetDepths = normalizePresetDepths(context.presetDepths);
@@ -4999,6 +5062,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     const nativePromptDraft = document.getElementById('setNativePromptText').value.trim();
     const customEntries = readCustomPresetEntries();
     const npcAccountsDraft = readNpcAccountsFromForm();
+    const hotMemeLore = hotMemeLoreSelectionFromForm();
     const settingsPatch = {
       userWeiboId: document.getElementById('setUserId').value.trim(),
       charWeiboId: document.getElementById('setCharId').value.trim(),
@@ -5019,6 +5083,8 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       nativePromptText: nativePromptDraft === nativePromptDefault(nativePromptMode) ? '' : nativePromptDraft,
       hotMemeEnabled: !!document.getElementById('setHotMemeEnabled').checked,
       hotMemePrompt: document.getElementById('setHotMemePrompt').value.trim() === WEIBO_HOT_MEME_DEFAULT.trim() ? '' : document.getElementById('setHotMemePrompt').value.trim(),
+      hotMemeLoreIds: hotMemeLore.ids,
+      hotMemeLoreSnap: hotMemeLore.snap,
       npcDmEnabled: !!document.getElementById('setNpcDmEnabled').checked,
       npcDmPrompt: document.getElementById('setNpcDmPrompt').value.trim() === WEIBO_NPC_DM_DEFAULT.trim() ? '' : document.getElementById('setNpcDmPrompt').value.trim(),
       npcAccounts: npcAccountsDraft,
@@ -5043,6 +5109,8 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
         nativePromptText: settingsPatch.nativePromptText,
         hotMemeEnabled: settingsPatch.hotMemeEnabled,
         hotMemePrompt: settingsPatch.hotMemePrompt,
+        hotMemeLoreIds: settingsPatch.hotMemeLoreIds,
+        hotMemeLoreSnap: settingsPatch.hotMemeLoreSnap,
         npcDmEnabled: settingsPatch.npcDmEnabled,
         npcDmPrompt: settingsPatch.npcDmPrompt,
         npcAccounts: settingsPatch.npcAccounts,
@@ -5065,6 +5133,8 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       nativePromptText: settingsPatch.nativePromptText,
       hotMemeEnabled: settingsPatch.hotMemeEnabled,
       hotMemePrompt: settingsPatch.hotMemePrompt,
+      hotMemeLoreIds: settingsPatch.hotMemeLoreIds,
+      hotMemeLoreSnap: settingsPatch.hotMemeLoreSnap,
       npcDmEnabled: settingsPatch.npcDmEnabled,
       npcDmPrompt: settingsPatch.npcDmPrompt,
       npcAccounts: settingsPatch.npcAccounts,
@@ -5115,7 +5185,14 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
   ['setIncludeChar','setIncludePersona','setIncludeScenario','setIncludeBg','setHotMemeEnabled','setNpcDmEnabled'].forEach((id) => {
     document.getElementById(id).onchange = refreshPresetUiSummaries;
   });
-  document.querySelectorAll('[data-preset-depth]').forEach((el) => el.onchange = refreshPresetUiSummaries);
+  document.querySelectorAll('[data-preset-depth]').forEach((el) => {
+    const update = () => {
+      if (el.value !== '') el.value = String(Math.max(0, Math.min(20, Number(el.value) || 0)));
+      refreshPresetUiSummaries();
+    };
+    el.oninput = update;
+    el.onchange = update;
+  });
   ['setNativePromptText','setInitPrompt','loreRawText','setManualSummary','setHotMemePrompt','setNpcDmPrompt'].forEach((id) => {
     document.getElementById(id)?.addEventListener('input', refreshPresetUiSummaries);
   });
@@ -5132,7 +5209,14 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
   document.getElementById('settingsResetHotMeme').onclick = ()=>{
     document.getElementById('setHotMemePrompt').value = WEIBO_HOT_MEME_DEFAULT;
     refreshPresetUiSummaries();
-    showBubble('已恢复默认热梗预设');
+    showBubble('已恢复默认热梗注入说明');
+  };
+  document.getElementById('settingsRefreshHotMemeLore').onclick = async ()=>{
+    const selected = hotMemeLoreSelectionFromForm().ids;
+    _loreCatalogCache = await listWorldLoreCatalog();
+    renderHotMemeLoreOptions(selected);
+    refreshPresetUiSummaries();
+    showBubble(`已读取 ${_loreCatalogCache?.flat?.length || 0} 条世界书条目`);
   };
   document.getElementById('settingsResetNpcDm').onclick = ()=>{
     document.getElementById('setNpcDmPrompt').value = WEIBO_NPC_DM_DEFAULT;
@@ -5260,7 +5344,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
         { title:'User Personality', depth:depths.persona, text:groups.persona.join('\n\n') || readPersonaPresetSource() },
         { title:'聊天前文', depth:depths.history, text:groups.history.join('\n\n') || '（当前未注入聊天前文）' },
         { title:'防止重复', depth:depths.dedupe, text:WEIBO_ANTI_REPEAT_RULES + '\n\n' + buildSlotGenerationMemory() },
-        { title:'热梗预设', depth:depths.hotMeme, text:phoneSettings.hotMemeEnabled === false ? '（已停用）' : selectedHotMemePrompt() },
+        { title:'热梗注入', depth:depths.hotMeme, text:phoneSettings.hotMemeEnabled === false ? '（已停用）' : [selectedHotMemePrompt(), hotMemeBoundLore()].filter(Boolean).join('\n\n') },
         { title:'正文 NPC 私信', depth:depths.npcDm, text:phoneSettings.npcDmEnabled ? (phoneSettings.npcDmPrompt || WEIBO_NPC_DM_DEFAULT) : '（已停用）' },
         { title:'世界书', depth:depths.worldbook, text:groups.worldbook.join('\n\n') || '（已启用条目 0）' },
         ...(phoneSettings.customEntries || []).filter((item)=>item.enabled!==false).map((item)=>({ title:'自定义｜'+item.title, depth:item.depth??4, text:item.content })),
