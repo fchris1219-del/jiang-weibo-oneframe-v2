@@ -4619,14 +4619,13 @@ Do not wrap output in Markdown code fences.
   (function clarifyWbLoreUi(){
     const raw = document.getElementById('loreRawText');
     if (raw) raw.placeholder = '直接写设定正文，不用写 <wb_lore> 或 [微博档位|…]';
-    if (raw?.nextElementSibling?.classList.contains('field-note')) raw.nextElementSibling.textContent = '直接写自然语言设定即可，例如账号身份、群像关系、已发生的事件、微博口径。';
+    if (raw?.nextElementSibling?.classList.contains('field-note')) raw.nextElementSibling.textContent = '直接写自然语言即可。可填：这一档的世界线/时间点、人物关系与知情范围、微博账号身份与口径、已发生的关键事件、群像/圈子状态、不应让路人知道的私密信息。不需要写 &lt;wb_lore&gt;、[微博档位|…] 或账号分栏格式。';
     const loreSummary = document.getElementById('wbLoreSummary');
     if (loreSummary) loreSummary.textContent = '仅保存到本档位；可手动从首楼拉取覆盖';
     const details = document.getElementById('loreSecList')?.closest('details');
-    const summary = details?.querySelector('summary');
-    if (summary) summary.textContent = '分栏编辑（和上方是同一段 wb_lore，可选）';
-    const detailsNote = summary?.nextElementSibling;
-    if (detailsNote) detailsNote.textContent = '只是把上方完整文本按【标题】拆成小框，不会额外注入内容；保存后再合并回完整文本。';
+    if (details) details.hidden = true;
+    const parse = document.getElementById('settingsParseLoreRaw');
+    if (parse) parse.hidden = true;
     const save = document.getElementById('settingsWriteLoreFloor');
     if (save) { save.id = 'settingsSaveLoreSlot'; save.textContent = '保存到本档位'; }
     const hint = document.getElementById('wbLoreHint');
@@ -4777,15 +4776,7 @@ Do not wrap output in Markdown code fences.
   };
   document.getElementById('settingsSaveLoreSlot').onclick = async ()=>{
     const raw = String(document.getElementById('loreRawText')?.value || '').trim();
-    const sectionsHaveBody = readLoreSectionsFromDom().some((s) => s.body);
-    const rest = String(document.getElementById('loreRestText')?.value || '').trim();
-    let text = composeWbLoreFromEditor();
-    // 只改了完整原文、分栏还是空：直接按原文写入
-    if (raw && !sectionsHaveBody && !rest && raw.length >= text.length) {
-      text = raw;
-      fillWbLoreEditor(raw, { forceAccount: true });
-      text = composeWbLoreFromEditor() || raw;
-    }
+    const text = cleanWbLoreEditorText(raw);
     const rawEl = document.getElementById('loreRawText');
     if (rawEl) rawEl.value = text;
     await persistWbLore(text);
