@@ -638,7 +638,7 @@ body{display:grid;place-items:center;overflow:hidden}
           </article>
           <article class="preset-entry" data-preset-entry="character">
             <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">角</div><div class="preset-entry-copy"><div class="preset-entry-title">Character Card</div><div class="preset-entry-note">可选择是否注入，内容只读取自当前角色卡</div></div><span class="preset-entry-state on" id="characterPresetState">已启用</span><span class="preset-entry-chev">⌄</span></div>
-            <div class="preset-entry-editor"><label class="settings-switch"><input type="checkbox" id="setIncludeChar" checked><span>注入角色描述与性格</span></label><label class="settings-switch"><input type="checkbox" id="setIncludeScenario" checked><span>注入当前场景</span></label><div class="preset-readonly" id="presetCharacterPreview">打开设置后读取…</div></div>
+            <div class="preset-entry-editor"><label class="settings-switch"><input type="checkbox" id="setIncludeChar" checked><span>注入角色描述与性格</span></label><label class="settings-switch"><input type="checkbox" id="setIncludeScenario" checked><span>注入角色卡 Scenario（不是聊天前文）</span></label><div class="field-note">Scenario 是角色卡里预设的场景/世界背景字段；最近对话由独立的「聊天前文」条目控制。</div><div class="preset-readonly" id="presetCharacterPreview">打开设置后读取…</div></div>
           </article>
           <article class="preset-entry" data-preset-entry="persona">
             <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">人</div><div class="preset-entry-copy"><div class="preset-entry-title">User Personality</div><div class="preset-entry-note">可选择是否注入，内容只读取自酒馆当前 Persona</div></div><span class="preset-entry-state on" id="personaPresetState">已启用</span><span class="preset-entry-chev">⌄</span></div>
@@ -647,6 +647,10 @@ body{display:grid;place-items:center;overflow:hidden}
           <article class="preset-entry" data-preset-entry="history">
             <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">前</div><div class="preset-entry-copy"><div class="preset-entry-title">聊天前文</div><div class="preset-entry-note" id="historyPresetSummary">最近 3 条</div></div><span class="preset-entry-state on">可配置</span><span class="preset-entry-chev">⌄</span></div>
             <div class="preset-entry-editor"><div class="set-row"><label for="setContextMode">前文方式</label><select id="setContextMode"><option value="recent">注入最近聊天</option><option value="summary">使用手动总结</option><option value="none">不注入聊天前文</option></select></div><div class="settings-subbox" id="recentContextBox"><div class="set-row" style="margin-top:0"><label for="setRecentMessages">最近聊天条数（默认 3）</label><input type="number" id="setRecentMessages" min="0" max="60" step="1" /></div></div><div class="settings-subbox" id="summaryContextBox" hidden><div class="set-row" style="margin-top:0"><label for="setManualSummary">粘贴前文总结</label><textarea id="setManualSummary" rows="6" placeholder="只会用这段总结代替聊天前文……"></textarea></div></div></div>
+          </article>
+          <article class="preset-entry" data-preset-entry="dedupe">
+            <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">防</div><div class="preset-entry-copy"><div class="preset-entry-title">防止重复</div><div class="preset-entry-note" id="dedupePresetSummary">当前档位暂无生成记录</div></div><span class="preset-entry-state on">固定注入</span><span class="preset-entry-chev">⌄</span></div>
+            <div class="preset-entry-editor"><div class="field-note">每次拉取都会注入当前聊天×当前档位已有的微博、评论和私信摘要。除非出现新事件、新角度或新的有趣反应，不得重复旧帖主题、句式、梗和互动套路。user/char 账号 ID 必须严格使用本档位设置值。</div><div class="preset-readonly" id="presetDedupePreview">打开设置后读取当前档位记录…</div></div>
           </article>
           <article class="preset-entry" data-preset-entry="worldbook">
             <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">书</div><div class="preset-entry-copy"><div class="preset-entry-title">世界书</div><div class="preset-entry-note" id="worldbookPresetSummary">尚未扫描</div></div><label class="preset-entry-switch"><input type="checkbox" id="setIncludeBg" checked><span class="preset-entry-state on" id="worldbookPresetState">已启用</span></label><span class="preset-entry-chev">⌄</span></div>
@@ -848,7 +852,7 @@ body{display:grid;place-items:center;overflow:hidden}
     aiBusy: false,
     currentMsgId: null,
     lastFloorWriteAt: 0,
-    wbLore: String(currentSlot()?.wbLore || ''), // 当前档位设定；切入时写首楼 + chatMetadata
+    wbLore: String(currentSlot()?.wbLore || ''), // 当前聊天×当前档位设定；仅存 chatMetadata/档位存储
     selectedLoreIds: [], // 用户勾选的世界书条目 id
     selectedLoreSnap: [], // 勾选时钉住的正文快照 {id,book,name,content}，现场读失败时兜底
     loreAutoSuppressed: false,
@@ -3084,6 +3088,49 @@ body{display:grid;place-items:center;overflow:hidden}
   function recentWeiboTopics(limit=3){
     return state.posts.slice(0, limit).map((p,i)=>(`${i+1}. ${p.text.slice(0,80)}`)).join('\n') || '（暂无微博）';
   }
+  function normalizeForDuplicateCheck(text){
+    return String(text || '').toLowerCase().replace(/[\s\p{P}\p{S}]+/gu, '');
+  }
+  function ngramSet(text, size=3){
+    const out = new Set();
+    for (let i = 0; i <= text.length - size; i++) out.add(text.slice(i, i + size));
+    return out;
+  }
+  function isNearDuplicatePostText(text){
+    const incoming = normalizeForDuplicateCheck(text);
+    if (!incoming) return true;
+    return (state.posts || []).some((post) => {
+      const old = normalizeForDuplicateCheck(post.text);
+      if (!old) return false;
+      if (incoming === old) return true;
+      const shorter = Math.min(incoming.length, old.length);
+      if (shorter >= 14 && (incoming.includes(old) || old.includes(incoming)) && shorter / Math.max(incoming.length, old.length) >= 0.72) return true;
+      if (shorter < 18) return false;
+      const a = ngramSet(incoming), b = ngramSet(old);
+      let overlap = 0;
+      a.forEach((item) => { if (b.has(item)) overlap++; });
+      const union = a.size + b.size - overlap;
+      return union > 0 && overlap / union >= 0.72;
+    });
+  }
+  function lockGeneratedAccountIdentities(post, allowUserPost=false){
+    if (!post) return null;
+    const ids = configuredWeiboIds();
+    const author = String(post.author || '').trim();
+    const avatar = String(post.avatar || '').trim();
+    const userHit = tokenMeansUser(avatar) || isUserAuthor(author);
+    const charHit = tokenMeansChar(avatar) || isCharAuthor(author);
+    if (userHit && !allowUserPost) return null;
+    if (userHit) { post.author = ids.user || displayName; post.avatar = defaultUserAvatarToken(); }
+    else if (charHit) { post.author = ids.char || displayChar; post.avatar = defaultCharAvatarToken(); }
+    post.comments = (post.comments || []).filter((comment) => {
+      const commentAuthor = String(comment.author || '').trim();
+      if (isUserAuthor(commentAuthor)) return false;
+      if (isCharAuthor(commentAuthor)) comment.author = ids.char || displayChar;
+      return true;
+    });
+    return post;
+  }
 
   function mergeAiPayload(raw, opts={}){
     const text = normalizeAiText(raw);
@@ -3104,6 +3151,8 @@ body{display:grid;place-items:center;overflow:hidden}
       if(!allComments.length) allComments = extractCommentsFromText(text);
       let added=0;
       allComments.forEach(c=>{
+        if (isUserAuthor(c.author)) return;
+        if (isCharAuthor(c.author)) c.author = configuredWeiboIds().char || displayChar;
         const k=c.author+'|'+c.text;
         if(!exist.has(k)){ target.comments.push(c); exist.add(k); added++; }
       });
@@ -3124,7 +3173,8 @@ body{display:grid;place-items:center;overflow:hidden}
       let addedPosts = 0;
       // 倒序 unshift，使 AI 输出的第 1 条出现在最上方
       for (let i = list.length - 1; i >= 0; i--) {
-        const incoming = list[i];
+        const incoming = lockGeneratedAccountIdentities(list[i], false);
+        if (!incoming || isNearDuplicatePostText(incoming.text)) continue;
         const comments = Array.isArray(incoming.comments) ? incoming.comments.slice() : [];
         const post = {
           author: incoming.author || '热门博主',
@@ -3153,7 +3203,8 @@ body{display:grid;place-items:center;overflow:hidden}
       const who = displayChar || rawCharName || '角色';
       let added = 0;
       for (let i = list.length - 1; i >= 0; i--) {
-        const incoming = list[i];
+        const incoming = lockGeneratedAccountIdentities(list[i], false);
+        if (!incoming || isNearDuplicatePostText(incoming.text)) continue;
         const comments = Array.isArray(incoming.comments) ? incoming.comments.slice() : [];
         const post = {
           author: who,
@@ -3198,6 +3249,7 @@ body{display:grid;place-items:center;overflow:hidden}
         const exist=new Set(hit.messages.map(m=>(m.sender||'')+'|'+(m.author||'')+'|'+m.text));
         let round=0;
         (incoming.messages||[]).forEach(m=>{
+          if (m.sender === 'user') return;
           const k=(m.sender||'')+'|'+(m.author||'')+'|'+m.text;
           if(exist.has(k)) return;
           hit.messages.push(m);
@@ -3220,7 +3272,8 @@ body{display:grid;place-items:center;overflow:hidden}
       if(!pool.length) pool = extractDmFromText(text, opts.threadName);
       let added=0;
       pool.forEach(m=>{
-        const msg = m.sender==='user' ? m : {sender:'npc', author:m.author||opts.threadName, avatar:m.avatar, text:m.text, time:m.time};
+        if (m.sender === 'user') return;
+        const msg = {sender:'npc', author:m.author||opts.threadName, avatar:m.avatar, text:m.text, time:m.time};
         const k=(msg.sender||'')+'|'+(msg.author||'')+'|'+msg.text;
         if(!exist.has(k)){ hit.messages.push(msg); exist.add(k); added++; }
       });
@@ -3230,6 +3283,8 @@ body{display:grid;place-items:center;overflow:hidden}
 
     // fallback
     posts.forEach(incoming=>{
+      incoming = lockGeneratedAccountIdentities(incoming, false);
+      if (!incoming || isNearDuplicatePostText(incoming.text)) return;
       const hit=state.posts.find(p=>p.text===incoming.text && p.author===incoming.author);
       if(hit){
         const exist=new Set(hit.comments.map(c=>c.author+'|'+c.text));
@@ -3240,7 +3295,7 @@ body{display:grid;place-items:center;overflow:hidden}
       let hit=state.threads.find(t=>t.name===incoming.name);
       if(!hit){ hit={name:incoming.name,messages:[]}; state.threads.unshift(hit); }
       const exist=new Set(hit.messages.map(m=>(m.sender||'')+'|'+(m.author||'')+'|'+m.text));
-      incoming.messages.forEach(m=>{ const k=(m.sender||'')+'|'+(m.author||'')+'|'+m.text; if(!exist.has(k)) hit.messages.push(m); });
+      incoming.messages.forEach(m=>{ if(m.sender==='user') return; const k=(m.sender||'')+'|'+(m.author||'')+'|'+m.text; if(!exist.has(k)) hit.messages.push(m); });
     });
     return 0;
   }
@@ -3784,6 +3839,56 @@ Do not wrap output in Markdown code fences.
 只有上下文明确说明已公开、泄露、被目击、被转发，或由知情者发布时，才能沿合理链路传播。不同账号的知情范围必须分层，不得全知。
 </weibo_information_boundary>`;
 
+  const WEIBO_ANTI_REPEAT_RULES = String.raw`<weibo_anti_repeat>
+本次请求只能使用「当前聊天 ID × 当前微博档位 ID」的设置与生成记录，严禁与其他聊天或其他档位混用。
+已有微博、评论、私信以及聊天前文已经玩过的梗，都视为「已用素材」。除非出现新事件、新角度、新的有趣反应或明确的后续进展，否则不得重复相同主题、笑点、文案句式、反应套路和路人观点。
+同一次输出内的推荐流、角色微博与私信也必须互相去重，不得把同一个梗换个说法重复输出。
+user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改名、缩写或用角色本名替代；未设置的账号不得由模型擅自补齐。
+</weibo_anti_repeat>`;
+
+  function configuredWeiboIds(){
+    return {
+      user: String(phoneSettings.userWeiboId || '').trim(),
+      char: String(phoneSettings.charWeiboId || '').trim(),
+    };
+  }
+  function clipGenerationMemory(text, limit){
+    text = String(text || '').replace(/\s+/g, ' ').trim();
+    return text.length > limit ? text.slice(0, limit) + '…' : text;
+  }
+  function buildSlotGenerationMemory(){
+    const ids = configuredWeiboIds();
+    const slot = currentSlot();
+    const chatId = currentChatId() || '未读到';
+    const postLines = [];
+    (state.posts || []).forEach((post, index) => {
+      postLines.push(`${index + 1}. [${post.author || '未知账号'}] ${clipGenerationMemory(post.text, 500)}${post.fakeImage ? `｜伪图:${clipGenerationMemory(post.fakeImage, 180)}` : ''}`);
+      (post.comments || []).forEach((comment) => postLines.push(`   评论[${comment.author || '路人'}]：${clipGenerationMemory(comment.text, 220)}`));
+    });
+    const dmLines = [];
+    (state.threads || []).forEach((thread) => {
+      dmLines.push(`联系人[${thread.name || '未知'}]`);
+      (thread.messages || []).forEach((message) => dmLines.push(`   ${message.sender === 'user' ? (ids.user || '用户') : (message.author || thread.name || '路人')}：${clipGenerationMemory(message.text, 220)}`));
+    });
+    const trimBlock = (lines, limit) => {
+      const text = lines.join('\n');
+      return text.length > limit ? text.slice(0, limit) + '\n…（更早记录已截断，仍视为不应复读）' : text;
+    };
+    return [
+      '【当前档位生成记忆｜严禁跨档】',
+      `聊天 ID：${chatId}`,
+      `档位 ID：${slot?.id || activeSlotId}｜档位名：${slot?.name || '默认档位'}`,
+      `锁定 user 微博 ID：${ids.user || '（未设置，禁止自行生成）'}`,
+      `锁定 char 微博 ID：${ids.char || '（未设置，禁止自行生成）'}`,
+      '',
+      `已有微博/评论（${state.posts.length} 帖）：`,
+      trimBlock(postLines, 12000) || '（暂无）',
+      '',
+      `已有私信（${state.threads.length} 个联系人）：`,
+      trimBlock(dmLines, 6000) || '（暂无）',
+    ].join('\n');
+  }
+
   function nativePromptDefault(mode){
     return mode === 'compact' ? WEIBO_NATIVE_COMPACT : WEIBO_NATIVE_DETAILED;
   }
@@ -3810,6 +3915,10 @@ Do not wrap output in Markdown code fences.
     if(mode==='dm-thread' && !opts.threadName){
       if(state.page?.type==='dm') opts.threadName=state.page.name;
     }
+    const fixedIds = configuredWeiboIds();
+    if ((mode === 'char-post' || mode === 'all') && !fixedIds.char) {
+      return alertBox('请先设置角色微博 ID', '角色发博与全部拉取不允许模型自行生成 char 账号 ID。请先在「账号」中填写角色微博 ID。');
+    }
 
     const keyword = mode === 'all' ? 'feed + weibo + msg'
       : mode === 'feed' ? 'feed'
@@ -3829,7 +3938,7 @@ Do not wrap output in Markdown code fences.
         '不得代替 {{user}} 发布、评论或发私信。不得把私密信息当作公开信息。',
         '已有主题（避免复读）：', recentWeiboTopics(8),
         '已有私信联系人（避免固定复用）：' + (existingDmContacts().join('、') || '无'),
-        '当前微博快照：', serializeWeiboApp(),
+        '当前档位的已有生成信息见固定注入的「防止重复」记忆块。',
       ].join('\n');
     }else if(mode==='feed'){
       context = [
@@ -3854,8 +3963,7 @@ Do not wrap output in Markdown code fences.
         '</weibo>',
         '当前已有微博主题（避免完全重复）：',
         recentWeiboTopics(8),
-        '完整快照（参照，勿原样复制旧帖）：',
-        serializeWeiboApp(),
+        '完整旧帖、评论与私信摘要见固定注入的「防止重复」记忆块。',
       ].join('\n');
     }else if(mode==='char-post'){
       const who = displayChar || rawCharName || '角色';
@@ -3876,8 +3984,7 @@ Do not wrap output in Markdown code fences.
         '5. 只输出协议，不要剧情旁白。',
         '角色近期已发主题（避免复读）：',
         postsOfWho('char').slice(0, 5).map((x, i) => `${i+1}. ${String(x.p.text||'').slice(0,80)}`).join('\n') || '（暂无）',
-        '完整快照：',
-        serializeWeiboApp(),
+        '完整旧帖与已玩过的梗见固定注入的「防止重复」记忆块。',
       ].join('\n');
     }else if(mode==='weibo'){
       const p=state.posts[opts.postIndex];
@@ -3894,8 +4001,7 @@ Do not wrap output in Markdown code fences.
         '<weibo>',
         serializeOnePost(p, n),
         '</weibo>',
-        '完整微博App快照（供参照，勿重复旧评）：',
-        serializeWeiboApp(),
+        '当前档位的旧评论见固定注入的「防止重复」记忆块。',
       ].join('\n');
     }else if(mode==='dm-scatter'){
       context = [
@@ -3908,8 +4014,7 @@ Do not wrap output in Markdown code fences.
         '已有私信联系人（请避开或少用）：'+(existingDmContacts().join('、')||'无'),
         '用户最近微博主题：',
         recentWeiboTopics(5),
-        '当前完整快照：',
-        serializeWeiboApp(),
+        '当前档位的已有帖子与私信见固定注入的「防止重复」记忆块。',
       ].join('\n');
     }else{
       const name=opts.threadName||'路人';
@@ -3926,8 +4031,7 @@ Do not wrap output in Markdown code fences.
         recentWeiboTopics(3),
         '当前会话：',
         t ? `<chat:${t.name}>\n`+(t.messages||[]).map(m=>m.sender==='user'?`[私信|我方消息|${m.text}|${m.time}]`:`[私信|${m.author||name}|npc.png|${m.text}|${m.time}]`).join('\n')+`\n</chat:${t.name}>` : '',
-        '完整快照：',
-        serializeWeiboApp(),
+        '当前档位的已有帖子与私信见固定注入的「防止重复」记忆块。',
       ].join('\n');
     }
 
@@ -3945,6 +4049,7 @@ Do not wrap output in Markdown code fences.
         ? ((mode === 'feed' || mode === 'all') ? 22000 : 16000)
         : ((mode === 'feed' || mode === 'all') ? 16000 : 12000);
       const contextSnap = await collectStContextSnapshot(snapMsgs, snapChars, keyword);
+      const generationMemory = buildSlotGenerationMemory();
 
       const forbid = [
         '【输出禁令｜最高优先级】',
@@ -3960,6 +4065,10 @@ Do not wrap output in Markdown code fences.
         selectedNativePrompt(),
         '',
         WEIBO_INFORMATION_BOUNDARY,
+        '',
+        WEIBO_ANTI_REPEAT_RULES,
+        '',
+        generationMemory,
         '',
         forbid,
         '【剧情依据｜已清洗】',
@@ -3991,6 +4100,7 @@ Do not wrap output in Markdown code fences.
         'ordered_prompts=' + baseOrdered.join(','),
         'note=no_world_info_no_raw_chat_history',
         'contextSnapChars=' + (contextSnap || '').length,
+        'slotGenerationMemoryChars=' + generationMemory.length,
       ].filter(Boolean).join('\n');
 
       async function runOnce(ordered, extra={}){
@@ -4255,7 +4365,7 @@ Do not wrap output in Markdown code fences.
         if (data.personality || ch?.personality) lines.push('【角色性格】\n' + String(data.personality || ch.personality));
       }
       if (document.getElementById('setIncludeScenario')?.checked && (data.scenario || ch?.scenario)) {
-        lines.push('【当前场景】\n' + String(data.scenario || ch.scenario));
+        lines.push('【角色卡 Scenario（非聊天前文）】\n' + String(data.scenario || ch.scenario));
       }
     } catch (e) {
       lines.push('读取失败：' + String(e?.message || e));
@@ -4376,6 +4486,10 @@ Do not wrap output in Markdown code fences.
     if (characterPreview) characterPreview.textContent = readCharacterPresetSource();
     const personaPreview = document.getElementById('presetPersonaPreview');
     if (personaPreview) personaPreview.textContent = readPersonaPresetSource();
+    const dedupeSummary = document.getElementById('dedupePresetSummary');
+    if (dedupeSummary) dedupeSummary.textContent = `当前聊天×本档位：${state.posts.length} 帖·${state.threads.length} 个私信联系人`;
+    const dedupePreview = document.getElementById('presetDedupePreview');
+    if (dedupePreview) dedupePreview.textContent = WEIBO_ANTI_REPEAT_RULES + '\n\n' + buildSlotGenerationMemory();
     const boundary = document.getElementById('presetBoundaryPreview');
     if (boundary) boundary.textContent = WEIBO_INFORMATION_BOUNDARY;
   }
@@ -4715,6 +4829,7 @@ Do not wrap output in Markdown code fences.
         { title:'角色卡', text:groups.character.join('\n\n') || readCharacterPresetSource() },
         { title:'User Personality', text:groups.persona.join('\n\n') || readPersonaPresetSource() },
         { title:'聊天前文', text:groups.history.join('\n\n') || '（当前未注入聊天前文）' },
+        { title:'防止重复', text:WEIBO_ANTI_REPEAT_RULES + '\n\n' + buildSlotGenerationMemory() },
         { title:'世界书', text:groups.worldbook.join('\n\n') || '（已启用条目 0）' },
         { title:'自定义条目', text:groups.custom.join('\n\n') || '（无已启用的自定义条目）' },
         { title:'信息隔离', text:WEIBO_INFORMATION_BOUNDARY },

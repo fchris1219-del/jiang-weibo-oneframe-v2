@@ -24,6 +24,7 @@
 - 详细原生版/简约格式版可选且可直接编辑；详细版默认内置饭圈/竞圈真实 ID 生成指导。
 - “微博预设”将微博提示词、初始化 `wb_lore`、角色/User Personality、聊天前文、世界书、信息隔离和自定义条目分组管理。
 - 角色卡、User Persona 与世界书在微博内只读，可单独决定是否注入；信息隔离规则始终注入。
+- 「防止重复」固定注入当前聊天×当前档位的已有微博/评论/私信摘要，并锁定 user/char 微博 ID 为本档位设置值。
 - “全部拉取”用一次模型请求同时返回推荐流、路人私信和角色微博。
 
 设计参考了 [ST-BaiBai-Book](https://github.com/baibai-git/ST-BaiBai-Book) 的 `extension_settings`、`chatMetadata`、主 API 回退与上下文构建方式。
