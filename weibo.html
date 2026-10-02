@@ -579,7 +579,6 @@ body{display:grid;place-items:center;overflow:hidden}
           <button type="button" class="mini-action" id="settingsNewSlot">新建</button>
         </div>
         <div class="set-row"><label for="setSlotName">档位名称</label><input type="text" id="setSlotName" placeholder="例如：主线 / 娱乐圈后期" /></div>
-        <label class="settings-switch"><input type="checkbox" id="setPullPrevLore"><span>本次切入时，从当前聊天首楼读取 wb_lore（若有）</span></label>
         <div class="slot-status" id="slotStatus">正在读取当前聊天档…</div>
       </section>
 
@@ -635,10 +634,10 @@ body{display:grid;place-items:center;overflow:hidden}
           </article>
           <article class="preset-entry" data-preset-entry="init">
             <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">初</div><div class="preset-entry-copy"><div class="preset-entry-title">档位初始化与 wb_lore</div><div class="preset-entry-note" id="wbLoreSummary">只从首楼读写，不扫描其它楼层</div></div><span class="preset-entry-state on">首楼</span><span class="preset-entry-chev">⌄</span></div>
-            <div class="preset-entry-editor"><div class="set-row"><label for="setInitPrompt">档位初始化提示词</label><textarea id="setInitPrompt" rows="5" placeholder="这一档微博生成时始终优先遵守的设定……"></textarea></div><div class="set-row"><label for="loreRawText">完整 wb_lore</label><textarea id="loreRawText" rows="8" placeholder="&lt;wb_lore&gt; 内部全文…"></textarea></div><details style="margin-top:10px"><summary style="font-size:12px;color:#777;cursor:pointer">按章节拆分编辑（可选）</summary><div class="field-note">将账号行、【微博撰写要求】等拆开编辑，保存时重新合成。</div><div id="loreSecList" class="lore-sec-box"></div><div class="set-row"><label for="loreRestText">其它正文</label><textarea id="loreRestText" rows="4"></textarea></div></details><label class="settings-switch"><input type="checkbox" id="setInjectMain"><span>同时把当前 wb_lore 注入酒馆主对话（默认关闭）</span></label><div class="settings-inline"><button type="button" class="mini-action" id="settingsReadFirstLore">从首楼读取</button><button type="button" class="mini-action" id="settingsParseLoreRaw">从原文拆分</button><button type="button" class="mini-action primary" id="settingsWriteLoreFloor">写入首楼</button><button type="button" class="mini-action" id="settingsClearLore">清空</button></div><div class="field-note" id="wbLoreHint">wb_lore 只保存在本档位与当前聊天首楼。</div></div>
+            <div class="preset-entry-editor"><div class="set-row"><label for="setInitPrompt">档位初始化提示词</label><textarea id="setInitPrompt" rows="5" placeholder="这一档微博生成时始终优先遵守的设定……"></textarea></div><div class="set-row"><label for="loreRawText">完整 wb_lore</label><textarea id="loreRawText" rows="8" placeholder="直接写设定正文，不用写 &lt;wb_lore&gt; 或 [微博档位|…]"></textarea><div class="field-note">直接写自然语言设定即可，例如账号身份、群像关系、已发生的事件、微博口径。「微博档位」头、初始化提示词和 &lt;wb_lore&gt; 外层都会在写入首楼时自动生成。</div></div><details style="margin-top:10px"><summary style="font-size:12px;color:#777;cursor:pointer">按章节拆分编辑（可选）</summary><div class="field-note">将账号行、【微博撰写要求】等拆开编辑，保存时重新合成。</div><div id="loreSecList" class="lore-sec-box"></div><div class="set-row"><label for="loreRestText">其它正文</label><textarea id="loreRestText" rows="4"></textarea></div></details><label class="settings-switch"><input type="checkbox" id="setInjectMain"><span>同时把当前 wb_lore 注入酒馆主对话（默认关闭）</span></label><div class="settings-inline"><button type="button" class="mini-action" id="settingsReadFirstLore">从首楼读取</button><button type="button" class="mini-action" id="settingsParseLoreRaw">从原文拆分</button><button type="button" class="mini-action primary" id="settingsWriteLoreFloor">写入首楼</button><button type="button" class="mini-action" id="settingsClearLore">清空</button></div><div class="field-note" id="wbLoreHint">wb_lore 只保存在本档位与当前聊天首楼。</div></div>
           </article>
           <article class="preset-entry" data-preset-entry="character">
-            <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">角</div><div class="preset-entry-copy"><div class="preset-entry-title">角色卡</div><div class="preset-entry-note">可选择是否注入，内容只读取自当前角色卡</div></div><span class="preset-entry-state on" id="characterPresetState">已启用</span><span class="preset-entry-chev">⌄</span></div>
+            <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">角</div><div class="preset-entry-copy"><div class="preset-entry-title">Character Card</div><div class="preset-entry-note">可选择是否注入，内容只读取自当前角色卡</div></div><span class="preset-entry-state on" id="characterPresetState">已启用</span><span class="preset-entry-chev">⌄</span></div>
             <div class="preset-entry-editor"><label class="settings-switch"><input type="checkbox" id="setIncludeChar" checked><span>注入角色描述与性格</span></label><label class="settings-switch"><input type="checkbox" id="setIncludeScenario" checked><span>注入当前场景</span></label><div class="preset-readonly" id="presetCharacterPreview">打开设置后读取…</div></div>
           </article>
           <article class="preset-entry" data-preset-entry="persona">
@@ -1571,14 +1570,24 @@ body{display:grid;place-items:center;overflow:hidden}
     });
     return lines.join('\n').trim();
   }
+  function cleanWbLoreEditorText(raw){
+    let text = String(raw || '').trim().replace(/^\[微博档位\|[^\]]*\]\s*/i, '');
+    const prompts = (globalConfig?.slots || []).map((slot) => String(slot?.initPrompt || '').trim()).filter(Boolean).sort((a, b) => b.length - a.length);
+    for (const prompt of prompts) {
+      const prefix = '[初始化提示词]\n' + prompt;
+      if (text.startsWith(prefix)) { text = text.slice(prefix.length).trim(); break; }
+    }
+    return text;
+  }
   function fillWbLoreEditor(raw, opts={}){
-    const model = parseWbLoreEditorModel(raw);
+    const cleaned = cleanWbLoreEditorText(raw);
+    const model = parseWbLoreEditorModel(cleaned);
     applyLoreAccountToSettingsForm(model.account, { force: !!opts.forceAccount });
     renderLoreSectionEditors(model.sections);
     const restEl = document.getElementById('loreRestText');
     if (restEl) restEl.value = model.rest || '';
     const rawEl = document.getElementById('loreRawText');
-    if (rawEl) rawEl.value = String(raw || '').trim();
+    if (rawEl) rawEl.value = cleaned;
     return model;
   }
   /** wb_lore 的楼层唯一来源是当前聊天首楼，不再扫描旧楼/前楼层。 */
@@ -1652,12 +1661,7 @@ body{display:grid;place-items:center;overflow:hidden}
     let found = '';
     // 1) 主存：本聊天 metadata（与楼层无关）
     found = readChatMetadataLore() || String(readPhoneBundleFromMetadata()?.wbLore || '').trim();
-    // 2) 当前聊天首楼（唯一楼层来源）
-    if (!found || force) {
-      const fromFloor = readFirstFloorWbLoreFromChat();
-      if (fromFloor) found = force ? fromFloor : (found || fromFloor);
-    }
-    // 3) 同浏览器 localStorage
+    // 2) 同浏览器 localStorage；首楼仅可在设置中手动「从首楼读取」覆盖。
     if (!found) {
       try {
         const all = JSON.parse(localStorage.getItem(PHONE_DATA_KEY) || '{}');
@@ -4462,7 +4466,6 @@ Do not wrap output in Markdown code fences.
     document.getElementById('setApiTemp').value = String(api.temperature ?? 0.8);
     document.getElementById('setApiMax').value = String(api.maxTokens || 4096);
     document.getElementById('setApiToken').value = '';
-    document.getElementById('setPullPrevLore').checked = false;
     updateContextModeVisibility();
     updateApiVisibility();
     state.wbLore = String(readPhoneBundleFromMetadata()?.wbLore || slot?.wbLore || state.wbLore || '');
@@ -4612,31 +4615,39 @@ Do not wrap output in Markdown code fences.
     card?.classList.add('open');
     card?.querySelector('[data-custom-title]')?.focus();
   };
+  // wb_lore 只是本档位的设定；不再反向写入正文首楼。
+  (function clarifyWbLoreUi(){
+    const raw = document.getElementById('loreRawText');
+    if (raw) raw.placeholder = '直接写设定正文，不用写 <wb_lore> 或 [微博档位|…]';
+    if (raw?.nextElementSibling?.classList.contains('field-note')) raw.nextElementSibling.textContent = '直接写自然语言设定即可，例如账号身份、群像关系、已发生的事件、微博口径。';
+    const loreSummary = document.getElementById('wbLoreSummary');
+    if (loreSummary) loreSummary.textContent = '仅保存到本档位；可手动从首楼拉取覆盖';
+    const details = document.getElementById('loreSecList')?.closest('details');
+    const summary = details?.querySelector('summary');
+    if (summary) summary.textContent = '分栏编辑（和上方是同一段 wb_lore，可选）';
+    const detailsNote = summary?.nextElementSibling;
+    if (detailsNote) detailsNote.textContent = '只是把上方完整文本按【标题】拆成小框，不会额外注入内容；保存后再合并回完整文本。';
+    const save = document.getElementById('settingsWriteLoreFloor');
+    if (save) { save.id = 'settingsSaveLoreSlot'; save.textContent = '保存到本档位'; }
+    const hint = document.getElementById('wbLoreHint');
+    if (hint) hint.textContent = 'wb_lore 仅保存到当前聊天的本档位，不会写入正文首楼。';
+  })();
   document.getElementById('settingsActivateSlot').onclick = async ()=>{
     await persistSettingsForm(false);
-    const pullPreviousLore = !!document.getElementById('setPullPrevLore').checked;
     activeSlotId = String(document.getElementById('setSlotSelect').value || 'default');
     const slot = currentSlot();
     if (!slot) return showBubble('档位不存在');
     resetPhoneStateForSlot();
     if (!hydrateFromChatMetadata()) loadPhoneData();
-    if (pullPreviousLore) {
-      const previousLore = readFirstFloorWbLoreFromChat();
-      if (previousLore) {
-        state.wbLore = previousLore;
-        slot.wbLore = previousLore;
-      }
-    }
     phoneSettings = Object.assign(defaultPhoneSettings(), slot.account || {});
     savePhoneSettings(phoneSettings);
     const slotRecordIds = { ...(chatBinding.slotRecordIds || {}), [activeSlotId]: currentChatId() || '' };
     await saveChatBinding({ activeSlotId, slotRecordIds });
     await writePhoneBundleToMetadata();
-    try { await WB_HOST?.writeFirstFloor?.(slot); } catch (e) { return alertBox('首楼写入失败', String(e?.message || e)); }
     try { WB_HOST?.setMainInjection?.(state.wbLore, !!globalConfig.context.injectMain); } catch (_) {}
     fillSettingsForm();
     renderAll();
-    showBubble(`已切入「${slot.name}」，已显示本档独立记录${pullPreviousLore ? '，并尝试从首楼读取 wb_lore' : ''}`);
+    showBubble(`已切入「${slot.name}」，已显示本档独立记录。`);
   };
   document.getElementById('settingsNewSlot').onclick = ()=>{
     const id = 'slot_' + Date.now().toString(36);
@@ -4744,18 +4755,27 @@ Do not wrap output in Markdown code fences.
     openSettingsPanel();
     showBubble('钉住设定已清除');
   };
-  document.getElementById('settingsReadFirstLore').onclick = ()=>{
+  document.getElementById('settingsReadFirstLore').onclick = async ()=>{
     const text = readFirstFloorWbLoreFromChat();
     if (!text) return showBubble('当前聊天首楼没有 <wb_lore>');
+    await persistWbLore(text);
+    const slot = currentSlot();
+    if (slot) {
+      slot.wbLore = text;
+      writeGlobalConfig(globalConfig);
+      await writePhoneBundleToMetadata();
+    }
     fillWbLoreEditor(text, { forceAccount: true });
-    showBubble(`已从首楼读取 wb_lore（${text.length} 字）`);
+    const hint = document.getElementById('wbLoreHint');
+    if (hint) hint.textContent = `已从首楼拉取并覆盖当前档位，共 ${text.length} 字。`;
+    showBubble(`已从首楼拉取并覆盖当前档位 wb_lore（${text.length} 字）`);
   };
   document.getElementById('settingsParseLoreRaw').onclick = ()=>{
     const raw = String(document.getElementById('loreRawText')?.value || '').trim();
     fillWbLoreEditor(raw, { forceAccount: true });
     showBubble(raw ? '已按原文拆分到分栏' : '原文为空');
   };
-  document.getElementById('settingsWriteLoreFloor').onclick = async ()=>{
+  document.getElementById('settingsSaveLoreSlot').onclick = async ()=>{
     const raw = String(document.getElementById('loreRawText')?.value || '').trim();
     const sectionsHaveBody = readLoreSectionsFromDom().some((s) => s.body);
     const rest = String(document.getElementById('loreRestText')?.value || '').trim();
@@ -4776,7 +4796,6 @@ Do not wrap output in Markdown code fences.
       slot.name = document.getElementById('setSlotName').value.trim() || slot.name;
       writeGlobalConfig(globalConfig);
       await writePhoneBundleToMetadata();
-      try { await WB_HOST?.writeFirstFloor?.(slot); } catch (e) { return alertBox('首楼写入失败', String(e?.message || e)); }
     }
     applyFansFromWbLore(text, { force: true });
     const acc = readLoreAccountFromSettingsForm();
@@ -4796,8 +4815,8 @@ Do not wrap output in Markdown code fences.
     persistPhoneState();
     renderAll();
     const hint = document.getElementById('wbLoreHint');
-    if (hint) hint.textContent = `已写入首楼并保存当前档位，共 ${text.length} 字。`;
-    showBubble(text ? `已写入首楼 wb_lore（${text.length} 字）` : '已清空当前档位 wb_lore');
+    if (hint) hint.textContent = `已保存到当前档位，共 ${text.length} 字；未写入首楼。`;
+    showBubble(text ? `已保存当前档位 wb_lore（${text.length} 字）` : '已清空当前档位 wb_lore');
   };
   document.getElementById('logCopy').onclick = async ()=>{
     const latest = aiRawLogs[0];
@@ -4846,9 +4865,7 @@ Do not wrap output in Markdown code fences.
   if (WB_HOST) {
     const slot = currentSlot();
     if (!chatBinding.activeSlotId) {
-      writePhoneBundleToMetadata()
-        .then(() => (slot?.initPrompt || slot?.wbLore) ? WB_HOST.writeFirstFloor?.(slot) : null)
-        .catch(() => {});
+      writePhoneBundleToMetadata().catch(() => {});
     }
     try { WB_HOST.setMainInjection?.(state.wbLore || slot?.wbLore || '', !!globalConfig.context.injectMain); } catch (_) {}
   }
