@@ -684,7 +684,7 @@ body{display:grid;place-items:center;overflow:hidden}
           </article>
           <article class="preset-entry" data-preset-entry="hotMeme">
             <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">梗</div><div class="preset-entry-copy"><div class="preset-entry-title">热梗注入</div><div class="preset-entry-note" id="hotMemePresetSummary">提供可用梗库；合适时请 AI 多用</div></div><label class="preset-entry-switch"><input type="checkbox" id="setHotMemeEnabled" checked><span class="preset-entry-state on" id="hotMemePresetState">已启用</span></label><span class="preset-entry-chev">⌄</span></div>
-            <div class="preset-entry-editor"><div class="set-row"><label for="setHotMemePrompt">热梗注入说明（可编辑）</label><textarea id="setHotMemePrompt" rows="7"></textarea><div class="field-note">这里声明哪些梗可以使用，并鼓励 AI 在身份、语境与时机合适时积极玩梗；不会要求生硬复读或强行追热点。</div></div><div class="set-row"><label>绑定世界书条目（可多选）</label><div class="field-note">绑定条目会作为本档位的可用梗库注入，只服务于热梗判断，不会自动变成所有账号都知道的公开事实。</div><div id="hotMemeLoreList" class="lore-pick-list"><div class="lore-empty">打开设置后读取世界书条目…</div></div></div><div class="settings-inline"><button type="button" class="mini-action" id="settingsRefreshHotMemeLore">刷新世界书选项</button><button type="button" class="mini-action" id="settingsResetHotMeme">恢复默认</button></div></div>
+            <div class="preset-entry-editor"><div class="set-row"><label for="setHotMemePrompt">热梗注入说明（可编辑）</label><textarea id="setHotMemePrompt" rows="7"></textarea><div class="field-note">这里声明哪些梗可以使用。只在身份、语境、时机与表达节奏合适时玩梗；不能每句话都带梗，也不能生硬复读或强行追热点。</div></div><div class="set-row"><label>绑定世界书条目（可多选）</label><div class="field-note">绑定条目会作为本档位的可用梗库注入，只服务于热梗判断，不会自动变成所有账号都知道的公开事实。</div><div id="hotMemeLoreList" class="lore-pick-list"><div class="lore-empty">打开设置后读取世界书条目…</div></div></div><div class="settings-inline"><button type="button" class="mini-action" id="settingsRefreshHotMemeLore">刷新世界书选项</button><button type="button" class="mini-action" id="settingsResetHotMeme">恢复默认</button></div></div>
           </article>
           <article class="preset-entry" data-preset-entry="npcDm">
             <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">信</div><div class="preset-entry-copy"><div class="preset-entry-title">正文 NPC 私信</div><div class="preset-entry-note">允许剧情中的 NPC 按身份主动私信 user</div></div><label class="preset-entry-switch"><input type="checkbox" id="setNpcDmEnabled"><span class="preset-entry-state" id="npcDmPresetState">已停用</span></label><span class="preset-entry-chev">⌄</span></div>
@@ -4010,7 +4010,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
 </weibo_anti_repeat>`;
 
   const WEIBO_HOT_MEME_DEFAULT = String.raw`<weibo_hot_meme>
-本条目与其绑定的世界书内容是「本档位允许使用的梗库」。请主动留意适合玩梗的位置，在账号身份、语境、时机和知情范围都合适时优先、多使用这些梗，让微博更有真实圈层感；但不得为了显得“冲浪”而生硬堆叠、机械复读或强塞无关热词。
+本条目与其绑定的世界书内容是「本档位允许使用的梗库」。请主动留意适合玩梗的位置，在账号身份、语境、时机、表达节奏和知情范围都合适时优先使用这些梗，让微博更有真实圈层感。但“多使用”不等于每句都带梗：普通叙述、认真交流、情绪铺垫和不适合玩梗的内容应自然表达，不得句句抖机灵；不得为了显得“冲浪”而生硬堆叠、机械复读或强塞无关热词。
 热梗、黑梗、圈内梗应从本梗库、当前前文、wb_lore、已有微博或可合理推断的圈层文化中生长。绑定条目只说明梗可以用，不代表其中所有信息已经公开，也不代表所有账号都知道。
 不同账号只使用其身份和立场会用的梗；本人、官方、梦女、唯粉、黑粉、串子、路人的玩梗方式必须有差别。夸人与骂人的用词也必须符合账号身份；例如梦女可以抱怨对方“直男”，但不会无来由地使用黑粉式的“超雄”。
 已经玩过的梗除非出现新进展、新角度或二次创作价值，不得反复复读。对不确定是否适合当前圈层的现实热梗，宁可不用，不得硬造“全网都在玩”的假共识。
