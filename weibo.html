@@ -397,6 +397,7 @@ body{display:grid;place-items:center;overflow:hidden}
 .settings-inline select{flex:1;height:38px;border:1px solid #e7e7e7;border-radius:9px;background:#fafafa;padding:0 9px;font:inherit}
 .mini-action{height:38px;padding:0 12px;border:0;border-radius:9px;background:#f1f1f1;color:#555;font-size:12px;font-weight:600;cursor:pointer}
 .mini-action.primary{background:#fff0e5;color:#dd6a10}
+.mini-action.danger{background:#fff0ee;color:#c8493f}.mini-action:disabled{opacity:.55;cursor:wait}
 .settings-switch{display:flex!important;align-items:flex-start!important;gap:9px!important;margin-top:11px!important;font-size:12px!important;color:#444!important;line-height:1.5!important}
 .settings-switch input{margin-top:2px;accent-color:var(--orange)}
 .settings-detail{margin-top:12px}.settings-detail[hidden]{display:none}
@@ -442,12 +443,14 @@ body{display:grid;place-items:center;overflow:hidden}
 .template-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:8px}.template-actions button{min-width:0}
 .book-bulk{display:flex;align-items:center;gap:5px;flex:0 0 auto}.book-bulk button{border:1px solid #eee;background:#fff;color:#777;border-radius:8px;padding:5px 7px;font-size:10px;cursor:pointer}.book-bulk button.primary{border-color:#ffc89f;color:#d6630d;background:#fff8f2}
 .id-pool-help{margin-top:7px;padding:8px 9px;border-radius:8px;background:#f7f7f7;color:#777;font-size:10px;line-height:1.55}
+.id-pool-list{display:flex;flex-direction:column;gap:8px;margin-top:10px}.id-pool-empty{padding:13px;border:1px dashed #ddd;border-radius:10px;text-align:center;color:#aaa;font-size:10px;background:#fafafa}.id-pool-row{display:grid;grid-template-columns:minmax(0,1.15fr) 72px minmax(0,1.35fr) 32px;gap:7px;align-items:end;padding:9px;border:1px solid #eee;border-radius:11px;background:#fafafa}.id-pool-field{min-width:0}.id-pool-field label{display:block;margin:0 0 4px;color:#999;font-size:9px}.id-pool-field input{box-sizing:border-box;width:100%;height:34px;border:1px solid #e5e5e5;border-radius:8px;background:#fff;padding:0 8px;font:inherit;font-size:11px;outline:none}.id-pool-field input:focus{border-color:#ef9b5f;box-shadow:0 0 0 3px rgba(239,155,95,.12)}.id-pool-remove{width:32px;height:34px;border:0;border-radius:8px;background:#fff0ee;color:#c8493f;font-size:16px;cursor:pointer}
+.scan-term-tools{display:flex;align-items:center;gap:7px;margin-top:7px}.scan-term-tools .mini-action{height:32px}.scan-term-chips{display:flex;flex:1;flex-wrap:wrap;gap:5px;min-width:0}.scan-term-chip{display:inline-flex;align-items:center;gap:5px;max-width:100%;padding:5px 7px;border-radius:999px;background:#fff2e8;color:#a9571e;font-size:10px;line-height:1}.scan-term-chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.scan-term-chip button{all:unset;cursor:pointer;color:#d1783a;font-size:12px}.scan-term-empty{color:#aaa;font-size:9px}
 .pull-bar{display:grid;grid-template-columns:1fr 1fr;gap:7px}
 .pull-bar #allPullBtn{background:var(--orange);border-color:var(--orange);color:#fff}
 .field-note{margin-top:5px;color:#9a9a9a;font-size:10px;line-height:1.5}
 .settings-subbox{margin-top:10px;padding:10px 11px;border-radius:10px;background:#fafafa;border:1px solid #eeeeee}
 .settings-subbox[hidden]{display:none}
-@media(max-width:520px){#app{border-radius:0;box-shadow:none}.settings-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){#app{border-radius:0;box-shadow:none}.settings-grid{grid-template-columns:1fr 1fr}.id-pool-row{grid-template-columns:minmax(0,1fr) 68px 32px}.id-pool-field.attr{grid-column:1/3}.id-pool-remove{grid-column:3;grid-row:1}}
 </style>
 </head>
 <body>
@@ -605,6 +608,7 @@ body{display:grid;place-items:center;overflow:hidden}
           <select id="setSlotSelect" aria-label="微博档位"></select>
           <button type="button" class="mini-action primary" id="settingsActivateSlot">切入</button>
           <button type="button" class="mini-action" id="settingsNewSlot">新建</button>
+          <button type="button" class="mini-action danger" id="settingsDeleteSlot">删除</button>
         </div>
         <div class="set-row"><label for="setSlotName">档位名称</label><input type="text" id="setSlotName" placeholder="例如：主线 / 娱乐圈后期" /></div>
         <div class="slot-status" id="slotStatus">正在读取当前聊天档…</div>
@@ -679,7 +683,7 @@ body{display:grid;place-items:center;overflow:hidden}
           <div class="set-row" style="margin-top:8px"><select id="setPresetTemplate" aria-label="预设模板"></select></div>
           <div class="template-actions"><button type="button" class="mini-action" id="settingsApplyTemplate">应用所选模板</button><button type="button" class="mini-action primary" id="settingsNewTemplate">新建预设模板</button><button type="button" class="mini-action" id="settingsSaveTemplate">保存到模板</button><button type="button" class="mini-action" id="settingsDeleteTemplate">删除模板</button></div>
           <div class="settings-inline"><button type="button" class="mini-action primary" id="settingsExportRoleScript">导出角色酒馆脚本 JSON</button></div>
-          <div class="field-note" id="presetTemplateHint">新模板会从系统默认预设复制；导出的脚本会携带所选模板，但不会携带 Token、聊天记录或世界书内部 ID。</div>
+          <div class="field-note" id="presetTemplateHint">新模板会从系统默认预设复制；导出脚本会携带所选模板、注册 NPC 账号与当前勾选的“世界书名＋条目名”可移植绑定，但不携带 Token、聊天记录、世界书正文或内部 ID。</div>
         </div>
         <div class="preset-toolbar"><button type="button" class="mini-action primary" id="settingsPreviewContext">生成分组注入预览</button><button type="button" class="mini-action" id="settingsAddPresetEntry">+新增自定义条目</button></div>
         <div class="preset-stack" id="presetStack">
@@ -709,11 +713,11 @@ body{display:grid;place-items:center;overflow:hidden}
           </article>
           <article class="preset-entry" data-preset-entry="hotMeme">
             <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">梗</div><div class="preset-entry-copy"><div class="preset-entry-title">热梗注入</div><div class="preset-entry-note" id="hotMemePresetSummary">提供可用梗库；合适时请 AI 多用</div></div><label class="preset-entry-switch"><input type="checkbox" id="setHotMemeEnabled" checked><span class="preset-entry-state on" id="hotMemePresetState">已启用</span></label><span class="preset-entry-chev">⌄</span></div>
-            <div class="preset-entry-editor"><div class="set-row"><label for="setHotMemePrompt">热梗注入说明（可编辑）</label><textarea id="setHotMemePrompt" rows="7"></textarea><div class="field-note">这里声明哪些梗可以使用。只在身份、语境、时机与表达节奏合适时玩梗；不能每句话都带梗，也不能生硬复读或强行追热点。</div></div><div class="set-row"><label for="setHotMemeManualText">手动热梗内容</label><textarea id="setHotMemeManualText" rows="6" placeholder="直接填写本模板可使用的梗、黑称、经典事件和适用账号……"></textarea></div><div class="settings-grid"><div class="set-row"><label for="setHotMemeBookNames">热梗世界书名称扫描</label><textarea id="setHotMemeBookNames" rows="3" placeholder="多个名称用中文逗号或换行分隔"></textarea></div><div class="set-row"><label for="setHotMemeEntryNames">热梗条目名称扫描</label><textarea id="setHotMemeEntryNames" rows="3" placeholder="多个名称用中文逗号或换行分隔"></textarea></div></div><div class="set-row"><label>绑定世界书条目（可多选）</label><div class="field-note">命中世界书名称时整本选择所有未禁用条目；命中任意条目扫描词时选择该条。绑定内容只服务于热梗判断，不会自动变成公开事实。</div><div id="hotMemeLoreList" class="lore-pick-list"><div class="lore-empty">打开设置后读取世界书条目…</div></div></div><div class="settings-inline"><button type="button" class="mini-action" id="settingsRefreshHotMemeLore">扫描并刷新热梗条目</button><button type="button" class="mini-action" id="settingsResetHotMeme">恢复默认</button></div></div>
+            <div class="preset-entry-editor"><div class="set-row"><label for="setHotMemePrompt">热梗注入说明（可编辑）</label><textarea id="setHotMemePrompt" rows="7"></textarea><div class="field-note">这里声明哪些梗可以使用。只在身份、语境、时机与表达节奏合适时玩梗；不能每句话都带梗，也不能生硬复读或强行追热点。</div></div><div class="set-row"><label for="setHotMemeManualText">手动热梗内容</label><textarea id="setHotMemeManualText" rows="6" placeholder="直接填写本模板可使用的梗、黑称、经典事件和适用账号……"></textarea></div><div class="settings-grid"><div class="set-row"><label for="setHotMemeBookNames">热梗世界书名称扫描</label><textarea id="setHotMemeBookNames" rows="3" placeholder="可用逗号或换行输入"></textarea><div class="scan-term-tools"><button type="button" class="mini-action" data-scan-split="setHotMemeBookNames">拆分词条</button><div class="scan-term-chips" data-scan-chips="setHotMemeBookNames"></div></div></div><div class="set-row"><label for="setHotMemeEntryNames">热梗条目名称扫描</label><textarea id="setHotMemeEntryNames" rows="3" placeholder="可用逗号或换行输入"></textarea><div class="scan-term-tools"><button type="button" class="mini-action" data-scan-split="setHotMemeEntryNames">拆分词条</button><div class="scan-term-chips" data-scan-chips="setHotMemeEntryNames"></div></div></div></div><div class="set-row"><label>绑定世界书条目（可多选）</label><div class="field-note">命中世界书名称时整本选择所有未禁用条目；命中任意条目扫描词时选择该条。绑定内容只服务于热梗判断，不会自动变成公开事实。</div><div id="hotMemeLoreList" class="lore-pick-list"><div class="lore-empty">打开设置后读取世界书条目…</div></div></div><div class="settings-inline"><button type="button" class="mini-action" id="settingsRefreshHotMemeLore">扫描并刷新热梗条目</button><button type="button" class="mini-action" id="settingsResetHotMeme">恢复默认</button></div></div>
           </article>
           <article class="preset-entry" data-preset-entry="idPool">
             <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">ID</div><div class="preset-entry-copy"><div class="preset-entry-title">自定义 ID 池</div><div class="preset-entry-note" id="idPoolPresetSummary">高权重候选；仍允许自然生成</div></div><span class="preset-entry-state on">模板可携带</span><span class="preset-entry-chev">⌄</span></div>
-            <div class="preset-entry-editor"><div class="set-row"><label for="setCustomIdPool">ID 候选池</label><textarea id="setCustomIdPool" rows="9" placeholder="每行一个：昵称 :: 权重1-10 :: 账号属性（可选）"></textarea><div class="id-pool-help">例如：宁州夜班保安 :: 8 :: VEX粉丝，爱阴阳怪气<br>等小让回头 :: 5<br>自定义 ID 的选用优先级高于自然生成；同一次输出仍须避免重复昵称。账号属性可留空。</div></div></div>
+            <div class="preset-entry-editor"><div class="set-row"><label>ID 候选池</label><div id="customIdPoolList" class="id-pool-list"></div><div class="settings-inline"><button type="button" class="mini-action primary" id="settingsAddCustomId">+ 新建 ID</button></div><div class="id-pool-help">每个 ID 分开填写昵称、权重和可选账号属性，不需要写分隔符或代码。自定义 ID 的选用优先级高于自然生成；同一次输出仍须避免重复昵称。</div></div></div>
           </article>
           <article class="preset-entry" data-preset-entry="npcDm">
             <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">信</div><div class="preset-entry-copy"><div class="preset-entry-title">正文 NPC 私信</div><div class="preset-entry-note">允许剧情中的 NPC 按身份主动私信 user</div></div><label class="preset-entry-switch"><input type="checkbox" id="setNpcDmEnabled"><span class="preset-entry-state" id="npcDmPresetState">已停用</span></label><span class="preset-entry-chev">⌄</span></div>
@@ -721,7 +725,7 @@ body{display:grid;place-items:center;overflow:hidden}
           </article>
           <article class="preset-entry" data-preset-entry="worldbook">
             <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">书</div><div class="preset-entry-copy"><div class="preset-entry-title">世界书</div><div class="preset-entry-note" id="worldbookPresetSummary">尚未扫描</div></div><label class="preset-entry-switch"><input type="checkbox" id="setIncludeBg" checked><span class="preset-entry-state on" id="worldbookPresetState">已启用</span></label><span class="preset-entry-chev">⌄</span></div>
-            <div class="preset-entry-editor"><div class="settings-grid"><div class="set-row"><label for="setLoreBookNames">世界书名称扫描</label><textarea id="setLoreBookNames" rows="3" placeholder="命中后整本勾选；多个名称用中文逗号或换行分隔"></textarea></div><div class="set-row"><label for="setLoreScanKeyword">条目名称扫描</label><textarea id="setLoreScanKeyword" rows="3" placeholder="🩶，微博关系"></textarea></div></div><div class="field-note">世界书名称命中后只勾选其中原本未禁用的条目；条目名称命中任意扫描词即勾选。支持中文逗号、英文逗号或换行。</div><div class="settings-inline"><button type="button" class="mini-action" id="settingsRefreshLore">刷新并自动扫描</button><button type="button" class="mini-action" id="settingsClearLorePick">清空勾选</button></div><div id="lorePickList" class="lore-pick-list"><div class="lore-empty">打开设置时自动加载…</div></div></div>
+            <div class="preset-entry-editor"><div class="settings-grid"><div class="set-row"><label for="setLoreBookNames">世界书名称扫描</label><textarea id="setLoreBookNames" rows="3" placeholder="命中后整本勾选；可用逗号或换行输入"></textarea><div class="scan-term-tools"><button type="button" class="mini-action" data-scan-split="setLoreBookNames">拆分词条</button><div class="scan-term-chips" data-scan-chips="setLoreBookNames"></div></div></div><div class="set-row"><label for="setLoreScanKeyword">条目名称扫描</label><textarea id="setLoreScanKeyword" rows="3" placeholder="🩶，微博关系"></textarea><div class="scan-term-tools"><button type="button" class="mini-action" data-scan-split="setLoreScanKeyword">拆分词条</button><div class="scan-term-chips" data-scan-chips="setLoreScanKeyword"></div></div></div></div><div class="field-note">世界书名称命中后只勾选其中原本未禁用的条目；条目名称命中任意扫描词即勾选。输入多个名词后点“拆分词条”，会分别显示并可单独删除。</div><div class="settings-inline"><button type="button" class="mini-action" id="settingsRefreshLore">刷新并自动扫描</button><button type="button" class="mini-action" id="settingsClearLorePick">清空勾选</button></div><div id="lorePickList" class="lore-pick-list"><div class="lore-empty">打开设置时自动加载…</div></div></div>
           </article>
           <article class="preset-entry" data-preset-entry="boundary"><div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">隔</div><div class="preset-entry-copy"><div class="preset-entry-title">信息隔离</div><div class="preset-entry-note">非公开信息不得被路人、粉丝、媒体或其它账号随意得知</div></div><span class="preset-entry-state on">必定注入</span><span class="preset-entry-chev">⌄</span></div><div class="preset-entry-editor"><div class="preset-readonly" id="presetBoundaryPreview"></div></div></article>
           <div id="customPresetEntries"></div>
@@ -781,7 +785,7 @@ body{display:grid;place-items:center;overflow:hidden}
     return {
       version: 6,
       api: { mode:'main', source:'custom', url:'', model:'', models:[], temperature:0.8, maxTokens:4096 },
-      context: { mode:'recent', recentMessages:3, manualSummary:'', includeChar:true, includePersona:true, includeScenario:true, includeWorldInfo:true, loreScanKeyword:'🩶', loreBookNames:'', nativePrompt:'detailed', nativePromptText:'', hotMemeEnabled:true, hotMemePrompt:'', hotMemeManualText:'', hotMemeBookNames:'', hotMemeEntryNames:'', hotMemeLoreIds:[], hotMemeLoreSnap:[], customIdPool:'', npcDmEnabled:false, npcDmPrompt:'', npcAccounts:[], generationCounts:{ feed:5, feedComments:5, comments:5, dm:10, dmThread:5, allFeed:5, allChar:1, allDm:10 }, presetDepths:{ ...DEFAULT_PRESET_DEPTHS }, customEntries:[], injectMain:false },
+      context: { mode:'recent', recentMessages:3, manualSummary:'', includeChar:true, includePersona:true, includeScenario:true, includeWorldInfo:true, loreScanKeyword:'🩶', loreBookNames:'', lorePortableBindings:[], nativePrompt:'detailed', nativePromptText:'', hotMemeEnabled:true, hotMemePrompt:'', hotMemeManualText:'', hotMemeBookNames:'', hotMemeEntryNames:'', hotMemePortableBindings:[], hotMemeLoreIds:[], hotMemeLoreSnap:[], customIdPool:'', npcDmEnabled:false, npcDmPrompt:'', npcAccounts:[], generationCounts:{ feed:5, feedComments:5, comments:5, dm:10, dmThread:5, allFeed:5, allChar:1, allDm:10 }, presetDepths:{ ...DEFAULT_PRESET_DEPTHS }, customEntries:[], injectMain:false },
       presetTemplates: [],
       activePresetTemplateId: 'system',
       embeddedPresetId: '',
@@ -801,6 +805,8 @@ body{display:grid;place-items:center;overflow:hidden}
     if (Number(value.version || 0) < 3 && Number(value.context?.recentMessages) === 12) out.context.recentMessages = 3;
     out.context.customEntries = Array.isArray(out.context.customEntries) ? out.context.customEntries : [];
     out.context.npcAccounts = Array.isArray(out.context.npcAccounts) ? out.context.npcAccounts : [];
+    out.context.lorePortableBindings = normalizePortableLoreBindings(out.context.lorePortableBindings);
+    out.context.hotMemePortableBindings = normalizePortableLoreBindings(out.context.hotMemePortableBindings);
     out.context.hotMemeLoreIds = Array.isArray(out.context.hotMemeLoreIds) ? out.context.hotMemeLoreIds.map(String) : [];
     out.context.hotMemeLoreSnap = Array.isArray(out.context.hotMemeLoreSnap) ? out.context.hotMemeLoreSnap : [];
     out.context.generationCounts = { ...base.context.generationCounts, ...(out.context.generationCounts || {}) };
@@ -813,11 +819,13 @@ body{display:grid;place-items:center;overflow:hidden}
         ...base.context,
         ...(slot?.context || {}),
         presetDepths: normalizePresetDepths(slot?.context?.presetDepths || out.context.presetDepths),
-        npcAccounts: Array.isArray(slot?.context?.npcAccounts) ? slot.context.npcAccounts : [],
+        npcAccounts: Array.isArray(slot?.context?.npcAccounts) ? slot.context.npcAccounts : out.context.npcAccounts,
+        lorePortableBindings: Array.isArray(slot?.context?.lorePortableBindings) ? slot.context.lorePortableBindings : out.context.lorePortableBindings,
+        hotMemePortableBindings: Array.isArray(slot?.context?.hotMemePortableBindings) ? slot.context.hotMemePortableBindings : out.context.hotMemePortableBindings,
         hotMemeLoreIds: Array.isArray(slot?.context?.hotMemeLoreIds) ? slot.context.hotMemeLoreIds.map(String) : [],
         hotMemeLoreSnap: Array.isArray(slot?.context?.hotMemeLoreSnap) ? slot.context.hotMemeLoreSnap : [],
         generationCounts: { ...base.context.generationCounts, ...(slot?.context?.generationCounts || out.context.generationCounts || {}) },
-        customEntries: Array.isArray(slot?.context?.customEntries) ? slot.context.customEntries : [],
+        customEntries: Array.isArray(slot?.context?.customEntries) ? slot.context.customEntries : out.context.customEntries,
       },
     }));
     out.version = 6;
@@ -878,6 +886,8 @@ body{display:grid;place-items:center;overflow:hidden}
       manualSummary: String(ctxSet.manualSummary || ''),
       loreScanKeyword: String(ctxSet.loreScanKeyword ?? '🩶'),
       loreBookNames: String(ctxSet.loreBookNames || ''),
+      lorePortableBindings: Array.isArray(ctxSet.lorePortableBindings) ? ctxSet.lorePortableBindings : [],
+      hotMemePortableBindings: Array.isArray(ctxSet.hotMemePortableBindings) ? ctxSet.hotMemePortableBindings : [],
       nativePrompt: ctxSet.nativePrompt === 'compact' ? 'compact' : 'detailed',
       nativePromptText: String(ctxSet.nativePromptText || ''),
       hotMemeEnabled: ctxSet.hotMemeEnabled !== false,
@@ -939,6 +949,8 @@ body{display:grid;place-items:center;overflow:hidden}
         manualSummary: String(cur.manualSummary || ''),
         loreScanKeyword: String(cur.loreScanKeyword ?? '🩶'),
         loreBookNames: String(cur.loreBookNames || ''),
+        lorePortableBindings: Array.isArray(cur.lorePortableBindings) ? cur.lorePortableBindings : [],
+        hotMemePortableBindings: Array.isArray(cur.hotMemePortableBindings) ? cur.hotMemePortableBindings : [],
         nativePrompt: cur.nativePrompt === 'compact' ? 'compact' : 'detailed',
         nativePromptText: String(cur.nativePromptText || ''),
         hotMemeEnabled: cur.hotMemeEnabled !== false,
@@ -1462,6 +1474,58 @@ body{display:grid;place-items:center;overflow:hidden}
   function splitScanTerms(value){
     return [...new Set(String(value || '').split(/[，,\n\r]+/).map((item) => item.trim()).filter(Boolean))];
   }
+  function renderScanTermChips(fieldId){
+    const field = document.getElementById(fieldId);
+    const box = document.querySelector(`[data-scan-chips="${fieldId}"]`);
+    if (!field || !box) return;
+    const terms = splitScanTerms(field.value);
+    box.innerHTML = terms.length ? terms.map((term, index) => `<span class="scan-term-chip"><span>${esc(term)}</span><button type="button" aria-label="删除 ${esc(term)}" data-scan-remove="${esc(fieldId)}" data-scan-index="${index}">×</button></span>`).join('') : '<span class="scan-term-empty">尚未拆分词条</span>';
+  }
+  function splitScanField(fieldId){
+    const field = document.getElementById(fieldId);
+    if (!field) return [];
+    const terms = splitScanTerms(field.value);
+    field.value = terms.join('\n');
+    renderScanTermChips(fieldId);
+    return terms;
+  }
+  function renderAllScanTermChips(){
+    ['setLoreBookNames','setLoreScanKeyword','setHotMemeBookNames','setHotMemeEntryNames'].forEach(renderScanTermChips);
+  }
+  function normalizePortableLoreBindings(value){
+    const seen = new Set();
+    return (Array.isArray(value) ? value : []).map((item) => ({
+      book:String(item?.book || '').replace(/^(世界书:|角色书:)/, '').trim(),
+      entry:String(item?.entry || item?.name || '').trim(),
+    })).filter((item) => {
+      const key = item.book.toLowerCase() + '\u0000' + item.entry.toLowerCase();
+      if (!item.book || !item.entry || seen.has(key)) return false;
+      seen.add(key); return true;
+    });
+  }
+  function portableLoreIds(books, bindings){
+    const wanted = normalizePortableLoreBindings(bindings);
+    const ids = new Set();
+    (books || []).forEach((book) => {
+      const bookName = String(book.label || book.key || '').replace(/^(世界书:|角色书:)/, '').trim().toLowerCase();
+      const entryNames = new Set(wanted.filter((item) => item.book.toLowerCase() === bookName).map((item) => item.entry.toLowerCase()));
+      if (!entryNames.size) return;
+      (book.entries || []).forEach((item) => { if (!item.disabled && entryNames.has(String(item.name || '').trim().toLowerCase())) ids.add(String(item.id)); });
+    });
+    return ids;
+  }
+  function portableBindingsFromIds(ids, snapshots = []){
+    const live = _loreCatalogCache?.flat || [];
+    const byId = new Map([...(Array.isArray(snapshots) ? snapshots : []), ...live].map((item) => [String(item.id), item]));
+    return normalizePortableLoreBindings((ids || []).map((id) => {
+      const item = byId.get(String(id));
+      return item ? { book:item.book, entry:item.name } : null;
+    }).filter(Boolean));
+  }
+  function collectPortableLoreBindings(){
+    syncLorePendingFromDom();
+    return portableBindingsFromIds([..._lorePickPending], state.selectedLoreSnap);
+  }
   function scanNameHit(value, terms){
     const text = String(value || '').replace(/^(世界书:|角色书:)/, '').trim().toLowerCase();
     return terms.some((term) => text.includes(String(term).toLowerCase()));
@@ -1531,7 +1595,7 @@ body{display:grid;place-items:center;overflow:hidden}
       refreshPresetTokenCounts();
     };
   }
-  async function renderLorePickList(forceReload){
+  async function renderLorePickList(forceReload, options = {}){
     const box = document.getElementById('lorePickList');
     if (!box) return;
     box.innerHTML = '<div class="lore-empty">正在读取酒馆世界书…</div>';
@@ -1543,7 +1607,7 @@ body{display:grid;place-items:center;overflow:hidden}
         if (document.querySelector('#npcAccountList [data-npc-key]')) refreshNpcLoreOptions();
         if (typeof renderHotMemeLoreOptions === 'function') renderHotMemeLoreOptions(hotMemeLoreIds.length ? hotMemeLoreIds : undefined);
       }
-      const selected = new Set(readSelectedLoreIds());
+      const selected = options.hydrateStored === false ? new Set() : new Set(readSelectedLoreIds());
       if (!_lorePickPending.size && selected.size) {
         selected.forEach((id) => _lorePickPending.add(id));
       }
@@ -1559,6 +1623,7 @@ body{display:grid;place-items:center;overflow:hidden}
           document.getElementById('setLoreScanKeyword')?.value ?? phoneSettings.loreScanKeyword ?? currentSlotContext().loreScanKeyword ?? '🩶'
         );
         autoIds.forEach((id) => _lorePickPending.add(id));
+        portableLoreIds(books, phoneSettings.lorePortableBindings || currentSlotContext().lorePortableBindings || []).forEach((id) => _lorePickPending.add(id));
       }
       if (!books.length && !flat.length) {
         box.innerHTML = '<div class="lore-empty">未扫描到当前聊天可读的世界书。<br>请确认已挂载世界书，或点「刷新并自动扫描」。</div>';
@@ -2321,7 +2386,8 @@ body{display:grid;place-items:center;overflow:hidden}
       const selectedSet = new Set(selectedIds);
       const entryScanTerms = splitScanTerms(phoneSettings.loreScanKeyword || currentSlotContext().loreScanKeyword || '🩶');
       const bookScanTerms = splitScanTerms(phoneSettings.loreBookNames || currentSlotContext().loreBookNames || '');
-      const allowAutoTitleScan = !manual && !state.loreAutoSuppressed && !!(entryScanTerms.length || bookScanTerms.length);
+      const portableBindings = normalizePortableLoreBindings(phoneSettings.lorePortableBindings || currentSlotContext().lorePortableBindings || []);
+      const allowAutoTitleScan = !manual && !state.loreAutoSuppressed && !!(entryScanTerms.length || bookScanTerms.length || portableBindings.length);
       const liveHitIds = new Set();
 
       // 恢复楼层/metadata 里钉住的勾选快照
@@ -2341,7 +2407,10 @@ body{display:grid;place-items:center;overflow:hidden}
           if (isJunkLore(name, keys, content)) return;
           const id = loreEntryId(bookTitle, e, index);
           if (manual || allowAutoTitleScan) {
-            const wanted = manual ? selectedSet.has(id) : (scanNameHit(bookTitle, bookScanTerms) || scanNameHit(name, entryScanTerms));
+            const cleanBook = String(bookTitle || '').replace(/^(世界书:|角色书:)/, '').trim().toLowerCase();
+            const cleanEntry = String(name || '').trim().toLowerCase();
+            const portableWanted = portableBindings.some((item) => item.book.toLowerCase() === cleanBook && item.entry.toLowerCase() === cleanEntry);
+            const wanted = manual ? (selectedSet.has(id) || portableWanted) : (portableWanted || scanNameHit(bookTitle, bookScanTerms) || scanNameHit(name, entryScanTerms));
             if (!wanted) return;
             liveHitIds.add(id);
           } else return;
@@ -2384,7 +2453,7 @@ body{display:grid;place-items:center;overflow:hidden}
 
       const modeLabel = manual
         ? '手动勾选世界书（现场读取优先，缺失用钉住快照）'
-        : (allowAutoTitleScan ? `自动扫描世界书名/条目名（${[...bookScanTerms, ...entryScanTerms].join('、')}）` : '未勾选世界书');
+        : (allowAutoTitleScan ? `自动扫描世界书名/条目名（${[...bookScanTerms, ...entryScanTerms].join('、') || '角色脚本内置绑定'}）` : '未勾选世界书');
       if (entryLines.length) {
         push('手机相关设定摘录｜' + modeLabel, entryLines.slice(0, manual ? 20 : 12).join('\n\n'));
       } else {
@@ -4126,6 +4195,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
   }
   function npcBoundLore(npc){
     const ids = new Set(Array.isArray(npc?.loreIds) ? npc.loreIds.map(String) : []);
+    portableLoreIds(_loreCatalogCache?.books || [], npc?.lorePortableBindings || []).forEach((id) => ids.add(id));
     const live = _loreCatalogCache?.flat || [];
     const snap = [...(state.selectedLoreSnap || []), ...(Array.isArray(npc?.loreSnap) ? npc.loreSnap : [])];
     const map = new Map([...live, ...snap].map((item) => [String(item.id), item]));
@@ -4142,6 +4212,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
         npc.bio ? `简介：${npc.bio}` : '',
         `粉丝：${Number(npc.fans) || 0}｜关注：${Number(npc.following) || 0}`,
         npc.manualLore ? `手动设定：\n${npc.manualLore}` : '',
+        npc.postPrompt ? `发帖要求：\n${npc.postPrompt}` : '',
         npcBoundLore(npc) ? `绑定世界书（只约束该 NPC 的身份/知情）：\n${npcBoundLore(npc)}` : '',
       ].filter(Boolean).join('\n');
     });
@@ -4208,6 +4279,25 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       return { id:String(parts[0] || '').trim(), weight:Math.max(1, Math.min(10, Number(parts[1]) || 5)), attributes:parts.slice(2).join(' :: ').trim() };
     }).filter((item) => item.id);
   }
+  function renderCustomIdPoolEditor(text){
+    const box = document.getElementById('customIdPoolList');
+    if (!box) return;
+    const list = parseCustomIdPool(text);
+    box.innerHTML = list.length ? list.map((item, index) => `<div class="id-pool-row" data-id-pool-row>
+      <div class="id-pool-field"><label>昵称</label><input type="text" data-id-pool-name value="${esc(item.id)}" placeholder="例：宁州夜班保安"></div>
+      <div class="id-pool-field"><label>权重 1–10</label><input type="number" min="1" max="10" step="1" data-id-pool-weight value="${item.weight}"></div>
+      <div class="id-pool-field attr"><label>账号属性（可选）</label><input type="text" data-id-pool-attr value="${esc(item.attributes)}" placeholder="例：VEX 粉丝，爱阴阳怪气"></div>
+      <button type="button" class="id-pool-remove" data-id-pool-remove aria-label="删除该 ID">×</button>
+    </div>`).join('') : '<div class="id-pool-empty">还没有自定义 ID，点下方“＋新建 ID”添加。</div>';
+  }
+  function customIdPoolTextFromForm(){
+    return [...document.querySelectorAll('#customIdPoolList [data-id-pool-row]')].map((row) => {
+      const id = String(row.querySelector('[data-id-pool-name]')?.value || '').trim();
+      const weight = Math.max(1, Math.min(10, Number(row.querySelector('[data-id-pool-weight]')?.value) || 5));
+      const attributes = String(row.querySelector('[data-id-pool-attr]')?.value || '').trim();
+      return id ? `${id} :: ${weight}${attributes ? ` :: ${attributes}` : ''}` : '';
+    }).filter(Boolean).join('\n');
+  }
   function buildCustomIdPoolPrompt(text){
     const list = parseCustomIdPool(text == null ? phoneSettings.customIdPool : text);
     if (!list.length) return '';
@@ -4226,10 +4316,14 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
   async function ensureHotMemeAutoBindings(){
     const bookNames = String(phoneSettings.hotMemeBookNames || currentSlotContext().hotMemeBookNames || '');
     const entryNames = String(phoneSettings.hotMemeEntryNames || currentSlotContext().hotMemeEntryNames || '');
-    if (!splitScanTerms(bookNames).length && !splitScanTerms(entryNames).length) return;
+    const hotPortable = normalizePortableLoreBindings(phoneSettings.hotMemePortableBindings || currentSlotContext().hotMemePortableBindings || []);
+    const npcPortable = npcAccounts().some((npc) => normalizePortableLoreBindings(npc.lorePortableBindings).length);
+    const mainPortable = normalizePortableLoreBindings(phoneSettings.lorePortableBindings || currentSlotContext().lorePortableBindings || []).length;
+    if (!splitScanTerms(bookNames).length && !splitScanTerms(entryNames).length && !hotPortable.length && !npcPortable && !mainPortable) return;
     if (!_loreCatalogCache) _loreCatalogCache = await listWorldLoreCatalog();
     const ids = new Set((phoneSettings.hotMemeLoreIds || []).map(String));
     scannedLoreIds(_loreCatalogCache.books || [], bookNames, entryNames).forEach((id) => ids.add(id));
+    portableLoreIds(_loreCatalogCache.books || [], hotPortable).forEach((id) => ids.add(id));
     const map = new Map((_loreCatalogCache.flat || []).map((item) => [String(item.id), item]));
     phoneSettings.hotMemeLoreIds = [...ids];
     phoneSettings.hotMemeLoreSnap = [...ids].map((id) => map.get(id) || (phoneSettings.hotMemeLoreSnap || []).find((item) => String(item.id) === id)).filter(Boolean).map((item) => ({ id:item.id, book:item.book, name:item.name, content:String(item.content || '').slice(0,12000) }));
@@ -4350,6 +4444,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
         `【同层微博任务｜关键词 weibo｜${npc ? 'NPC' : '角色'}发博】`,
         `请以微博账号「${postWho}」的口吻发微博（作者必须是 ${postWho}，头像字段写 ${npc ? 'npc.png' : 'char'}）。`,
         npc ? `该 NPC 的独立设定：\n${buildNpcRegistryPrompt()}` : '',
+        npc?.postPrompt ? `该 NPC 的固定发帖要求（必须遵守）：\n${npc.postPrompt}` : '',
         hint
           ? ('用户提示词（必须紧扣）：' + hint)
           : '用户未给提示词：请空 roll——结合人设、开场与最近剧情，发一条自然、可公开的角色碎碎念/动态（勿剧透未发生情节，勿替 {{user}} 发博）。',
@@ -4864,6 +4959,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       const bookNames = document.getElementById('setHotMemeBookNames')?.value || phoneSettings.hotMemeBookNames || '';
       const entryNames = document.getElementById('setHotMemeEntryNames')?.value || phoneSettings.hotMemeEntryNames || '';
       scannedLoreIds(_loreCatalogCache.books, bookNames, entryNames).forEach((id) => ids.add(id));
+      portableLoreIds(_loreCatalogCache.books, phoneSettings.hotMemePortableBindings || currentSlotContext().hotMemePortableBindings || []).forEach((id) => ids.add(id));
     }
     box.innerHTML = hotMemeLoreOptionsHtml([...ids]);
     box.onchange = () => { refreshPresetUiSummaries(); };
@@ -4875,7 +4971,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     if (key === 'persona') return document.getElementById('setIncludePersona')?.checked ? readPersonaPresetSource() : '';
     if (key === 'history') return recentHistoryForTokenEstimate();
     if (key === 'dedupe') return WEIBO_ANTI_REPEAT_RULES + '\n\n' + buildSlotGenerationMemory();
-    if (key === 'idPool') return buildCustomIdPoolPrompt(document.getElementById('setCustomIdPool')?.value || '');
+    if (key === 'idPool') return buildCustomIdPoolPrompt(customIdPoolTextFromForm());
     if (key === 'hotMeme') return document.getElementById('setHotMemeEnabled')?.checked ? [String(document.getElementById('setHotMemePrompt')?.value || WEIBO_HOT_MEME_DEFAULT), hotMemeLoreFromForm()].filter(Boolean).join('\n\n') : '';
     if (key === 'npcDm') return document.getElementById('setNpcDmEnabled')?.checked ? String(document.getElementById('setNpcDmPrompt')?.value || WEIBO_NPC_DM_DEFAULT) : '';
     if (key === 'worldbook') return worldbookForTokenEstimate();
@@ -4904,6 +5000,8 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       fans: Math.max(0, Number(value.fans) || 0),
       following: Math.max(0, Number(value.following) || 0),
       manualLore: String(value.manualLore || '').trim(),
+      postPrompt: String(value.postPrompt || '').trim(),
+      lorePortableBindings: normalizePortableLoreBindings(value.lorePortableBindings),
       loreIds: Array.isArray(value.loreIds) ? [...new Set(value.loreIds.map(String))] : [],
       loreSnap: Array.isArray(value.loreSnap) ? value.loreSnap : [],
     };
@@ -4919,14 +5017,19 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     if (!box) return;
     const list = (Array.isArray(entries) ? entries : []).map(normalizeNpcAccount);
     if (!list.length) { box.innerHTML = '<div class="custom-entry-empty">还没有注册 NPC 账号</div>'; return; }
-    box.innerHTML = list.map((npc, index) => `<div class="npc-editor-card" data-npc-key="${esc(npc.key)}">
+    box.innerHTML = list.map((npc, index) => {
+      const portableIds = portableLoreIds(_loreCatalogCache?.books || [], npc.lorePortableBindings);
+      const selectedIds = [...new Set([...(npc.loreIds || []), ...portableIds])];
+      return `<div class="npc-editor-card" data-npc-key="${esc(npc.key)}">
       <div class="npc-editor-head"><strong>${esc(npc.id || npc.name || ('NPC ' + (index + 1)))}</strong><button type="button" data-npc-delete>删除</button></div>
       <div class="settings-grid"><div class="set-row"><label>微博 ID（必填）</label><input type="text" data-npc-id value="${esc(npc.id)}" placeholder="@前的昵称"></div><div class="set-row"><label>正文姓名/称呼</label><input type="text" data-npc-name value="${esc(npc.name)}"></div></div>
       <div class="set-row"><label>简介</label><input type="text" data-npc-bio value="${esc(npc.bio)}"></div>
       <div class="settings-grid"><div class="set-row"><label>粉丝数</label><input type="text" data-npc-fans value="${esc(formatFanNumber(npc.fans))}"></div><div class="set-row"><label>关注数</label><input type="number" data-npc-following value="${npc.following}" min="0"></div></div>
       <div class="set-row"><label>手动 NPC 设定</label><textarea rows="4" data-npc-manual placeholder="身份、与 user/char 的关系、说话方式、知情范围……">${esc(npc.manualLore)}</textarea></div>
-      <div class="set-row"><label>绑定世界书条目（可多选）</label><div class="lore-pick-list" data-npc-lore-list>${npcLoreOptionsHtml(npc.loreIds)}</div></div>
-    </div>`).join('');
+      <div class="set-row"><label>NPC 发帖要求</label><textarea rows="4" data-npc-post-prompt placeholder="该 NPC 发微博时必须遵守的口吻、频率、主题、禁忌与可公开范围……">${esc(npc.postPrompt)}</textarea></div>
+      <div class="set-row"><label>绑定世界书条目（可多选）</label><div class="lore-pick-list" data-npc-lore-list>${npcLoreOptionsHtml(selectedIds)}</div></div>
+    </div>`;
+    }).join('');
     box.querySelectorAll('[data-npc-delete]').forEach((button) => button.onclick = () => {
       if (!confirm('删除这个 NPC 账号？')) return;
       button.closest('[data-npc-key]')?.remove();
@@ -4947,10 +5050,19 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       fans: parseFanNumber(card.querySelector('[data-npc-fans]')?.value),
       following: Number(card.querySelector('[data-npc-following]')?.value) || 0,
       manualLore: card.querySelector('[data-npc-manual]')?.value,
+      postPrompt: card.querySelector('[data-npc-post-prompt]')?.value,
       loreIds,
+      lorePortableBindings: portableBindingsFromIds(loreIds, [...oldSnap.values()]),
       loreSnap: loreIds.map((id) => catalog.get(String(id)) || oldSnap.get(String(id))).filter(Boolean).map((item) => ({ id:item.id, book:item.book, name:item.name, content:String(item.content || '').slice(0, 8000) })),
     }, index);
     }).filter((npc) => npc.id || npc.name);
+  }
+  function portableNpcAccountsFromForm(){
+    return readNpcAccountsFromForm().map((npc) => ({
+      key:npc.key, id:npc.id, name:npc.name, bio:npc.bio,
+      fans:npc.fans, following:npc.following, manualLore:npc.manualLore, postPrompt:npc.postPrompt,
+      lorePortableBindings:normalizePortableLoreBindings(npc.lorePortableBindings),
+    }));
   }
   function refreshNpcLoreOptions(){
     const list = readNpcAccountsFromForm();
@@ -5069,7 +5181,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       hotSummary.textContent = hotEnabled ? `可用梗库 · 已绑定 ${count} 条世界书` : `已停用 · 保留绑定 ${count} 条`;
     }
     const idPoolSummary = document.getElementById('idPoolPresetSummary');
-    if (idPoolSummary) idPoolSummary.textContent = `高权重候选 ${parseCustomIdPool(document.getElementById('setCustomIdPool')?.value || '').length} 个；仍允许自然生成`;
+    if (idPoolSummary) idPoolSummary.textContent = `高权重候选 ${parseCustomIdPool(customIdPoolTextFromForm()).length} 个；仍允许自然生成`;
     const npcDmEnabled = !!document.getElementById('setNpcDmEnabled')?.checked;
     const npcDmState = document.getElementById('npcDmPresetState');
     if (npcDmState) { npcDmState.textContent = npcDmEnabled ? '已启用' : '已停用'; npcDmState.classList.toggle('on', npcDmEnabled); }
@@ -5129,10 +5241,10 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     return {
       mode:base.mode, recentMessages:base.recentMessages,
       includeChar:base.includeChar, includePersona:base.includePersona, includeScenario:base.includeScenario, includeWorldInfo:base.includeWorldInfo,
-      loreScanKeyword:base.loreScanKeyword, loreBookNames:base.loreBookNames,
+      loreScanKeyword:base.loreScanKeyword, loreBookNames:base.loreBookNames, lorePortableBindings:[],
       nativePrompt:base.nativePrompt, nativePromptText:'',
-      hotMemeEnabled:base.hotMemeEnabled, hotMemePrompt:'', hotMemeManualText:'', hotMemeBookNames:'', hotMemeEntryNames:'',
-      npcDmEnabled:base.npcDmEnabled, npcDmPrompt:'', customIdPool:'',
+      hotMemeEnabled:base.hotMemeEnabled, hotMemePrompt:'', hotMemeManualText:'', hotMemeBookNames:'', hotMemeEntryNames:'', hotMemePortableBindings:[],
+      npcDmEnabled:base.npcDmEnabled, npcDmPrompt:'', npcAccounts:[], customIdPool:'',
       generationCounts:{ ...base.generationCounts }, presetDepths:{ ...DEFAULT_PRESET_DEPTHS }, customEntries:[],
     };
   }
@@ -5146,6 +5258,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       includeWorldInfo:!!document.getElementById('setIncludeBg').checked,
       loreScanKeyword:document.getElementById('setLoreScanKeyword').value.trim() || '🩶',
       loreBookNames:document.getElementById('setLoreBookNames').value.trim(),
+      lorePortableBindings:collectPortableLoreBindings(),
       nativePrompt:document.getElementById('setNativePrompt').value === 'compact' ? 'compact' : 'detailed',
       nativePromptText:document.getElementById('setNativePromptText').value.trim(),
       hotMemeEnabled:!!document.getElementById('setHotMemeEnabled').checked,
@@ -5153,9 +5266,11 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       hotMemeManualText:document.getElementById('setHotMemeManualText').value.trim(),
       hotMemeBookNames:document.getElementById('setHotMemeBookNames').value.trim(),
       hotMemeEntryNames:document.getElementById('setHotMemeEntryNames').value.trim(),
+      hotMemePortableBindings:(() => { const pick = hotMemeLoreSelectionFromForm(); return portableBindingsFromIds(pick.ids, pick.snap); })(),
       npcDmEnabled:!!document.getElementById('setNpcDmEnabled').checked,
       npcDmPrompt:document.getElementById('setNpcDmPrompt').value.trim(),
-      customIdPool:document.getElementById('setCustomIdPool').value.trim(),
+      npcAccounts:portableNpcAccountsFromForm(),
+      customIdPool:customIdPoolTextFromForm(),
       generationCounts:{
         feed:Number(document.getElementById('setFeedCount').value)||5, feedComments:Number(document.getElementById('setFeedCommentCount').value)||0,
         comments:Number(document.getElementById('setCommentCount').value)||5, dm:Number(document.getElementById('setDmCount').value)||10,
@@ -5168,7 +5283,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
   }
   function normalizePresetTemplate(item, fallbackName='未命名模板'){
     const value = item && typeof item === 'object' ? item : {};
-    return { id:String(value.id || ('tpl_' + Date.now().toString(36))), name:String(value.name || fallbackName).trim() || fallbackName, version:Math.max(1,Number(value.version)||1), config:{ ...systemPresetConfig(), ...(value.config || {}), generationCounts:{ ...systemPresetConfig().generationCounts, ...(value.config?.generationCounts || {}) }, presetDepths:normalizePresetDepths(value.config?.presetDepths), customEntries:Array.isArray(value.config?.customEntries) ? value.config.customEntries : [] } };
+    return { id:String(value.id || ('tpl_' + Date.now().toString(36))), name:String(value.name || fallbackName).trim() || fallbackName, version:Math.max(1,Number(value.version)||1), config:{ ...systemPresetConfig(), ...(value.config || {}), lorePortableBindings:normalizePortableLoreBindings(value.config?.lorePortableBindings), hotMemePortableBindings:normalizePortableLoreBindings(value.config?.hotMemePortableBindings), npcAccounts:Array.isArray(value.config?.npcAccounts) ? value.config.npcAccounts.map(normalizeNpcAccount) : [], generationCounts:{ ...systemPresetConfig().generationCounts, ...(value.config?.generationCounts || {}) }, presetDepths:normalizePresetDepths(value.config?.presetDepths), customEntries:Array.isArray(value.config?.customEntries) ? value.config.customEntries : [] } };
   }
   function presetTemplates(){ return (globalConfig.presetTemplates || []).map((item) => normalizePresetTemplate(item)); }
   function renderPresetTemplateSelect(){
@@ -5201,7 +5316,11 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     document.getElementById('setHotMemeEntryNames').value = config.hotMemeEntryNames || '';
     document.getElementById('setNpcDmEnabled').checked = !!config.npcDmEnabled;
     document.getElementById('setNpcDmPrompt').value = String(config.npcDmPrompt || '').trim() || WEIBO_NPC_DM_DEFAULT;
-    document.getElementById('setCustomIdPool').value = config.customIdPool || '';
+    phoneSettings.lorePortableBindings = normalizePortableLoreBindings(config.lorePortableBindings);
+    phoneSettings.hotMemePortableBindings = normalizePortableLoreBindings(config.hotMemePortableBindings);
+    phoneSettings.npcAccounts = (config.npcAccounts || []).map(normalizeNpcAccount);
+    renderNpcAccountEditor(config.npcAccounts || []);
+    renderCustomIdPoolEditor(config.customIdPool || '');
     const counts = { ...systemPresetConfig().generationCounts, ...(config.generationCounts || {}) };
     const countMap = { setFeedCount:'feed', setFeedCommentCount:'feedComments', setCommentCount:'comments', setDmCount:'dm', setDmThreadCount:'dmThread', setAllFeedCount:'allFeed', setAllCharCount:'allChar', setAllDmCount:'allDm' };
     Object.entries(countMap).forEach(([id,key]) => { document.getElementById(id).value = counts[key]; });
@@ -5209,7 +5328,8 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     document.querySelectorAll('[data-preset-depth]').forEach((input) => { input.value = depths[input.dataset.presetDepth] ?? 4; });
     renderCustomPresetEntries(config.customEntries || []);
     _lorePickPending.clear(); state.loreAutoSuppressed = false; _lorePickBookKey = null;
-    if (_loreCatalogCache) { renderLorePickList(false); renderHotMemeLoreOptions([], true); }
+    if (_loreCatalogCache) { renderLorePickList(false, { hydrateStored:false }); renderHotMemeLoreOptions([], true); }
+    renderAllScanTermChips();
     updateContextModeVisibility(); refreshPresetUiSummaries();
   }
   function selectedPresetTemplate(){
@@ -5273,10 +5393,12 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     document.getElementById('setHotMemeEntryNames').value = String(context.hotMemeEntryNames || '');
     phoneSettings.hotMemeLoreIds = Array.isArray(context.hotMemeLoreIds) ? context.hotMemeLoreIds.map(String) : [];
     phoneSettings.hotMemeLoreSnap = Array.isArray(context.hotMemeLoreSnap) ? context.hotMemeLoreSnap : [];
+    phoneSettings.hotMemePortableBindings = normalizePortableLoreBindings(context.hotMemePortableBindings);
     renderHotMemeLoreOptions(phoneSettings.hotMemeLoreIds);
     document.getElementById('setNpcDmEnabled').checked = !!context.npcDmEnabled;
     document.getElementById('setNpcDmPrompt').value = String(context.npcDmPrompt || '').trim() || WEIBO_NPC_DM_DEFAULT;
-    document.getElementById('setCustomIdPool').value = String(context.customIdPool || '');
+    phoneSettings.lorePortableBindings = normalizePortableLoreBindings(context.lorePortableBindings);
+    renderCustomIdPoolEditor(String(context.customIdPool || ''));
     const counts = { ...defaultGlobalConfig().context.generationCounts, ...(context.generationCounts || {}) };
     document.getElementById('setFeedCount').value = counts.feed;
     document.getElementById('setFeedCommentCount').value = counts.feedComments;
@@ -5301,6 +5423,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     document.getElementById('setApiTemp').value = String(api.temperature ?? 0.8);
     document.getElementById('setApiMax').value = String(api.maxTokens || 4096);
     document.getElementById('setApiToken').value = '';
+    renderAllScanTermChips();
     updateContextModeVisibility();
     updateApiVisibility();
     state.wbLore = String(readPhoneBundleFromMetadata()?.wbLore || slot?.wbLore || state.wbLore || '');
@@ -5352,6 +5475,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       manualSummary: document.getElementById('setManualSummary').value.trim(),
       loreScanKeyword: document.getElementById('setLoreScanKeyword').value.trim(),
       loreBookNames: document.getElementById('setLoreBookNames').value.trim(),
+      lorePortableBindings: collectPortableLoreBindings(),
       nativePrompt: nativePromptMode,
       nativePromptText: nativePromptDraft === nativePromptDefault(nativePromptMode) ? '' : nativePromptDraft,
       hotMemeEnabled: !!document.getElementById('setHotMemeEnabled').checked,
@@ -5359,12 +5483,13 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       hotMemeManualText: document.getElementById('setHotMemeManualText').value.trim(),
       hotMemeBookNames: document.getElementById('setHotMemeBookNames').value.trim(),
       hotMemeEntryNames: document.getElementById('setHotMemeEntryNames').value.trim(),
+      hotMemePortableBindings: portableBindingsFromIds(hotMemeLore.ids, hotMemeLore.snap),
       hotMemeLoreIds: hotMemeLore.ids,
       hotMemeLoreSnap: hotMemeLore.snap,
       npcDmEnabled: !!document.getElementById('setNpcDmEnabled').checked,
       npcDmPrompt: document.getElementById('setNpcDmPrompt').value.trim() === WEIBO_NPC_DM_DEFAULT.trim() ? '' : document.getElementById('setNpcDmPrompt').value.trim(),
       npcAccounts: npcAccountsDraft,
-      customIdPool: document.getElementById('setCustomIdPool').value.trim(),
+      customIdPool: customIdPoolTextFromForm(),
       generationCounts: {
         feed:Math.max(1,Math.min(20,Number(document.getElementById('setFeedCount').value)||5)),
         feedComments:Math.max(0,Math.min(10,Number(document.getElementById('setFeedCommentCount').value)||0)),
@@ -5393,6 +5518,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
         manualSummary: settingsPatch.manualSummary,
         loreScanKeyword: settingsPatch.loreScanKeyword,
         loreBookNames: settingsPatch.loreBookNames,
+        lorePortableBindings: settingsPatch.lorePortableBindings,
         nativePrompt: settingsPatch.nativePrompt,
         nativePromptText: settingsPatch.nativePromptText,
         hotMemeEnabled: settingsPatch.hotMemeEnabled,
@@ -5400,6 +5526,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
         hotMemeManualText: settingsPatch.hotMemeManualText,
         hotMemeBookNames: settingsPatch.hotMemeBookNames,
         hotMemeEntryNames: settingsPatch.hotMemeEntryNames,
+        hotMemePortableBindings: settingsPatch.hotMemePortableBindings,
         hotMemeLoreIds: settingsPatch.hotMemeLoreIds,
         hotMemeLoreSnap: settingsPatch.hotMemeLoreSnap,
         npcDmEnabled: settingsPatch.npcDmEnabled,
@@ -5423,6 +5550,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       manualSummary: settingsPatch.manualSummary,
       loreScanKeyword: settingsPatch.loreScanKeyword,
       loreBookNames: settingsPatch.loreBookNames,
+      lorePortableBindings: settingsPatch.lorePortableBindings,
       nativePrompt: settingsPatch.nativePrompt,
       nativePromptText: settingsPatch.nativePromptText,
       hotMemeEnabled: settingsPatch.hotMemeEnabled,
@@ -5430,6 +5558,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       hotMemeManualText: settingsPatch.hotMemeManualText,
       hotMemeBookNames: settingsPatch.hotMemeBookNames,
       hotMemeEntryNames: settingsPatch.hotMemeEntryNames,
+      hotMemePortableBindings: settingsPatch.hotMemePortableBindings,
       hotMemeLoreIds: settingsPatch.hotMemeLoreIds,
       hotMemeLoreSnap: settingsPatch.hotMemeLoreSnap,
       npcDmEnabled: settingsPatch.npcDmEnabled,
@@ -5490,7 +5619,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     showBubble(`已载入模板「${template.name}」，点底部保存后应用到本档位`);
   };
   document.getElementById('settingsNewTemplate').onclick = ()=>{
-    const name = String(prompt('新预设模板名称', (displayChar || rawCharName || '角色') + '微博模板') || '').trim();
+    const name = String(prompt('新预设模板名称', '{{char}}微博模板') || '').trim();
     if (!name) return;
     const template = normalizePresetTemplate({ id:'tpl_' + Date.now().toString(36), name, version:1, config:systemPresetConfig() });
     const list = presetTemplates(); list.push(template); saveTemplateCollection(list, template.id);
@@ -5501,7 +5630,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     let template = selectedPresetTemplate();
     const list = presetTemplates();
     if (!template || template.id === 'system') {
-      const name = String(prompt('另存为模板名称', (displayChar || rawCharName || '角色') + '微博模板') || '').trim();
+      const name = String(prompt('另存为模板名称', '{{char}}微博模板') || '').trim();
       if (!name) return;
       template = normalizePresetTemplate({ id:'tpl_' + Date.now().toString(36), name, version:1, config:presetTemplateConfigFromForm() });
       list.push(template);
@@ -5524,8 +5653,8 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
   document.getElementById('settingsExportRoleScript').onclick = async ()=>{
     let template = selectedPresetTemplate();
     if (!template) return showBubble('请先选择模板');
+    template = { ...template, version:template.version + 1, config:presetTemplateConfigFromForm() };
     if (template.id !== 'system') {
-      template = { ...template, version:template.version + 1, config:presetTemplateConfigFromForm() };
       const list = presetTemplates(); const index = list.findIndex((item) => item.id === template.id); if (index >= 0) list[index] = template;
       saveTemplateCollection(list, template.id);
     }
@@ -5548,9 +5677,47 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     el.oninput = update;
     el.onchange = update;
   });
-  ['setNativePromptText','setInitPrompt','loreRawText','setManualSummary','setHotMemePrompt','setHotMemeManualText','setHotMemeBookNames','setHotMemeEntryNames','setCustomIdPool','setNpcDmPrompt'].forEach((id) => {
+  ['setNativePromptText','setInitPrompt','loreRawText','setManualSummary','setHotMemePrompt','setHotMemeManualText','setHotMemeBookNames','setHotMemeEntryNames','setNpcDmPrompt'].forEach((id) => {
     document.getElementById(id)?.addEventListener('input', refreshPresetUiSummaries);
   });
+  document.querySelectorAll('[data-scan-split]').forEach((button) => {
+    button.onclick = () => {
+      const terms = splitScanField(button.dataset.scanSplit);
+      refreshPresetUiSummaries();
+      showBubble(terms.length ? `已拆分为 ${terms.length} 个扫描词条` : '没有可拆分的扫描词');
+    };
+  });
+  document.querySelectorAll('.scan-term-chips').forEach((box) => {
+    box.onclick = (event) => {
+      const remove = event.target.closest('[data-scan-remove]');
+      if (!remove) return;
+      const fieldId = remove.dataset.scanRemove;
+      const field = document.getElementById(fieldId);
+      const terms = splitScanTerms(field?.value);
+      terms.splice(Math.max(0, Number(remove.dataset.scanIndex) || 0), 1);
+      if (field) field.value = terms.join('\n');
+      renderScanTermChips(fieldId);
+      refreshPresetUiSummaries();
+    };
+  });
+  document.getElementById('settingsAddCustomId').onclick = () => {
+    const text = customIdPoolTextFromForm();
+    const seed = text ? text + '\n新 ID :: 5' : '新 ID :: 5';
+    renderCustomIdPoolEditor(seed);
+    document.querySelector('#customIdPoolList [data-id-pool-row]:last-child [data-id-pool-name]')?.select();
+    refreshPresetUiSummaries();
+  };
+  document.getElementById('customIdPoolList').onclick = (event) => {
+    const remove = event.target.closest('[data-id-pool-remove]');
+    if (!remove) return;
+    remove.closest('[data-id-pool-row]')?.remove();
+    if (!document.querySelector('#customIdPoolList [data-id-pool-row]')) renderCustomIdPoolEditor('');
+    refreshPresetUiSummaries();
+  };
+  document.getElementById('customIdPoolList').oninput = (event) => {
+    if (event.target.matches('[data-id-pool-weight]')) event.target.value = String(Math.max(1, Math.min(10, Number(event.target.value) || 1)));
+    refreshPresetUiSummaries();
+  };
   document.getElementById('setNativePrompt').onchange = ()=>{
     const ta = document.getElementById('setNativePromptText');
     const old = String(ta.value || '').trim();
@@ -5639,6 +5806,33 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     updateSlotStatusForSelection(id);
     showBubble('已新建；点「切入」后绑定到本聊天');
   };
+  document.getElementById('settingsDeleteSlot').onclick = async ()=>{
+    if ((globalConfig.slots || []).length <= 1) return showBubble('至少需要保留一个档位');
+    const targetId = String(document.getElementById('setSlotSelect').value || activeSlotId);
+    const target = globalConfig.slots.find((slot) => String(slot.id) === targetId);
+    if (!target) return showBubble('要删除的档位不存在');
+    if (!confirm(`删除档位“${target.name || '未命名档位'}”？\n\n将删除该档位的设置和当前聊天中的微博、评论、私信记录，不影响其它档位。`)) return;
+    const oldSettingsKey = (rawCharName || 'default') + '::' + (rawUserName || 'user') + '::slot:' + targetId;
+    const oldDataKey = currentChatId() + '::' + (rawCharName || 'char') + '::' + (rawUserName || 'user') + '::slot:' + targetId;
+    globalConfig.slots = globalConfig.slots.filter((slot) => String(slot.id) !== targetId);
+    if (activeSlotId === targetId) activeSlotId = String(globalConfig.slots[0].id);
+    writeGlobalConfig(globalConfig);
+    const slotRecords = { ...(chatBinding.slotRecords || {}) };
+    const slotRecordIds = { ...(chatBinding.slotRecordIds || {}) };
+    delete slotRecords[targetId]; delete slotRecordIds[targetId];
+    await saveChatBinding({ slotRecords, slotRecordIds, activeSlotId });
+    try {
+      const settings = JSON.parse(localStorage.getItem(PHONE_SETTINGS_KEY) || '{}'); delete settings[oldSettingsKey]; localStorage.setItem(PHONE_SETTINGS_KEY, JSON.stringify(settings));
+      const records = JSON.parse(localStorage.getItem(PHONE_DATA_KEY) || '{}'); delete records[oldDataKey]; localStorage.setItem(PHONE_DATA_KEY, JSON.stringify(records));
+    } catch (_) {}
+    resetPhoneStateForSlot();
+    hydrateFromChatMetadata();
+    phoneSettings = Object.assign(defaultPhoneSettings(), currentSlot()?.account || {});
+    savePhoneSettings(phoneSettings);
+    fillSettingsForm();
+    renderAll();
+    showBubble(`已删除档位“${target.name || '未命名档位'}”`);
+  };
   document.getElementById('settingsReset').onclick = async ()=>{
     const prevUser = collectUserNameCandidates();
     const prevChar = collectCharNameCandidates();
@@ -5713,23 +5907,51 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     }
     catch (e) { preview.innerHTML = '<div class="custom-entry-empty">预览失败：' + esc(String(e?.message || e)) + '</div>'; }
   };
-  document.getElementById('settingsRefreshLore').onclick = ()=>{
-    _loreCatalogCache = null; // 丢掉旧列表，避免角色书/世界书重名残留
-    _lorePickBookKey = null;
-    _lorePickPending.clear();
-    state.loreAutoSuppressed = false;
-    phoneSettings.loreScanKeyword = document.getElementById('setLoreScanKeyword').value.trim();
-    phoneSettings.loreBookNames = document.getElementById('setLoreBookNames').value.trim();
-    renderLorePickList(true);
+  document.getElementById('settingsRefreshLore').onclick = async ()=>{
+    const button = document.getElementById('settingsRefreshLore');
+    const oldText = button.textContent;
+    button.disabled = true; button.textContent = '正在重新扫描…';
+    try {
+      _loreCatalogCache = null;
+      _lorePickBookKey = null;
+      _lorePickPending.clear();
+      state.selectedLoreIds = [];
+      state.selectedLoreSnap = [];
+      phoneSettings.selectedLoreIds = [];
+      state.loreAutoSuppressed = false;
+      phoneSettings.loreScanKeyword = document.getElementById('setLoreScanKeyword').value.trim();
+      phoneSettings.loreBookNames = document.getElementById('setLoreBookNames').value.trim();
+      await renderLorePickList(true, { hydrateStored:false });
+      const picks = collectCheckedLorePicks();
+      await persistLorePicks(picks.ids, picks.snap);
+      showBubble(`扫描完成：命中 ${picks.ids.length} 条世界书`);
+    } catch (error) {
+      showBubble('重新扫描失败：' + String(error?.message || error));
+    } finally {
+      button.disabled = false; button.textContent = oldText;
+    }
   };
   document.getElementById('settingsClearLorePick').onclick = async ()=>{
-    syncLorePendingFromDom();
-    _lorePickPending.clear();
-    state.loreAutoSuppressed = true;
-    await persistLorePicks([], []);
-    _lorePickBookKey = null;
-    renderLorePickList(false);
-    showBubble('已清空勾选；不会自动恢复，除非你点“刷新并自动扫描”');
+    const button = document.getElementById('settingsClearLorePick');
+    const oldText = button.textContent;
+    button.disabled = true; button.textContent = '正在清空…';
+    try {
+      _lorePickPending.clear();
+      state.selectedLoreIds = [];
+      state.selectedLoreSnap = [];
+      phoneSettings.selectedLoreIds = [];
+      phoneSettings.lorePortableBindings = [];
+      state.loreAutoSuppressed = true;
+      await persistLorePicks([], []);
+      _lorePickBookKey = null;
+      await renderLorePickList(false, { hydrateStored:false });
+      refreshPresetUiSummaries();
+      showBubble('已清空勾选；不会自动恢复，除非你点“刷新并自动扫描”');
+    } catch (error) {
+      showBubble('清空勾选失败：' + String(error?.message || error));
+    } finally {
+      button.disabled = false; button.textContent = oldText;
+    }
   };
   document.getElementById('settingsClearData').onclick = ()=>{
     if (!confirm('清空当前档位里的微博、评论、私信？其它档位不受影响。')) return;
