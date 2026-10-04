@@ -5414,13 +5414,16 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
   }
   async function exportRoleScript(template){
     const value = normalizePresetTemplate(template);
+    const templateName = String(value.name || '').trim() || '{{char}}微博模板';
+    const exportName = /微博\s*$/.test(templateName) ? templateName : templateName + '微博';
+    const fileName = exportName.replace(/[\\/:*?"<>|\r\n]+/g, '-').trim() || '微博';
     const url = 'https://fchris1219-del.github.io/jiang-weibo-oneframe-v2/launcher.js?v=' + Date.now();
     const source = await fetch(url, { cache:'reload' }).then((res) => { if (!res.ok) throw new Error('启动器 HTTP ' + res.status); return res.text(); });
     if (!/const JWR2_EMBEDDED_PRESET\s*=\s*[^;]+;/.test(source)) throw new Error('线上启动器尚未支持模板导出，请刷新前端后重试');
     const literal = JSON.stringify(value).replace(/</g, '\\u003c');
     const content = source.replace(/const JWR2_EMBEDDED_PRESET\s*=\s*[^;]+;/, 'const JWR2_EMBEDDED_PRESET = ' + literal + ';');
-    const script = { type:'script', enabled:true, name:'微博', id:crypto.randomUUID ? crypto.randomUUID() : ('jwr2-' + Date.now()), content, info:`单轮廓远程前端；内置预设模板：${value.name} v${value.version}`, button:{ enabled:true, buttons:[] }, data:{}, export_with:{ data:true, button:true } };
-    downloadTextFile('酒馆助手脚本-微博.json', JSON.stringify(script, null, 2));
+    const script = { type:'script', enabled:true, name:exportName, id:crypto.randomUUID ? crypto.randomUUID() : ('jwr2-' + Date.now()), content, info:`单轮廓远程前端；内置预设模板：${value.name} v${value.version}`, button:{ enabled:true, buttons:[] }, data:{}, export_with:{ data:true, button:true } };
+    downloadTextFile(fileName + '.json', JSON.stringify(script, null, 2));
   }
   function fillSettingsForm(){
     globalConfig = readGlobalConfig();
