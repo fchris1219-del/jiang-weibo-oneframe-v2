@@ -6,6 +6,8 @@ const JWR2_BRIDGE_KEY = '__JWR2_BRIDGE__';
 const JWR2_INSTANCE_KEY = '__JWR2_CLEANUP__';
 const JWR2_SETTINGS_KEY = 'jiang_weibo_oneframe_v2';
 const JWR2_CHAT_KEY = 'jiang_weibo_oneframe_v2';
+// 导出角色酒馆脚本时只替换这一行；null 表示使用远程 HTML 的系统默认预设。
+const JWR2_EMBEDDED_PRESET = null;
 
 const JWR2_DOC = (() => {
   try { return window.parent && window.parent.document ? window.parent.document : document; }
@@ -94,10 +96,15 @@ function jwr2SafeContext() {
 }
 
 function jwr2DefaultStore() {
+  const embedded = jwr2Clone(JWR2_EMBEDDED_PRESET, null);
+  const embeddedId = embedded?.id ? String(embedded.id) : '';
   return {
-    version: 4,
+    version: 6,
     api: { mode: 'main', source: 'custom', url: '', model: '', models: [], temperature: 0.8, maxTokens: 4096, token: '' },
-    context: { mode: 'recent', recentMessages: 3, manualSummary: '', includeChar: true, includePersona: true, includeScenario: true, includeWorldInfo: true, loreScanKeyword: '🩶', nativePrompt: 'detailed', nativePromptText: '', customEntries: [], injectMain: false },
+    context: { mode: 'recent', recentMessages: 3, manualSummary: '', includeChar: true, includePersona: true, includeScenario: true, includeWorldInfo: true, loreScanKeyword: '🩶', nativePrompt: 'detailed', nativePromptText: '', customEntries: [], injectMain: false, ...(embedded?.config || {}) },
+    presetTemplates: embedded ? [embedded] : [],
+    activePresetTemplateId: embeddedId || 'system',
+    embeddedPresetId: embeddedId,
     slots: [{ id: 'default', name: '默认档位', initPrompt: '', wbLore: '' }],
   };
 }
@@ -110,11 +117,23 @@ function jwr2ReadSettings() {
   const out = { ...base, ...jwr2Clone(raw, {}) };
   out.api = { ...base.api, ...(raw.api || {}) };
   out.context = { ...base.context, ...(raw.context || {}) };
+  const embedded = jwr2Clone(JWR2_EMBEDDED_PRESET, null);
+  const embeddedChanged = !!(embedded?.id && String(raw.embeddedPresetId || '') !== String(embedded.id));
+  if (embeddedChanged) {
+    out.context = { ...base.context, ...(embedded.config || {}) };
+    out.activePresetTemplateId = String(embedded.id);
+    out.embeddedPresetId = String(embedded.id);
+  }
+  const templateMap = new Map();
+  [...(Array.isArray(raw.presetTemplates) ? raw.presetTemplates : []), ...(embedded ? [embedded] : [])].forEach((item) => {
+    if (item?.id) templateMap.set(String(item.id), jwr2Clone(item, item));
+  });
+  out.presetTemplates = [...templateMap.values()];
   out.context.customEntries = Array.isArray(out.context.customEntries) ? out.context.customEntries : [];
   out.slots = Array.isArray(raw.slots) && raw.slots.length ? jwr2Clone(raw.slots, base.slots) : base.slots;
-  out.slots = out.slots.map((slot) => ({ ...slot, context: { ...base.context, ...(slot?.context || {}), customEntries: Array.isArray(slot?.context?.customEntries) ? slot.context.customEntries : [] } }));
+  out.slots = out.slots.map((slot) => ({ ...slot, context: { ...base.context, ...(embeddedChanged ? (embedded?.config || {}) : (slot?.context || {})), customEntries: Array.isArray(embeddedChanged ? embedded?.config?.customEntries : slot?.context?.customEntries) ? (embeddedChanged ? embedded.config.customEntries : slot.context.customEntries) : [] } }));
   if (Number(raw.version || 0) < 3 && Number(raw.context?.recentMessages) === 12) out.context.recentMessages = 3;
-  out.version = 4;
+  out.version = 6;
   return out;
 }
 
@@ -354,6 +373,7 @@ function jwr2InstallBridge() {
     getCurrentChatId: () => jwr2ChatId(),
     getChatMessages: (...args) => typeof getChatMessages === 'function' ? getChatMessages(...args) : [],
     getSettings: () => jwr2PublicSettings(),
+    getEmbeddedPreset: () => jwr2Clone(JWR2_EMBEDDED_PRESET, null),
     saveSettings: (value) => jwr2WriteSettings(value),
     getChatStore: () => jwr2ReadChatStore(),
     saveChatStore: (value) => jwr2WriteChatStore(value),
