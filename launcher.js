@@ -473,8 +473,8 @@ function jwr2Mount() {
   #jwr2-status{position:absolute;width:min(420px,calc(100vw - 24px));height:min(760px,calc(100dvh - 24px));border-radius:22px;display:grid;place-items:center;padding:24px;box-sizing:border-box;text-align:center;background:#fff;color:#555;font-size:13px;pointer-events:none}#jwr2-status.bad{color:#b72f2f}
   @media(max-width:520px){#jwr2-fab{right:10px;bottom:62px}#jwr2-overlay{place-items:stretch}#jwr2-frame,#jwr2-status{width:100vw;height:100dvh;border-radius:0}}
   </style>
-  <button id="jwr2-fab" type="button" aria-label="打开江清让同层微博">博</button>
-  <section id="jwr2-overlay"><div id="jwr2-backdrop"></div><iframe id="jwr2-frame" title="江清让同层微博" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads"></iframe><div id="jwr2-status">准备加载…</div></section>`;
+  <button id="jwr2-fab" type="button" aria-label="打开微博">博</button>
+  <section id="jwr2-overlay"><div id="jwr2-backdrop"></div><iframe id="jwr2-frame" title="微博" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads"></iframe><div id="jwr2-status">准备加载…</div></section>`;
   JWR2_DOC.body.appendChild(root);
   jwr2Root = root;
   jwr2Frame = root.querySelector('#jwr2-frame');
