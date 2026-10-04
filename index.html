@@ -621,7 +621,10 @@ body{display:grid;place-items:center;overflow:hidden}
           <div class="set-row"><label for="setUserId">我的微博昵称</label><input type="text" id="setUserId" /></div>
           <div class="set-row"><label for="setCharId">角色微博昵称</label><input type="text" id="setCharId" /></div>
         </div>
-        <div class="set-row"><label for="setUserBio">我的简介</label><input type="text" id="setUserBio" placeholder="账号简介（可选）" /></div>
+        <div class="settings-grid">
+          <div class="set-row"><label for="setUserBio">我的简介</label><input type="text" id="setUserBio" placeholder="账号简介（可选）" /></div>
+          <div class="set-row"><label for="setCharBio">角色简介</label><input type="text" id="setCharBio" placeholder="随角色模板导出" /></div>
+        </div>
         <div class="settings-grid">
           <div class="set-row"><label for="setUserFans">我的粉丝</label><input type="text" id="setUserFans" /></div>
           <div class="set-row"><label for="setUserFollowing">我的关注</label><input type="text" id="setUserFollowing" /></div>
@@ -683,13 +686,13 @@ body{display:grid;place-items:center;overflow:hidden}
           <div class="set-row" style="margin-top:8px"><select id="setPresetTemplate" aria-label="预设模板"></select></div>
           <div class="template-actions"><button type="button" class="mini-action" id="settingsApplyTemplate">应用所选模板</button><button type="button" class="mini-action primary" id="settingsNewTemplate">新建预设模板</button><button type="button" class="mini-action" id="settingsSaveTemplate">保存到模板</button><button type="button" class="mini-action" id="settingsDeleteTemplate">删除模板</button></div>
           <div class="settings-inline"><button type="button" class="mini-action primary" id="settingsExportRoleScript">导出角色酒馆脚本 JSON</button></div>
-          <div class="field-note" id="presetTemplateHint">新模板会从系统默认预设复制；导出脚本会携带所选模板、注册 NPC 账号与当前勾选的“世界书名＋条目名”可移植绑定，但不携带 Token、聊天记录、世界书正文或内部 ID。</div>
+          <div class="field-note" id="presetTemplateHint">新模板会从系统默认预设复制；导出脚本会携带所选模板、Char 微博账号资料、注册 NPC 账号与当前勾选的“世界书名＋条目名”可移植绑定。User 微博账号资料、Token、聊天记录、世界书正文和内部 ID 均不会导出。</div>
         </div>
         <div class="preset-toolbar"><button type="button" class="mini-action primary" id="settingsPreviewContext">生成分组注入预览</button><button type="button" class="mini-action" id="settingsAddPresetEntry">+新增自定义条目</button></div>
         <div class="preset-stack" id="presetStack">
           <article class="preset-entry" data-preset-entry="native">
             <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">规</div><div class="preset-entry-copy"><div class="preset-entry-title">微博原生提示词</div><div class="preset-entry-note" id="nativePromptSummary">详细原生版 · 含 ID 生成指导</div></div><span class="preset-entry-state on">必定注入</span><span class="preset-entry-chev">⌄</span></div>
-            <div class="preset-entry-editor"><div class="set-row"><label for="setNativePrompt">默认版本</label><select id="setNativePrompt"><option value="detailed">详细原生版（含 ID 指导）</option><option value="compact">简约格式版</option></select></div><div class="set-row"><label for="setNativePromptText">实际注入文本（可直接修改）</label><textarea id="setNativePromptText" rows="14"></textarea></div><div class="settings-inline"><button type="button" class="mini-action" id="settingsResetNativePrompt">恢复所选版本默认</button></div></div>
+            <div class="preset-entry-editor"><div class="set-row"><label for="setNativePrompt">默认版本</label><select id="setNativePrompt"><option value="detailed">详细原生版（含 ID 指导）</option><option value="compact">简约表达版</option></select></div><div class="set-row"><label for="setNativePromptText">表达与内容规则（可修改）</label><textarea id="setNativePromptText" rows="14"></textarea><div class="field-note">这里只编辑微博表达、账号口吻、生态与内容规则。输出标签、字段名称、分隔符和编号协议固定内嵌，不能被模板修改。</div></div><details style="margin-top:10px"><summary>查看固定输出格式（只读）</summary><div class="preset-readonly" id="fixedNativeFormatPreview">打开设置后载入…</div></details><div class="settings-inline"><button type="button" class="mini-action" id="settingsResetNativePrompt">恢复所选版本默认</button></div></div>
           </article>
           <article class="preset-entry" data-preset-entry="init">
             <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">初</div><div class="preset-entry-copy"><div class="preset-entry-title">档位初始化与 wb_lore</div><div class="preset-entry-note" id="wbLoreSummary">仅保存到本档位；可手动从首楼拉取覆盖</div></div><span class="preset-entry-state on">档位</span><span class="preset-entry-chev">⌄</span></div>
@@ -804,6 +807,7 @@ body{display:grid;place-items:center;overflow:hidden}
     };
     if (Number(value.version || 0) < 3 && Number(value.context?.recentMessages) === 12) out.context.recentMessages = 3;
     out.context.customEntries = Array.isArray(out.context.customEntries) ? out.context.customEntries : [];
+    out.context.charAccount = normalizePortableCharAccount(out.context.charAccount);
     out.context.npcAccounts = Array.isArray(out.context.npcAccounts) ? out.context.npcAccounts : [];
     out.context.lorePortableBindings = normalizePortableLoreBindings(out.context.lorePortableBindings);
     out.context.hotMemePortableBindings = normalizePortableLoreBindings(out.context.hotMemePortableBindings);
@@ -818,6 +822,7 @@ body{display:grid;place-items:center;overflow:hidden}
       context: {
         ...base.context,
         ...(slot?.context || {}),
+        charAccount: normalizePortableCharAccount(slot?.context?.charAccount || out.context.charAccount),
         presetDepths: normalizePresetDepths(slot?.context?.presetDepths || out.context.presetDepths),
         npcAccounts: Array.isArray(slot?.context?.npcAccounts) ? slot.context.npcAccounts : out.context.npcAccounts,
         lorePortableBindings: Array.isArray(slot?.context?.lorePortableBindings) ? slot.context.lorePortableBindings : out.context.lorePortableBindings,
@@ -862,6 +867,15 @@ body{display:grid;place-items:center;overflow:hidden}
   }
 
   const PHONE_SETTINGS_KEY = 'weibo_phone_settings_v1';
+  function normalizePortableCharAccount(value){
+    const item = value && typeof value === 'object' ? value : {};
+    return {
+      weiboId: String(item.weiboId || item.charWeiboId || '').trim(),
+      bio: String(item.bio || item.charBio || '').trim(),
+      fans: Math.max(0, Number(item.fans ?? item.charFans) || 0),
+      following: Math.max(0, Number(item.following ?? item.charFollowing) || 0),
+    };
+  }
   function settingsBucketId(){
     return (rawCharName || 'default') + '::' + (rawUserName || 'user') + '::slot:' + activeSlotId;
   }
@@ -869,14 +883,17 @@ body{display:grid;place-items:center;overflow:hidden}
     const ctxSet = currentSlotContext();
     const slot = currentSlot() || {};
     const account = slot.account || {};
+    const portableChar = normalizePortableCharAccount(ctxSet.charAccount);
+    const hasPortableChar = !!(portableChar.weiboId || portableChar.bio || portableChar.fans || portableChar.following);
     return {
       userWeiboId: account.userWeiboId || '',
-      charWeiboId: account.charWeiboId || '',
+      charWeiboId: (hasPortableChar ? portableChar.weiboId : account.charWeiboId) || '',
       userBio: account.userBio || '',
+      charBio: (hasPortableChar ? portableChar.bio : account.charBio) || '',
       userFans: Number(account.userFans) || 0,
-      charFans: Number(account.charFans) || 0,
+      charFans: hasPortableChar ? portableChar.fans : (Number(account.charFans) || 0),
       userFollowing: Number.isFinite(Number(account.userFollowing)) ? Number(account.userFollowing) : 12,
-      charFollowing: Number.isFinite(Number(account.charFollowing)) ? Number(account.charFollowing) : 86,
+      charFollowing: hasPortableChar ? portableChar.following : (Number.isFinite(Number(account.charFollowing)) ? Number(account.charFollowing) : 86),
       includeBgLore: ctxSet.includeWorldInfo !== false,
       includeChar: ctxSet.includeChar !== false,
       includePersona: ctxSet.includePersona !== false,
@@ -934,7 +951,7 @@ body{display:grid;place-items:center;overflow:hidden}
     const slot = currentSlot();
     if (slot) {
       slot.account = {
-        userWeiboId: cur.userWeiboId || '', charWeiboId: cur.charWeiboId || '', userBio: cur.userBio || '',
+        userWeiboId: cur.userWeiboId || '', charWeiboId: cur.charWeiboId || '', userBio: cur.userBio || '', charBio: cur.charBio || '',
         userFans: Number(cur.userFans) || 0, charFans: Number(cur.charFans) || 0,
         userFollowing: Number(cur.userFollowing) || 0, charFollowing: Number(cur.charFollowing) || 0,
       };
@@ -967,6 +984,7 @@ body{display:grid;place-items:center;overflow:hidden}
         generationCounts: { ...defaultGlobalConfig().context.generationCounts, ...(cur.generationCounts || {}) },
         presetDepths: normalizePresetDepths(cur.presetDepths),
         customEntries: Array.isArray(cur.customEntries) ? cur.customEntries : [],
+        charAccount: normalizePortableCharAccount({ weiboId:cur.charWeiboId, bio:cur.charBio, fans:cur.charFans, following:cur.charFollowing }),
         injectMain: !!cur.injectMain,
       };
       slot.context = { ...globalConfig.context };
@@ -3702,7 +3720,7 @@ body{display:grid;place-items:center;overflow:hidden}
     const isNpc = !!npc;
     const name = isUser ? displayName : (isNpc ? (npc.id || npc.name) : (displayChar || rawCharName || '角色'));
     const token = isUser ? defaultUserAvatarToken() : (isNpc ? 'npc.png' : defaultCharAvatarToken());
-    const bio = isUser ? String(phoneSettings.userBio || '').trim() : (isNpc ? String(npc.bio || '').trim() : '');
+    const bio = isUser ? String(phoneSettings.userBio || '').trim() : (isNpc ? String(npc.bio || '').trim() : String(phoneSettings.charBio || '').trim());
     const list = postsOfWho(mode);
     ensureProfileStats();
     const fans = isUser ? (Number(state.userFans) || 0) : (isNpc ? (Number(npc.fans) || 0) : (Number(state.charFans) || 0));
@@ -4163,6 +4181,13 @@ Do not wrap output in Markdown code fences.
 
 </weibo_format>`;
 
+  const WEIBO_NATIVE_COMPACT_RULES = String.raw`<weibo_native_rules>
+生成自然发生的微博内容，不要解释微博，也不要代替 {{user}} 发布其未明确给出的内容。
+不同账号必须保留各自身份、立场、知情范围和说话习惯；普通用户、粉丝、黑粉、串子、营销号、媒体、官方与本人不能说成同一种口吻。
+夸人、骂人、玩梗与阴阳怪气必须符合发言账号身份。不要让所有评论持相同立场，也不要凭空制造尚未发生的重大公开事件。
+只使用当前剧情中已公开或该账号可合理得知的信息，并遵守额外注入的信息隔离规则。
+</weibo_native_rules>`;
+
   const WEIBO_INFORMATION_BOUNDARY = String.raw`<weibo_information_boundary>
 只能使用在当前剧情中已经公开，或该账号根据其身份和传播链可合理知情的信息。
 角色私下对话、内心、未公开身份/关系/计划、私信、隐蔽事件，不得自动成为路人、粉丝、媒体或其他微博账号的共同知识。
@@ -4262,12 +4287,32 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     ].join('\n');
   }
 
+  function detailedNativeEditableDefault(){
+    const marker = '\n【协议一：weibo】';
+    const source = String(WEIBO_NATIVE_DETAILED || '');
+    const head = source.includes(marker) ? source.slice(0, source.indexOf(marker)) : source;
+    return head.replace(/^<weibo_native_output>\s*/i, '<weibo_native_rules>\n').replace(/<\/weibo_native_output>\s*$/i, '').trim() + '\n</weibo_native_rules>';
+  }
+  function sanitizeEditableNativePrompt(value, mode='detailed'){
+    let text = String(value || '').trim();
+    if (!text || text === WEIBO_NATIVE_DETAILED.trim() || text === WEIBO_NATIVE_COMPACT.trim()) return nativePromptDefault(mode);
+    text = text.replace(/<weibo_format>[\s\S]*?<\/weibo_format>/gi, '').trim();
+    const protocolAt = text.indexOf('【协议一：weibo】');
+    if (protocolAt >= 0) text = text.slice(0, protocolAt).trim();
+    text = text.replace(/^<weibo_native_output>\s*/i, '<weibo_native_rules>\n').replace(/<\/weibo_native_output>\s*$/i, '').trim();
+    if (/^<weibo_native_rules>/i.test(text) && !/<\/weibo_native_rules>\s*$/i.test(text)) text += '\n</weibo_native_rules>';
+    return text || nativePromptDefault(mode);
+  }
   function nativePromptDefault(mode){
-    return mode === 'compact' ? WEIBO_NATIVE_COMPACT : WEIBO_NATIVE_DETAILED;
+    return mode === 'compact' ? WEIBO_NATIVE_COMPACT_RULES : detailedNativeEditableDefault();
+  }
+  function fixedNativeFormat(){
+    return WEIBO_NATIVE_COMPACT;
   }
   function selectedNativePrompt(){
-    const custom = String(phoneSettings.nativePromptText || currentSlotContext().nativePromptText || '').trim();
-    return (custom || nativePromptDefault(phoneSettings.nativePrompt)) + '\n\n【动态数量覆盖】本次任务中明确写出的微博、评论、私信与角色微博数量，高于本预设示例中的默认 5 条、10 条或 3–6 条；按本次任务数量连续编号并输出。';
+    const mode = phoneSettings.nativePrompt === 'compact' ? 'compact' : 'detailed';
+    const custom = sanitizeEditableNativePrompt(phoneSettings.nativePromptText || currentSlotContext().nativePromptText || '', mode);
+    return custom + '\n\n' + fixedNativeFormat() + '\n\n【动态数量覆盖】本次任务中明确写出的微博、评论、私信与角色微博数量，高于固定协议示例中的默认 5 条、10 条或 3–6 条；按本次任务数量连续编号并输出。';
   }
   function selectedHotMemePrompt(){
     const custom = String(phoneSettings.hotMemePrompt || currentSlotContext().hotMemePrompt || '').trim();
@@ -4965,7 +5010,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     box.onchange = () => { refreshPresetUiSummaries(); };
   }
   function presetContentForToken(key){
-    if (key === 'native') return String(document.getElementById('setNativePromptText')?.value || selectedNativePrompt());
+    if (key === 'native') return sanitizeEditableNativePrompt(document.getElementById('setNativePromptText')?.value, document.getElementById('setNativePrompt')?.value) + '\n\n' + fixedNativeFormat();
     if (key === 'init') return [document.getElementById('setInitPrompt')?.value, document.getElementById('loreRawText')?.value, buildNpcRegistryPrompt()].filter(Boolean).join('\n\n');
     if (key === 'character') return (document.getElementById('setIncludeChar')?.checked || document.getElementById('setIncludeScenario')?.checked) ? readCharacterPresetSource() : '';
     if (key === 'persona') return document.getElementById('setIncludePersona')?.checked ? readPersonaPresetSource() : '';
@@ -5244,7 +5289,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       loreScanKeyword:base.loreScanKeyword, loreBookNames:base.loreBookNames, lorePortableBindings:[],
       nativePrompt:base.nativePrompt, nativePromptText:'',
       hotMemeEnabled:base.hotMemeEnabled, hotMemePrompt:'', hotMemeManualText:'', hotMemeBookNames:'', hotMemeEntryNames:'', hotMemePortableBindings:[],
-      npcDmEnabled:base.npcDmEnabled, npcDmPrompt:'', npcAccounts:[], customIdPool:'',
+      npcDmEnabled:base.npcDmEnabled, npcDmPrompt:'', npcAccounts:[], customIdPool:'', charAccount:normalizePortableCharAccount(),
       generationCounts:{ ...base.generationCounts }, presetDepths:{ ...DEFAULT_PRESET_DEPTHS }, customEntries:[],
     };
   }
@@ -5260,7 +5305,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       loreBookNames:document.getElementById('setLoreBookNames').value.trim(),
       lorePortableBindings:collectPortableLoreBindings(),
       nativePrompt:document.getElementById('setNativePrompt').value === 'compact' ? 'compact' : 'detailed',
-      nativePromptText:document.getElementById('setNativePromptText').value.trim(),
+      nativePromptText:sanitizeEditableNativePrompt(document.getElementById('setNativePromptText').value, document.getElementById('setNativePrompt').value),
       hotMemeEnabled:!!document.getElementById('setHotMemeEnabled').checked,
       hotMemePrompt:document.getElementById('setHotMemePrompt').value.trim(),
       hotMemeManualText:document.getElementById('setHotMemeManualText').value.trim(),
@@ -5270,6 +5315,12 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       npcDmEnabled:!!document.getElementById('setNpcDmEnabled').checked,
       npcDmPrompt:document.getElementById('setNpcDmPrompt').value.trim(),
       npcAccounts:portableNpcAccountsFromForm(),
+      charAccount:normalizePortableCharAccount({
+        weiboId:document.getElementById('setCharId').value,
+        bio:document.getElementById('setCharBio').value,
+        fans:parseFanNumber(document.getElementById('setCharFans').value),
+        following:parseFanNumber(document.getElementById('setCharFollowing').value),
+      }),
       customIdPool:customIdPoolTextFromForm(),
       generationCounts:{
         feed:Number(document.getElementById('setFeedCount').value)||5, feedComments:Number(document.getElementById('setFeedCommentCount').value)||0,
@@ -5283,7 +5334,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
   }
   function normalizePresetTemplate(item, fallbackName='未命名模板'){
     const value = item && typeof item === 'object' ? item : {};
-    return { id:String(value.id || ('tpl_' + Date.now().toString(36))), name:String(value.name || fallbackName).trim() || fallbackName, version:Math.max(1,Number(value.version)||1), config:{ ...systemPresetConfig(), ...(value.config || {}), lorePortableBindings:normalizePortableLoreBindings(value.config?.lorePortableBindings), hotMemePortableBindings:normalizePortableLoreBindings(value.config?.hotMemePortableBindings), npcAccounts:Array.isArray(value.config?.npcAccounts) ? value.config.npcAccounts.map(normalizeNpcAccount) : [], generationCounts:{ ...systemPresetConfig().generationCounts, ...(value.config?.generationCounts || {}) }, presetDepths:normalizePresetDepths(value.config?.presetDepths), customEntries:Array.isArray(value.config?.customEntries) ? value.config.customEntries : [] } };
+    return { id:String(value.id || ('tpl_' + Date.now().toString(36))), name:String(value.name || fallbackName).trim() || fallbackName, version:Math.max(1,Number(value.version)||1), config:{ ...systemPresetConfig(), ...(value.config || {}), charAccount:normalizePortableCharAccount(value.config?.charAccount), lorePortableBindings:normalizePortableLoreBindings(value.config?.lorePortableBindings), hotMemePortableBindings:normalizePortableLoreBindings(value.config?.hotMemePortableBindings), npcAccounts:Array.isArray(value.config?.npcAccounts) ? value.config.npcAccounts.map(normalizeNpcAccount) : [], generationCounts:{ ...systemPresetConfig().generationCounts, ...(value.config?.generationCounts || {}) }, presetDepths:normalizePresetDepths(value.config?.presetDepths), customEntries:Array.isArray(value.config?.customEntries) ? value.config.customEntries : [] } };
   }
   function presetTemplates(){ return (globalConfig.presetTemplates || []).map((item) => normalizePresetTemplate(item)); }
   function renderPresetTemplateSelect(){
@@ -5308,7 +5359,8 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     document.getElementById('setLoreScanKeyword').value = config.loreScanKeyword || '🩶';
     document.getElementById('setLoreBookNames').value = config.loreBookNames || '';
     document.getElementById('setNativePrompt').value = config.nativePrompt === 'compact' ? 'compact' : 'detailed';
-    document.getElementById('setNativePromptText').value = String(config.nativePromptText || '').trim() || nativePromptDefault(config.nativePrompt);
+    document.getElementById('setNativePromptText').value = sanitizeEditableNativePrompt(config.nativePromptText, config.nativePrompt);
+    document.getElementById('fixedNativeFormatPreview').textContent = fixedNativeFormat();
     document.getElementById('setHotMemeEnabled').checked = config.hotMemeEnabled !== false;
     document.getElementById('setHotMemePrompt').value = String(config.hotMemePrompt || '').trim() || WEIBO_HOT_MEME_DEFAULT;
     document.getElementById('setHotMemeManualText').value = config.hotMemeManualText || '';
@@ -5316,6 +5368,11 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     document.getElementById('setHotMemeEntryNames').value = config.hotMemeEntryNames || '';
     document.getElementById('setNpcDmEnabled').checked = !!config.npcDmEnabled;
     document.getElementById('setNpcDmPrompt').value = String(config.npcDmPrompt || '').trim() || WEIBO_NPC_DM_DEFAULT;
+    const portableChar = normalizePortableCharAccount(config.charAccount);
+    document.getElementById('setCharId').value = portableChar.weiboId;
+    document.getElementById('setCharBio').value = portableChar.bio;
+    document.getElementById('setCharFans').value = formatFanNumber(portableChar.fans);
+    document.getElementById('setCharFollowing').value = String(portableChar.following);
     phoneSettings.lorePortableBindings = normalizePortableLoreBindings(config.lorePortableBindings);
     phoneSettings.hotMemePortableBindings = normalizePortableLoreBindings(config.hotMemePortableBindings);
     phoneSettings.npcAccounts = (config.npcAccounts || []).map(normalizeNpcAccount);
@@ -5374,6 +5431,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     document.getElementById('setUserId').value = phoneSettings.userWeiboId || '';
     document.getElementById('setCharId').value = phoneSettings.charWeiboId || '';
     document.getElementById('setUserBio').value = phoneSettings.userBio || '';
+    document.getElementById('setCharBio').value = phoneSettings.charBio || '';
     document.getElementById('setUserFans').value = formatFanNumber(Number(state.userFans) || Number(phoneSettings.userFans) || 0);
     document.getElementById('setCharFans').value = formatFanNumber(Number(state.charFans) || Number(phoneSettings.charFans) || 0);
     document.getElementById('setUserFollowing').value = String(Number(state.userFollowing) || Number(phoneSettings.userFollowing) || 0);
@@ -5385,7 +5443,8 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     document.getElementById('setLoreScanKeyword').value = String(context.loreScanKeyword ?? '🩶');
     document.getElementById('setLoreBookNames').value = String(context.loreBookNames || '');
     document.getElementById('setNativePrompt').value = context.nativePrompt === 'compact' ? 'compact' : 'detailed';
-    document.getElementById('setNativePromptText').value = String(context.nativePromptText || '').trim() || nativePromptDefault(context.nativePrompt === 'compact' ? 'compact' : 'detailed');
+    document.getElementById('setNativePromptText').value = sanitizeEditableNativePrompt(context.nativePromptText, context.nativePrompt === 'compact' ? 'compact' : 'detailed');
+    document.getElementById('fixedNativeFormatPreview').textContent = fixedNativeFormat();
     document.getElementById('setHotMemeEnabled').checked = context.hotMemeEnabled !== false;
     document.getElementById('setHotMemePrompt').value = String(context.hotMemePrompt || '').trim() || WEIBO_HOT_MEME_DEFAULT;
     document.getElementById('setHotMemeManualText').value = String(context.hotMemeManualText || '');
@@ -5454,7 +5513,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     const userFollowing = Math.max(0, parseFanNumber(document.getElementById('setUserFollowing').value));
     const charFollowing = Math.max(0, parseFanNumber(document.getElementById('setCharFollowing').value));
     const nativePromptMode = document.getElementById('setNativePrompt').value === 'compact' ? 'compact' : 'detailed';
-    const nativePromptDraft = document.getElementById('setNativePromptText').value.trim();
+    const nativePromptDraft = sanitizeEditableNativePrompt(document.getElementById('setNativePromptText').value, nativePromptMode);
     const customEntries = readCustomPresetEntries();
     const npcAccountsDraft = readNpcAccountsFromForm();
     const hotMemeLore = hotMemeLoreSelectionFromForm();
@@ -5462,6 +5521,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       userWeiboId: document.getElementById('setUserId').value.trim(),
       charWeiboId: document.getElementById('setCharId').value.trim(),
       userBio: document.getElementById('setUserBio').value.trim(),
+      charBio: document.getElementById('setCharBio').value.trim(),
       userFans,
       charFans,
       userFollowing,
@@ -5532,6 +5592,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
         npcDmEnabled: settingsPatch.npcDmEnabled,
         npcDmPrompt: settingsPatch.npcDmPrompt,
         npcAccounts: settingsPatch.npcAccounts,
+        charAccount: normalizePortableCharAccount({ weiboId:settingsPatch.charWeiboId, bio:settingsPatch.charBio, fans:settingsPatch.charFans, following:settingsPatch.charFollowing }),
         customIdPool: settingsPatch.customIdPool,
         generationCounts: settingsPatch.generationCounts,
         presetDepths: settingsPatch.presetDepths,
@@ -5564,6 +5625,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       npcDmEnabled: settingsPatch.npcDmEnabled,
       npcDmPrompt: settingsPatch.npcDmPrompt,
       npcAccounts: settingsPatch.npcAccounts,
+      charAccount: normalizePortableCharAccount({ weiboId:settingsPatch.charWeiboId, bio:settingsPatch.charBio, fans:settingsPatch.charFans, following:settingsPatch.charFollowing }),
       customIdPool: settingsPatch.customIdPool,
       generationCounts: settingsPatch.generationCounts,
       presetDepths: settingsPatch.presetDepths,
@@ -5720,8 +5782,8 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
   };
   document.getElementById('setNativePrompt').onchange = ()=>{
     const ta = document.getElementById('setNativePromptText');
-    const old = String(ta.value || '').trim();
-    if (!old || old === WEIBO_NATIVE_DETAILED.trim() || old === WEIBO_NATIVE_COMPACT.trim()) ta.value = nativePromptDefault(document.getElementById('setNativePrompt').value);
+    ta.value = nativePromptDefault(document.getElementById('setNativePrompt').value);
+    document.getElementById('fixedNativeFormatPreview').textContent = fixedNativeFormat();
     refreshPresetUiSummaries();
   };
   document.getElementById('settingsResetNativePrompt').onclick = ()=>{
