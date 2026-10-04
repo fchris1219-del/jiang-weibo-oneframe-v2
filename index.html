@@ -634,13 +634,6 @@ body{display:grid;place-items:center;overflow:hidden}
       </section>
 
       <section class="settings-section">
-        <h3>NPC 微博账号</h3>
-        <div class="section-note">只属于当前聊天×当前档位。可填昵称、简介、粉丝/关注，并绑定已扫描的世界书条目；绑定内容只作为该 NPC 的身份与知情范围。</div>
-        <div class="settings-inline"><button type="button" class="mini-action primary" id="settingsAddNpc">+ 增加 NPC 账号</button><button type="button" class="mini-action" id="settingsRefreshNpcLore">刷新世界书选项</button></div>
-        <div class="npc-editor-list" id="npcAccountList"><div class="custom-entry-empty">还没有注册 NPC 账号</div></div>
-      </section>
-
-      <section class="settings-section">
         <h3>生成通道</h3>
         <div class="section-note">默认跟随酒馆当前主 API；只有明确选择副 API 才走独立通道。</div>
         <div class="settings-tabs">
@@ -665,19 +658,6 @@ body{display:grid;place-items:center;overflow:hidden}
         <div class="api-status" id="apiStatus">当前：跟随酒馆主 API</div>
       </section>
 
-      <section class="settings-section">
-        <h3>拉取数量</h3>
-        <div class="section-note">分别控制推荐、评论、私信和“全部拉取”的生成数量。数量越大，单次请求消耗的 Tokens 越多。</div>
-        <div class="settings-grid">
-          <div class="set-row"><label for="setFeedCount">刷新推荐 · 微博数</label><input type="number" id="setFeedCount" min="1" max="20" step="1"></div>
-          <div class="set-row"><label for="setFeedCommentCount">每条推荐 · 热评数</label><input type="number" id="setFeedCommentCount" min="0" max="10" step="1"></div>
-          <div class="set-row"><label for="setCommentCount">单帖生成 · 评论数</label><input type="number" id="setCommentCount" min="1" max="20" step="1"></div>
-          <div class="set-row"><label for="setDmCount">收私信 · 消息数</label><input type="number" id="setDmCount" min="1" max="30" step="1"></div>
-          <div class="set-row"><label for="setDmThreadCount">私信续聊 · 回复数</label><input type="number" id="setDmThreadCount" min="1" max="15" step="1"></div>
-        </div>
-        <div class="settings-subbox"><strong style="font-size:11px">全部拉取</strong><div class="settings-grid"><div class="set-row"><label for="setAllFeedCount">推荐微博数</label><input type="number" id="setAllFeedCount" min="1" max="20" step="1"></div><div class="set-row"><label for="setAllCharCount">角色微博数</label><input type="number" id="setAllCharCount" min="1" max="5" step="1"></div><div class="set-row"><label for="setAllDmCount">私信消息数</label><input type="number" id="setAllDmCount" min="1" max="30" step="1"></div></div></div>
-      </section>
-
       <section class="settings-section" id="weiboPresetSection">
         <h3>微博预设</h3>
         <div class="section-note">微博生成时的所有注入统一在这里管理。条目默认收起，点击后才展开详情；角色卡和世界书正文只读。</div>
@@ -698,6 +678,10 @@ body{display:grid;place-items:center;overflow:hidden}
             <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">初</div><div class="preset-entry-copy"><div class="preset-entry-title">档位初始化与 wb_lore</div><div class="preset-entry-note" id="wbLoreSummary">仅保存到本档位；可手动从首楼拉取覆盖</div></div><span class="preset-entry-state on">档位</span><span class="preset-entry-chev">⌄</span></div>
             <div class="preset-entry-editor"><div class="set-row"><label for="setInitPrompt">档位初始化提示词</label><textarea id="setInitPrompt" rows="5" placeholder="这一档微博生成时始终优先遵守的设定……"></textarea></div><div class="set-row"><label for="loreRawText">完整 wb_lore</label><textarea id="loreRawText" rows="8" placeholder="直接写设定正文，不用写 &lt;wb_lore&gt; 或 [微博档位|…]"></textarea><div class="field-note">直接写自然语言即可。可填：世界线/时间点、人物关系与知情范围、账号身份与口径、已发生的关键事件、群像/圈子状态和不应外泄的私密信息。</div></div><details style="margin-top:10px" hidden><summary>旧版拆分编辑</summary><div id="loreSecList" class="lore-sec-box"></div><textarea id="loreRestText" rows="4"></textarea></details><label class="settings-switch"><input type="checkbox" id="setInjectMain"><span>同时把当前 wb_lore 注入酒馆主对话（默认关闭）</span></label><div class="settings-inline"><button type="button" class="mini-action" id="settingsReadFirstLore">从首楼读取覆盖</button><button type="button" class="mini-action" id="settingsParseLoreRaw" hidden>从原文拆分</button><button type="button" class="mini-action primary" id="settingsSaveLoreSlot">保存到本档位</button><button type="button" class="mini-action" id="settingsClearLore">清空</button></div><div class="field-note" id="wbLoreHint">wb_lore 仅保存到当前聊天的本档位，不会写入正文首楼。</div></div>
           </article>
+          <article class="preset-entry" data-preset-entry="npcAccounts">
+            <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">账</div><div class="preset-entry-copy"><div class="preset-entry-title">NPC 微博账号</div><div class="preset-entry-note" id="npcAccountsPresetSummary">模板可携带 · 尚未注册账号</div></div><span class="preset-entry-state on">模板可携带</span><span class="preset-entry-chev">⌄</span></div>
+            <div class="preset-entry-editor"><div class="field-note">可填微博 ID、正文称呼、简介、粉丝/关注、手动设定与发帖要求，并绑定世界书条目。保存模板或导出角色脚本时会一起携带；应用后仍按当前聊天×当前档位隔离。</div><div class="settings-inline"><button type="button" class="mini-action primary" id="settingsAddNpc">+ 增加 NPC 账号</button><button type="button" class="mini-action" id="settingsRefreshNpcLore">刷新世界书选项</button></div><div class="npc-editor-list" id="npcAccountList"><div class="custom-entry-empty">还没有注册 NPC 账号</div></div></div>
+          </article>
           <article class="preset-entry" data-preset-entry="character">
             <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">角</div><div class="preset-entry-copy"><div class="preset-entry-title">Character Card</div><div class="preset-entry-note">可选择是否注入，内容只读取自当前角色卡</div></div><span class="preset-entry-state on" id="characterPresetState">已启用</span><span class="preset-entry-chev">⌄</span></div>
             <div class="preset-entry-editor"><label class="settings-switch"><input type="checkbox" id="setIncludeChar" checked><span>注入角色描述与性格</span></label><label class="settings-switch"><input type="checkbox" id="setIncludeScenario" checked><span>注入角色卡 Scenario（不是聊天前文）</span></label><div class="field-note">Scenario 是角色卡里预设的场景/世界背景字段；最近对话由独立的「聊天前文」条目控制。</div><div class="preset-readonly" id="presetCharacterPreview">打开设置后读取…</div></div>
@@ -709,6 +693,10 @@ body{display:grid;place-items:center;overflow:hidden}
           <article class="preset-entry" data-preset-entry="history">
             <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">前</div><div class="preset-entry-copy"><div class="preset-entry-title">聊天前文</div><div class="preset-entry-note" id="historyPresetSummary">最近 3 条</div></div><span class="preset-entry-state on">可配置</span><span class="preset-entry-chev">⌄</span></div>
             <div class="preset-entry-editor"><div class="set-row"><label for="setContextMode">前文方式</label><select id="setContextMode"><option value="recent">注入最近聊天</option><option value="summary">使用手动总结</option><option value="none">不注入聊天前文</option></select></div><div class="settings-subbox" id="recentContextBox"><div class="set-row" style="margin-top:0"><label for="setRecentMessages">最近聊天条数（默认 3）</label><input type="number" id="setRecentMessages" min="0" max="60" step="1" /></div></div><div class="settings-subbox" id="summaryContextBox" hidden><div class="set-row" style="margin-top:0"><label for="setManualSummary">粘贴前文总结</label><textarea id="setManualSummary" rows="6" placeholder="只会用这段总结代替聊天前文……"></textarea></div></div></div>
+          </article>
+          <article class="preset-entry" data-preset-entry="generationCounts" data-preset-static="true">
+            <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">数</div><div class="preset-entry-copy"><div class="preset-entry-title">拉取数量</div><div class="preset-entry-note" id="generationCountsPresetSummary">推荐、评论、私信与全部拉取数量</div></div><span class="preset-entry-state on">模板可携带</span><span class="preset-entry-chev">⌄</span></div>
+            <div class="preset-entry-editor"><div class="field-note">这些是生成数量参数，会随预设模板和角色脚本导出，但不是独立提示词，因此没有注入深度与 Token 数。</div><div class="settings-grid"><div class="set-row"><label for="setFeedCount">刷新推荐 · 微博数</label><input type="number" id="setFeedCount" min="1" max="20" step="1"></div><div class="set-row"><label for="setFeedCommentCount">每条推荐 · 热评数</label><input type="number" id="setFeedCommentCount" min="0" max="10" step="1"></div><div class="set-row"><label for="setCommentCount">单帖生成 · 评论数</label><input type="number" id="setCommentCount" min="1" max="20" step="1"></div><div class="set-row"><label for="setDmCount">收私信 · 消息数</label><input type="number" id="setDmCount" min="1" max="30" step="1"></div><div class="set-row"><label for="setDmThreadCount">私信续聊 · 回复数</label><input type="number" id="setDmThreadCount" min="1" max="15" step="1"></div></div><div class="settings-subbox"><strong style="font-size:11px">全部拉取</strong><div class="settings-grid"><div class="set-row"><label for="setAllFeedCount">推荐微博数</label><input type="number" id="setAllFeedCount" min="1" max="20" step="1"></div><div class="set-row"><label for="setAllCharCount">角色微博数</label><input type="number" id="setAllCharCount" min="1" max="5" step="1"></div><div class="set-row"><label for="setAllDmCount">私信消息数</label><input type="number" id="setAllDmCount" min="1" max="30" step="1"></div></div></div></div>
           </article>
           <article class="preset-entry" data-preset-entry="dedupe">
             <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">防</div><div class="preset-entry-copy"><div class="preset-entry-title">防止重复</div><div class="preset-entry-note" id="dedupePresetSummary">当前档位暂无生成记录</div></div><span class="preset-entry-state on">固定注入</span><span class="preset-entry-chev">⌄</span></div>
@@ -774,7 +762,7 @@ body{display:grid;place-items:center;overflow:hidden}
   // 参考酒馆原生预设的 in-chat depth：0 最靠近本次任务，数字越大越早注入。
   // AshenBridge 的辅助条目普遍为 depth 4；微博协议/隔离/去重则放到更靠近请求的深度。
   const DEFAULT_PRESET_DEPTHS = Object.freeze({
-    native:0, boundary:0, dedupe:1, idPool:1, hotMeme:2, npcDm:2, init:2, history:3,
+    native:0, boundary:0, dedupe:1, idPool:1, hotMeme:2, npcDm:2, npcAccounts:2, init:2, history:3,
     character:4, persona:4, worldbook:4,
   });
   function normalizePresetDepths(value){
@@ -4226,8 +4214,8 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     const map = new Map([...live, ...snap].map((item) => [String(item.id), item]));
     return [...ids].map((id) => map.get(id)).filter(Boolean).map((item) => `【${item.name || id}】\n${item.content || ''}`).join('\n\n');
   }
-  function buildNpcRegistryPrompt(){
-    const list = npcAccounts();
+  function buildNpcRegistryPrompt(source){
+    const list = Array.isArray(source) ? source.filter((npc) => npc && String(npc.id || npc.name || '').trim()) : npcAccounts();
     if (!list.length) return '';
     const blocks = list.map((npc) => {
       const id = String(npc.id || npc.name || '').trim();
@@ -4388,7 +4376,8 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     add('persona', 'User Personality', groups.persona.join('\n\n'), phoneSettings.includePersona !== false);
     add('worldbook', '世界书', groups.worldbook.join('\n\n'), phoneSettings.includeBgLore !== false);
     add('history', '聊天前文', groups.history.join('\n\n'), phoneSettings.contextMode !== 'none');
-    add('init', '档位初始化、wb_lore 与 NPC 账号', [groups.init.join('\n\n'), buildNpcRegistryPrompt()].filter(Boolean).join('\n\n'));
+    add('init', '档位初始化与 wb_lore', groups.init.join('\n\n'));
+    add('npcAccounts', 'NPC 微博账号', buildNpcRegistryPrompt());
     (phoneSettings.customEntries || []).forEach((item, index) => add('custom', String(item.title || ('自定义条目 ' + (index + 1))), item.content, item.enabled !== false, item.depth ?? 4));
     add('idPool', '自定义 ID 池', buildCustomIdPoolPrompt());
     add('hotMeme', '热梗注入', [selectedHotMemePrompt(), hotMemeBoundLore()].filter(Boolean).join('\n\n'), phoneSettings.hotMemeEnabled !== false);
@@ -4937,6 +4926,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     document.querySelectorAll('#presetStack [data-preset-entry]').forEach((card) => {
       const key = String(card.dataset.presetEntry || '');
       if (!key) return;
+      if (card.dataset.presetStatic === 'true') return;
       const title = card.querySelector('.preset-entry-title');
       if (title && !title.querySelector('.preset-token')) title.insertAdjacentHTML('beforeend', `<span class="preset-token" data-preset-token="${key}">≈0 tokens</span>`);
       const editor = card.querySelector('.preset-entry-editor');
@@ -5011,7 +5001,8 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
   }
   function presetContentForToken(key){
     if (key === 'native') return sanitizeEditableNativePrompt(document.getElementById('setNativePromptText')?.value, document.getElementById('setNativePrompt')?.value) + '\n\n' + fixedNativeFormat();
-    if (key === 'init') return [document.getElementById('setInitPrompt')?.value, document.getElementById('loreRawText')?.value, buildNpcRegistryPrompt()].filter(Boolean).join('\n\n');
+    if (key === 'init') return [document.getElementById('setInitPrompt')?.value, document.getElementById('loreRawText')?.value].filter(Boolean).join('\n\n');
+    if (key === 'npcAccounts') return buildNpcRegistryPrompt(readNpcAccountsFromForm());
     if (key === 'character') return (document.getElementById('setIncludeChar')?.checked || document.getElementById('setIncludeScenario')?.checked) ? readCharacterPresetSource() : '';
     if (key === 'persona') return document.getElementById('setIncludePersona')?.checked ? readPersonaPresetSource() : '';
     if (key === 'history') return recentHistoryForTokenEstimate();
@@ -5079,7 +5070,10 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       if (!confirm('删除这个 NPC 账号？')) return;
       button.closest('[data-npc-key]')?.remove();
       if (!box.querySelector('[data-npc-key]')) box.innerHTML = '<div class="custom-entry-empty">还没有注册 NPC 账号</div>';
+      refreshPresetUiSummaries();
     });
+    box.oninput = refreshPresetUiSummaries;
+    box.onchange = refreshPresetUiSummaries;
   }
   function readNpcAccountsFromForm(){
     const catalog = new Map((_loreCatalogCache?.flat || []).map((item) => [String(item.id), item]));
@@ -5192,7 +5186,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
   function refreshPresetUiSummaries(){
     const mode = document.getElementById('setNativePrompt')?.value === 'compact' ? 'compact' : 'detailed';
     const nativeSummary = document.getElementById('nativePromptSummary');
-    if (nativeSummary) nativeSummary.textContent = mode === 'compact' ? '简约格式版 · 可自编辑' : '详细原生版 · 含 ID 生成指导 · 可自编辑';
+    if (nativeSummary) nativeSummary.textContent = mode === 'compact' ? '简约表达版 · 固定格式内嵌' : '详细原生版 · 含 ID 生成指导 · 固定格式内嵌';
     const history = document.getElementById('historyPresetSummary');
     const contextMode = document.getElementById('setContextMode')?.value || 'recent';
     if (history) history.textContent = contextMode === 'recent' ? `最近 ${document.getElementById('setRecentMessages')?.value || 3} 条` : (contextMode === 'summary' ? '手动前文总结' : '不注入聊天前文');
@@ -5230,6 +5224,18 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     const npcDmEnabled = !!document.getElementById('setNpcDmEnabled')?.checked;
     const npcDmState = document.getElementById('npcDmPresetState');
     if (npcDmState) { npcDmState.textContent = npcDmEnabled ? '已启用' : '已停用'; npcDmState.classList.toggle('on', npcDmEnabled); }
+    const npcAccountsSummary = document.getElementById('npcAccountsPresetSummary');
+    if (npcAccountsSummary) {
+      const count = readNpcAccountsFromForm().length;
+      npcAccountsSummary.textContent = count ? `模板可携带 · 已注册 ${count} 个账号` : '模板可携带 · 尚未注册账号';
+    }
+    const generationSummary = document.getElementById('generationCountsPresetSummary');
+    if (generationSummary) {
+      const feed = document.getElementById('setFeedCount')?.value || 5;
+      const comments = document.getElementById('setCommentCount')?.value || 5;
+      const dm = document.getElementById('setDmCount')?.value || 10;
+      generationSummary.textContent = `推荐 ${feed} · 评论 ${comments} · 私信 ${dm}`;
+    }
     refreshPresetTokenCounts();
   }
 
@@ -5742,6 +5748,9 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
   ['setNativePromptText','setInitPrompt','loreRawText','setManualSummary','setHotMemePrompt','setHotMemeManualText','setHotMemeBookNames','setHotMemeEntryNames','setNpcDmPrompt'].forEach((id) => {
     document.getElementById(id)?.addEventListener('input', refreshPresetUiSummaries);
   });
+  ['setFeedCount','setFeedCommentCount','setCommentCount','setDmCount','setDmThreadCount','setAllFeedCount','setAllCharCount','setAllDmCount'].forEach((id) => {
+    document.getElementById(id)?.addEventListener('input', refreshPresetUiSummaries);
+  });
   document.querySelectorAll('[data-scan-split]').forEach((button) => {
     button.onclick = () => {
       const terms = splitScanField(button.dataset.scanSplit);
@@ -5812,10 +5821,12 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     list.push(normalizeNpcAccount({ key:'npc_' + Date.now().toString(36) }, list.length));
     renderNpcAccountEditor(list);
     document.querySelector('#npcAccountList [data-npc-key]:last-child [data-npc-id]')?.focus();
+    refreshPresetUiSummaries();
   };
   document.getElementById('settingsRefreshNpcLore').onclick = async ()=>{
     _loreCatalogCache = await listWorldLoreCatalog();
     refreshNpcLoreOptions();
+    refreshPresetUiSummaries();
     showBubble(`已读取 ${_loreCatalogCache?.flat?.length || 0} 条世界书条目`);
   };
   document.getElementById('settingsAddPresetEntry').onclick = ()=>{
@@ -5954,7 +5965,8 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       const depths = normalizePresetDepths(phoneSettings.presetDepths);
       renderPresetPreviewCards([
         { title:'微博提示词', depth:depths.native, text:selectedNativePrompt() },
-        { title:'wb_lore 初始化与 NPC 账号', depth:depths.init, text:[groups.init.join('\n\n'),buildNpcRegistryPrompt()].filter(Boolean).join('\n\n') || '（未填写）' },
+        { title:'wb_lore 初始化', depth:depths.init, text:groups.init.join('\n\n') || '（未填写）' },
+        { title:'NPC 微博账号', depth:depths.npcAccounts, text:buildNpcRegistryPrompt() || '（未注册账号）' },
         { title:'Character Card', depth:depths.character, text:groups.character.concat(groups.other).join('\n\n') || readCharacterPresetSource() },
         { title:'User Personality', depth:depths.persona, text:groups.persona.join('\n\n') || readPersonaPresetSource() },
         { title:'聊天前文', depth:depths.history, text:groups.history.join('\n\n') || '（当前未注入聊天前文）' },
