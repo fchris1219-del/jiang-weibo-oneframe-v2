@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>同层微博</title>
+<title>小微博</title>
 <style>
 :root{
   --orange:#ff8200;
@@ -447,6 +447,7 @@ body{display:grid;place-items:center;overflow:hidden}
 .scan-term-tools{display:flex;align-items:center;gap:7px;margin-top:7px}.scan-term-tools .mini-action{height:32px}.scan-term-chips{display:flex;flex:1;flex-wrap:wrap;gap:5px;min-width:0}.scan-term-chip{display:inline-flex;align-items:center;gap:5px;max-width:100%;padding:5px 7px;border-radius:999px;background:#fff2e8;color:#a9571e;font-size:10px;line-height:1}.scan-term-chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.scan-term-chip button{all:unset;cursor:pointer;color:#d1783a;font-size:12px}.scan-term-empty{color:#aaa;font-size:9px}
 .pull-bar{display:grid;grid-template-columns:1fr 1fr;gap:7px}
 .pull-bar #allPullBtn{background:var(--orange);border-color:var(--orange);color:#fff}
+.request-loading{position:absolute;z-index:95;top:48px;left:50%;display:flex;align-items:center;gap:8px;max-width:calc(100% - 36px);padding:9px 13px;border:1px solid #ffd0ad;border-radius:999px;background:rgba(255,250,246,.97);color:#a95016;box-shadow:0 8px 28px rgba(132,65,20,.18);font-size:11px;font-weight:700;opacity:0;pointer-events:none;transform:translate(-50%,-12px);transition:opacity .16s ease,transform .16s ease}.request-loading.show{opacity:1;transform:translate(-50%,0)}.request-loading-spinner{width:13px;height:13px;flex:0 0 auto;border:2px solid #f7c29b;border-top-color:var(--orange);border-radius:50%;animation:pullSpin .75s linear infinite}
 .field-note{margin-top:5px;color:#9a9a9a;font-size:10px;line-height:1.5}
 .settings-subbox{margin-top:10px;padding:10px 11px;border-radius:10px;background:#fafafa;border:1px solid #eeeeee}
 .settings-subbox[hidden]{display:none}
@@ -514,7 +515,7 @@ body{display:grid;place-items:center;overflow:hidden}
           <div class="me-av" id="meAv">我</div>
           <div>
             <div class="me-name" id="meName">我</div>
-            <div class="me-bio" id="meBio">简介：同层微博</div>
+            <div class="me-bio" id="meBio">简介：小微博</div>
           </div>
         </div>
         <div class="me-stats">
@@ -666,7 +667,7 @@ body{display:grid;place-items:center;overflow:hidden}
           <div class="set-row" style="margin-top:8px"><select id="setPresetTemplate" aria-label="预设模板"></select></div>
           <div class="template-actions"><button type="button" class="mini-action" id="settingsApplyTemplate">应用所选模板</button><button type="button" class="mini-action primary" id="settingsNewTemplate">新建预设模板</button><button type="button" class="mini-action" id="settingsSaveTemplate">保存到模板</button><button type="button" class="mini-action" id="settingsDeleteTemplate">删除模板</button></div>
           <div class="settings-inline"><button type="button" class="mini-action primary" id="settingsExportRoleScript">导出角色酒馆脚本 JSON</button></div>
-          <div class="field-note" id="presetTemplateHint">新模板会从系统默认预设复制；导出脚本会携带所选模板、Char 微博账号资料、注册 NPC 账号与当前勾选的“世界书名＋条目名”可移植绑定。User 微博账号资料、Token、聊天记录、世界书正文和内部 ID 均不会导出。</div>
+          <div class="field-note" id="presetTemplateHint">选择“系统默认预设”时，只导出不携带任何角色、NPC、ID 池或世界书选择的原始酱微博脚本。自建模板才会携带模板中的 Char 微博账号资料、注册 NPC 账号与“世界书名＋条目名”可移植绑定；User 微博账号资料、Token、聊天记录、世界书正文和内部 ID 均不会导出。</div>
         </div>
         <div class="preset-toolbar"><button type="button" class="mini-action primary" id="settingsPreviewContext">生成分组注入预览</button><button type="button" class="mini-action" id="settingsAddPresetEntry">+新增自定义条目</button></div>
         <div class="preset-stack" id="presetStack">
@@ -737,6 +738,7 @@ body{display:grid;place-items:center;overflow:hidden}
     <div class="settings-footer"><button type="button" class="reset" id="settingsReset">恢复默认</button><button type="button" class="save" id="settingsSave">保存当前设置</button></div>
   </div>
 
+  <div class="request-loading" id="requestLoading" role="status" aria-live="assertive" aria-hidden="true"><span class="request-loading-spinner"></span><span id="requestLoadingText">正在发送请求…</span></div>
   <div class="float-toast" id="floatToast" aria-live="polite"></div>
 </div>
 
@@ -1124,7 +1126,7 @@ body{display:grid;place-items:center;overflow:hidden}
       state.lastFloorWriteAt = Date.now();
       return true;
     } catch (e) {
-      console.warn('[同层微博] 写回楼层失败', e);
+      console.warn('[小微博] 写回楼层失败', e);
       return false;
     }
   }
@@ -1235,7 +1237,7 @@ body{display:grid;place-items:center;overflow:hidden}
       else if (typeof saveMetadata === 'function') await saveMetadata();
       return true;
     } catch (e) {
-      console.warn('[同层微博] patchChatMetadata 失败', e);
+      console.warn('[小微博] patchChatMetadata 失败', e);
       return false;
     }
   }
@@ -1472,7 +1474,7 @@ body{display:grid;place-items:center;overflow:hidden}
           } catch (_) {}
         }
       } else if (!books.length) {
-        console.warn('[同层微博] loadWorldInfo 不可用，仅角色书条目');
+        console.warn('[小微博] loadWorldInfo 不可用，仅角色书条目');
       }
     } catch (_) {}
 
@@ -1896,7 +1898,7 @@ body{display:grid;place-items:center;overflow:hidden}
       else if (typeof saveMetadata === 'function') await saveMetadata();
       return true;
     } catch (e) {
-      console.warn('[同层微博] 写入 chatMetadata 失败', e);
+      console.warn('[小微博] 写入 chatMetadata 失败', e);
       return false;
     }
   }
@@ -1957,7 +1959,7 @@ body{display:grid;place-items:center;overflow:hidden}
       };
       localStorage.setItem(PHONE_DATA_KEY, JSON.stringify(all));
     } catch (e) {
-      console.warn('[同层微博] 本地缓存失败', e);
+      console.warn('[小微博] 本地缓存失败', e);
     }
   }
   function loadPhoneData(){
@@ -1981,7 +1983,7 @@ body{display:grid;place-items:center;overflow:hidden}
       if (Number.isFinite(cfo) && cfo >= 0) state.charFollowing = cfo;
       return !!(state.posts.length || state.threads.length || state.wbLore || state.selectedLoreIds.length || state.userFans || state.charFans);
     } catch (e) {
-      console.warn('[同层微博] 读取本地缓存失败', e);
+      console.warn('[小微博] 读取本地缓存失败', e);
       return false;
     }
   }
@@ -1999,7 +2001,7 @@ body{display:grid;place-items:center;overflow:hidden}
       applyPhoneSnapshot(parsed.posts, parsed.threads, extractUiMeta(raw), lore, loreSnap);
       return true;
     } catch (e) {
-      console.warn('[同层微博] 从楼层恢复失败', e);
+      console.warn('[小微博] 从楼层恢复失败', e);
       return false;
     }
   }
@@ -2012,7 +2014,7 @@ body{display:grid;place-items:center;overflow:hidden}
       if (ok) window.__weiboapp_serialized = payload;
       return ok;
     } catch (e) {
-      console.warn('[同层微博] syncToFloor 失败', e);
+      console.warn('[小微博] syncToFloor 失败', e);
       return false;
     }
   }
@@ -2166,11 +2168,11 @@ body{display:grid;place-items:center;overflow:hidden}
   }
 
   /**
-   * 同层手机专用上下文（精简）。
+   * 小微博专用上下文（精简）。
    * 依据左宥之卡结构：
    * - 卡面 first_mes 常是占位；本局开场只认当前聊天第 1 楼，禁止从 alternate_greetings 乱挑
    * - 角色书里「微博热搜输出」「脆文输出」「UpdateVariable」会抢格式，禁止整本灌进手机 prompt
-   * - 只保留：人设摘要、本局开场、近期聊天（截断）、知情范围、同层协议世界书
+   * - 只保留：人设摘要、本局开场、近期聊天（截断）、知情范围、微博协议世界书
    */
   async function collectStContextSnapshot(maxMsgs = 3, maxChars = 14000, scanKeyword = ''){
     maxMsgs = Math.max(0, Math.min(60, Number(phoneSettings.recentMessages ?? maxMsgs) || 0));
@@ -2189,7 +2191,7 @@ body{display:grid;place-items:center;overflow:hidden}
     try {
       await harvestWbLore();
       if (state.wbLore) {
-        push('同层微博钉住设定（wb_lore｜不受隐藏前文影响）', String(state.wbLore).slice(0, 8000));
+        push('小微博钉住设定（wb_lore｜不受隐藏前文影响）', String(state.wbLore).slice(0, 8000));
       }
     } catch (_) {}
 
@@ -2217,7 +2219,7 @@ body{display:grid;place-items:center;overflow:hidden}
       s = s.replace(/<script[\s\S]*?<\/script>/gi, '');
       s = s.replace(/```html[\s\S]*?```/gi, '[界面已省略]');
       s = s.replace(/```[\s\S]*?```/g, '');
-      s = s.replace(/<weiboapp>[\s\S]*?<\/weiboapp>/gi, '[同层微博界面已省略]');
+      s = s.replace(/<weiboapp>[\s\S]*?<\/weiboapp>/gi, '[小微博界面已省略]');
       s = s.replace(/<UpdateVariable>[\s\S]*?<\/UpdateVariable>/gi, '');
       s = s.replace(/<JSONPatch>[\s\S]*?<\/JSONPatch>/gi, '');
       s = s.replace(/<!--[\s\S]*?-->/g, '');
@@ -2253,7 +2255,7 @@ body{display:grid;place-items:center;overflow:hidden}
       const c = String(content || '');
       if (isJunkLore(n, keyList, c)) return false;
 
-      if (/知情范围|同层微博|推荐页拉取|微博路人/.test(n + c.slice(0, 200))) return true;
+      if (/知情范围|小微博|推荐页拉取|微博路人/.test(n + c.slice(0, 200))) return true;
       if (kw && (keyStr.includes(kw) || c.toLowerCase().includes(kw))) {
         if (c.length < 3500) return true;
       }
@@ -3419,7 +3421,7 @@ body{display:grid;place-items:center;overflow:hidden}
   function mergeAiPayload(raw, opts={}){
     const text = normalizeAiText(raw);
     window.__weibo_last_ai_raw = text;
-    console.log('[同层微博] AI原文长度', text.length, '预览:', text.slice(0, 500));
+    console.log('[小微博] AI原文长度', text.length, '预览:', text.slice(0, 500));
 
     const a=parseWeiboApp(text), b=parseWeiboApp(`<weiboapp>${text}</weiboapp>`);
     const posts=a.posts.length?a.posts:b.posts;
@@ -3448,7 +3450,7 @@ body{display:grid;place-items:center;overflow:hidden}
       if (added > 0) bumpDisplayComments(target, added);
       else ensurePostEngagement(target);
       setUnreadOnTarget('comment', opts.postIndex, added);
-      console.log('[同层微博] 本帖新增评论', added, '/ 解析到', allComments.length);
+      console.log('[小微博] 本帖新增评论', added, '/ 解析到', allComments.length);
       return added;
     }
 
@@ -3482,7 +3484,7 @@ body{display:grid;place-items:center;overflow:hidden}
         state.posts.unshift(post);
         addedPosts++;
       }
-      console.log('[同层微博] 推荐拉取新增微博', addedPosts);
+      console.log('[小微博] 推荐拉取新增微博', addedPosts);
       return addedPosts;
     }
 
@@ -3517,7 +3519,7 @@ body{display:grid;place-items:center;overflow:hidden}
       // 发博后粉丝微增一点，写回楼层更像真账号
       ensureProfileStats();
       if (!npc) state.charFans = (Number(state.charFans) || 0) + (3 + (hashSeed(who + Date.now()) % 18));
-      console.log('[同层微博] 角色发博新增', added);
+      console.log('[小微博] 角色发博新增', added);
       return added;
     }
 
@@ -3552,7 +3554,7 @@ body{display:grid;place-items:center;overflow:hidden}
         });
         setUnreadOnTarget('dm', incoming.name, round);
       });
-      console.log('[同层微博] 新增私信条数', added);
+      console.log('[小微博] 新增私信条数', added);
       return added;
     }
 
@@ -3732,7 +3734,7 @@ body{display:grid;place-items:center;overflow:hidden}
               <div class="pf-uid">@${esc(name)}</div>
             </div>
           </div>
-          <div class="pf-bio">${bio ? esc(bio) : (isUser ? '简介：同层微博' : (isNpc ? 'NPC 微博主页 · 当前档位' : '角色微博主页 · 只看 TA 发过的微博'))}</div>
+          <div class="pf-bio">${bio ? esc(bio) : (isUser ? '简介：小微博' : (isNpc ? 'NPC 微博主页 · 当前档位' : '角色微博主页 · 只看 TA 发过的微博'))}</div>
           <div class="pf-stats">
             <div><b>${esc(formatFanNumber(following))}</b><span>关注</span></div>
             <div><b>${esc(formatFanNumber(fans))}</b><span>粉丝</span></div>
@@ -4402,9 +4404,23 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     return { feed:clamp('feed',1,20), feedComments:clamp('feedComments',0,10), comments:clamp('comments',1,20), dm:clamp('dm',1,30), dmThread:clamp('dmThread',1,15), allFeed:clamp('allFeed',1,20), allChar:clamp('allChar',1,5), allDm:clamp('allDm',1,30) };
   }
 
+  function setRequestLoading(mode, visible){
+    const labels = {
+      all:'正在全部拉取…', feed:'正在拉取推荐微博…', 'char-post':'正在替角色生成微博…',
+      'npc-post':'正在替 NPC 生成微博…', weibo:'正在生成评论…',
+      'dm-scatter':'正在拉取私信…', 'dm-thread':'正在续写私信…',
+    };
+    const box = document.getElementById('requestLoading');
+    const text = document.getElementById('requestLoadingText');
+    if (!box || !text) return;
+    text.textContent = labels[mode] || '正在发送请求…';
+    box.classList.toggle('show', !!visible);
+    box.setAttribute('aria-hidden', visible ? 'false' : 'true');
+  }
+
   async function requestAiReply(opts={}){
     if(state.aiBusy) return alertBox('请稍候','AI 正在回复');
-    if(!AI_GENERATE && !AI_GENERATE_RAW) return alertBox('提示','需在酒馆同层环境使用 generate / generateRaw');
+    if(!AI_GENERATE && !AI_GENERATE_RAW) return alertBox('提示','需在酒馆环境使用 generate / generateRaw');
 
     let mode = opts.mode;
     if(!mode){
@@ -4435,7 +4451,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     if(mode==='all'){
       const who = displayChar || rawCharName || '角色';
       context = [
-        '【同层微博任务｜全部拉取｜单次请求】',
+        '【小微博任务｜全部拉取｜单次请求】',
         '请在一次输出中同时返回推荐信息流、路人私信和角色微博。三段必须用下列容器包裹，不得混排：',
         `<feed_result><weibo>…严格 post:1 至 post:${qty.allFeed}…</weibo></feed_result>`,
         `<char_result><weibo>…严格 post:1 至 post:${qty.allChar}，发布者均为 ${who}…</weibo></char_result>`,
@@ -4448,7 +4464,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       ].join('\n');
     }else if(mode==='feed'){
       context = [
-        '【同层微博任务｜关键词 feed｜推荐页拉取】',
+        '【小微博任务｜关键词 feed｜推荐页拉取】',
         '剧情依据以快照中的「本局开场（当前聊天第 1 楼）」为准；禁止使用其它线路/其它备用开场的设定。',
         '卡面 first_mes 若是占位句请忽略。',
         '请结合人物关系与开场已知公开信息，生成与故事相关的推荐流；只输出微博协议，不要写正文剧情旁白。',
@@ -4481,7 +4497,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       const fansHint = formatEngNumber(accountFans);
       const engHint = formatEngNumber(Math.max(1, Math.round((accountFans || 10000) / 10)));
       context = [
-        `【同层微博任务｜关键词 weibo｜${npc ? 'NPC' : '角色'}发博】`,
+        `【小微博任务｜关键词 weibo｜${npc ? 'NPC' : '角色'}发博】`,
         `请以微博账号「${postWho}」的口吻发微博（作者必须是 ${postWho}，头像字段写 ${npc ? 'npc.png' : 'char'}）。`,
         npc ? `该 NPC 的独立设定：\n${buildNpcRegistryPrompt()}` : '',
         npc?.postPrompt ? `该 NPC 的固定发帖要求（必须遵守）：\n${npc.postPrompt}` : '',
@@ -4505,7 +4521,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       if (visibility.type === 'private') return alertBox('仅自己可见','这条微博不能生成路人或角色评论。');
       const n=opts.postIndex+1;
       context = [
-        '【同层微博任务｜关键词 weibo】',
+        '【小微博任务｜关键词 weibo】',
         '请结合上方角色设定、场景与聊天前文来理解人物关系/语气/剧情，但输出必须仍是微博协议，不要写正文剧情。',
         `目标帖子编号：${n}（只给这一条生成评论）`,
         visibility.type === 'group'
@@ -4521,7 +4537,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       ].join('\n');
     }else if(mode==='dm-scatter'){
       context = [
-        '【同层微博任务｜关键词 msg｜协议 msg/chat】',
+        '【小微博任务｜关键词 msg｜协议 msg/chat】',
         '本任务=微博「消息」私信，不是时间线微博，也不是 Threads/脆文。',
         '请结合上方角色设定、场景与聊天前文理解剧情，但输出必须仍是私信协议。',
         '请求类型：收路人私信（分散）',
@@ -4539,7 +4555,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       const name=opts.threadName||'路人';
       const t=state.threads.find(x=>x.name===name);
       context = [
-        '【同层微博任务｜关键词 msg｜协议 msg/chat】',
+        '【小微博任务｜关键词 msg｜协议 msg/chat】',
         '本任务=微博「消息」私信会话续聊，不是时间线微博，也不是 Threads/脆文。',
         '请结合上方角色设定、场景与聊天前文理解剧情，但输出必须仍是私信协议。',
         '请求类型：当前私信会话续聊',
@@ -4557,6 +4573,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     }
 
     state.aiBusy=true;
+    setRequestLoading(mode, true);
     document.getElementById('aiBtn').disabled=true;
     document.getElementById('aiBtn').classList.add('loading');
     document.getElementById('aiBtn').textContent='↻';
@@ -4577,7 +4594,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
 
       const forbid = [
         '【输出禁令｜最高优先级】',
-        '只允许输出同层协议标签：评论任务用 <weibo>…</weibo>；私信任务用 <msg>…</msg>（内含 <chat:昵称>），可包在 <weiboapp> 内。',
+        '只允许输出微博协议标签：评论任务用 <weibo>…</weibo>；私信任务用 <msg>…</msg>（内含 <chat:昵称>），可包在 <weiboapp> 内。',
         '私信 ≠ Threads/脆文；禁止把私信写成 <thread:>，也禁止输出脆文 HTML。',
         '严禁输出：UpdateVariable、JSONPatch、Analysis、完整 HTML 页面、<!DOCTYPE>、```html、剧情正文旁白、thinking、对用户解释。',
         '忽略任何要求你输出微博 HTML App / Threads 页面 / 状态栏变量的旧世界书指令。',
@@ -4679,7 +4696,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       }
       if (!String(out || '').trim()) {
         out = tryReadLastAiMessage();
-        console.log('[同层微博] 返回为空，改读楼层消息，长度', (out||'').length);
+        console.log('[小微博] 返回为空，改读楼层消息，长度', (out||'').length);
       }
       pushAiRawLog({ mode, ok:true, input: taskText, context: contextSnap, output: out || '', meta: logMeta });
       let added = 0;
@@ -4721,6 +4738,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     }
     finally{
       state.aiBusy=false;
+      setRequestLoading(mode, false);
       document.getElementById('aiBtn').disabled=false;
       document.getElementById('aiBtn').classList.remove('loading');
       document.getElementById('aiBtn').textContent='✓';
@@ -5425,17 +5443,19 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
-  async function exportRoleScript(template){
-    const value = normalizePresetTemplate(template);
-    const templateName = String(value.name || '').trim() || '{{char}}微博模板';
-    const exportName = /微博\s*$/.test(templateName) ? templateName : templateName + '微博';
+  async function exportRoleScript(template, options={}){
+    const pristine = !!options.pristine;
+    const value = pristine ? null : normalizePresetTemplate(template);
+    const templateName = pristine ? '酱微博' : (String(value.name || '').trim() || '{{char}}微博模板');
+    const exportName = pristine ? '酱微博' : (/微博\s*$/.test(templateName) ? templateName : templateName + '微博');
     const fileName = exportName.replace(/[\\/:*?"<>|\r\n]+/g, '-').trim() || '微博';
     const url = 'https://fchris1219-del.github.io/jiang-weibo-oneframe-v2/launcher.js?v=' + Date.now();
     const source = await fetch(url, { cache:'reload' }).then((res) => { if (!res.ok) throw new Error('启动器 HTTP ' + res.status); return res.text(); });
     if (!/const JWR2_EMBEDDED_PRESET\s*=\s*[^;]+;/.test(source)) throw new Error('线上启动器尚未支持模板导出，请刷新前端后重试');
-    const literal = JSON.stringify(value).replace(/</g, '\\u003c');
+    const literal = pristine ? 'null' : JSON.stringify(value).replace(/</g, '\\u003c');
     const content = source.replace(/const JWR2_EMBEDDED_PRESET\s*=\s*[^;]+;/, 'const JWR2_EMBEDDED_PRESET = ' + literal + ';');
-    const script = { type:'script', enabled:true, name:exportName, id:crypto.randomUUID ? crypto.randomUUID() : ('jwr2-' + Date.now()), content, info:`单轮廓远程前端；内置预设模板：${value.name} v${value.version}`, button:{ enabled:true, buttons:[] }, data:{}, export_with:{ data:true, button:true } };
+    const info = pristine ? '小微博原始启动器；使用远程系统默认预设，不携带角色、NPC 或世界书选择配置。' : `单轮廓远程前端；内置预设模板：${value.name} v${value.version}`;
+    const script = { type:'script', enabled:true, name:exportName, id:crypto.randomUUID ? crypto.randomUUID() : ('jwr2-' + Date.now()), content, info, button:{ enabled:true, buttons:[] }, data:{}, export_with:{ data:true, button:true } };
     downloadTextFile(fileName + '.json', JSON.stringify(script, null, 2));
   }
   function fillSettingsForm(){
@@ -5741,11 +5761,14 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
   document.getElementById('settingsExportRoleScript').onclick = async ()=>{
     let template = selectedPresetTemplate();
     if (!template) return showBubble('请先选择模板');
-    template = { ...template, version:template.version + 1, config:presetTemplateConfigFromForm() };
-    if (template.id !== 'system') {
-      const list = presetTemplates(); const index = list.findIndex((item) => item.id === template.id); if (index >= 0) list[index] = template;
-      saveTemplateCollection(list, template.id);
+    if (template.id === 'system') {
+      try { await exportRoleScript(null, { pristine:true }); showBubble('已导出原始「酱微博」酒馆脚本'); }
+      catch (error) { alertBox('导出失败', String(error?.message || error)); }
+      return;
     }
+    template = { ...template, version:template.version + 1, config:presetTemplateConfigFromForm() };
+    const list = presetTemplates(); const index = list.findIndex((item) => item.id === template.id); if (index >= 0) list[index] = template;
+    saveTemplateCollection(list, template.id);
     try { await exportRoleScript(template); showBubble(`已导出「${template.name}」角色酒馆脚本`); }
     catch (error) { alertBox('导出失败', String(error?.message || error)); }
   };
@@ -6121,7 +6144,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     const latest = aiRawLogs[0];
     if(!latest) return alertBox('提示','暂无日志');
     const text = [
-      '# 同层微博 AI 原始日志',
+      '# 小微博 AI 原始日志',
       'time: ' + latest.time,
       'mode: ' + latest.mode,
       'meta:\n' + latest.meta,
@@ -6148,7 +6171,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
   const restored = restorePhoneState();
   // metadata 主存：藏楼后再开壳也能灌回 lore / 勾选 / 帖
   harvestWbLore().then((lore) => {
-    if (lore) console.log('[同层微博] wb_lore(metadata)', lore.length, '字');
+    if (lore) console.log('[小微博] wb_lore(metadata)', lore.length, '字');
     // 粉量：未锁死才灌；昵称空位也会补（见 applyFansFromWbLore）
     applyFansFromWbLore(lore || state.wbLore);
     ensureProfileStats({ allowDefault: true });
@@ -6168,7 +6191,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     }
     try { WB_HOST.setMainInjection?.(state.wbLore || slot?.wbLore || '', !!globalConfig.context.injectMain); } catch (_) {}
   }
-  if (restored) console.log('[同层微博] 已从' + restored + '恢复', state.posts.length, '帖 /', state.threads.length, '私信 / lore', (state.wbLore || '').length);
+  if (restored) console.log('[小微博] 已从' + restored + '恢复', state.posts.length, '帖 /', state.threads.length, '私信 / lore', (state.wbLore || '').length);
 })();
 </script>
 </body>

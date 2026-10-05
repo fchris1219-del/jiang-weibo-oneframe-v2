@@ -1,5 +1,5 @@
-/** 江清让同层微博 v2：单轮廓远程前端启动器 */
-const JWR2_TAG = '[江清让微博v2]';
+/** 酱微博：单轮廓远程前端启动器 */
+const JWR2_TAG = '[酱微博]';
 const JWR2_FRONTEND_URL = 'https://fchris1219-del.github.io/jiang-weibo-oneframe-v2/weibo.html?v=ee68adb';
 const JWR2_ROOT_ID = 'jwr2-root';
 const JWR2_BRIDGE_KEY = '__JWR2_BRIDGE__';
@@ -45,7 +45,7 @@ function jwr2Runtime() {
   const ctx = jwr2Context() || {};
   const ch = ctx?.characters?.[ctx?.characterId] || {};
   const data = ch?.data || ch;
-  let charName = String(data?.name || ctx?.name2 || '江清让');
+  let charName = String(data?.name || ctx?.name2 || '角色');
   let userName = String(ctx?.name1 || 'user');
   let charAvatar = String(data?.avatar || ch?.avatar || '');
   let userAvatar = String(ctx?.user_avatar || ctx?.powerUserSettings?.user_avatar || '');
@@ -234,7 +234,7 @@ function jwr2Messages(request) {
   if (Array.isArray(request?.messages)) return request.messages;
   const input = String(request?.user_input || request?.prompt || request || '');
   return [
-    { role: 'system', content: '你是同层微博数据生成器。严格按任务要求输出协议标签，不解释。' },
+    { role: 'system', content: '你是小微博数据生成器。严格按任务要求输出协议标签，不解释。' },
     { role: 'user', content: input },
   ];
 }
@@ -553,6 +553,6 @@ function jwr2Cleanup() {
     console.log(JWR2_TAG, '单轮廓启动器已挂载');
   } catch (error) {
     console.error(JWR2_TAG, '启动失败', error);
-    alert('江清让微博启动失败：' + String(error?.message || error));
+    alert('酱微博启动失败：' + String(error?.message || error));
   }
 })();
