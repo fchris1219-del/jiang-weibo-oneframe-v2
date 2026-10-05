@@ -664,9 +664,9 @@ body{display:grid;place-items:center;overflow:hidden}
         <div class="template-box">
           <div class="template-title">预设模板 <span>系统默认永远保留</span></div>
           <div class="set-row" style="margin-top:8px"><select id="setPresetTemplate" aria-label="预设模板"></select></div>
-          <div class="template-actions"><button type="button" class="mini-action" id="settingsApplyTemplate">应用所选模板</button><button type="button" class="mini-action primary" id="settingsNewTemplate">新建预设模板</button><button type="button" class="mini-action" id="settingsSaveTemplate">保存到模板</button><button type="button" class="mini-action" id="settingsDeleteTemplate">删除模板</button></div>
+          <div class="template-actions"><button type="button" class="mini-action" id="settingsApplyTemplate">应用所选模板</button><button type="button" class="mini-action primary" id="settingsNewGlobalTemplate">新建全局模板</button><button type="button" class="mini-action primary" id="settingsNewRoleTemplate">新建角色模板</button><button type="button" class="mini-action" id="settingsSaveTemplate">保存到模板</button><button type="button" class="mini-action" id="settingsDeleteTemplate">删除模板</button></div>
           <div class="settings-inline"><button type="button" class="mini-action primary" id="settingsExportRoleScript">导出角色酒馆脚本 JSON</button></div>
-          <div class="field-note" id="presetTemplateHint">选择“系统默认预设”时，只导出不携带任何角色、NPC、ID 池或世界书选择的原始酱微博脚本。自建模板才会携带模板中的 Char 微博账号资料、注册 NPC 账号与“世界书名＋条目名”可移植绑定；User 微博账号资料、Token、聊天记录、世界书正文和内部 ID 均不会导出。</div>
+          <div class="field-note" id="presetTemplateHint">全局模板对所有角色、聊天和档位可见；角色模板只对当前角色可见，但在该角色的不同聊天与档位中都能使用。模板应用后的 NPC、ID 池、世界书与提示词配置只写入当前档位。选择“系统默认预设”导出时仍只导出原始酱微博脚本。</div>
         </div>
         <div class="preset-toolbar"><button type="button" class="mini-action primary" id="settingsPreviewContext">生成分组注入预览</button><button type="button" class="mini-action" id="settingsAddPresetEntry">+新增自定义条目</button></div>
         <div class="preset-stack" id="presetStack">
@@ -762,6 +762,7 @@ body{display:grid;place-items:center;overflow:hidden}
   const charAvatarPath = (typeof window.charAvatarPath !== 'undefined') ? window.charAvatarPath : '{{charAvatarPath}}';
   const rawUserName = (!userName || String(userName).includes('{{')) ? '' : String(userName);
   const rawCharName = (!charName || String(charName).includes('{{')) ? '' : String(charName);
+  const CURRENT_CHARACTER_TEMPLATE_KEY = String(window.__JWR2_CHAR_KEY__ || [rawCharName || 'char', String(charAvatarPath || '')].join('::'));
   const WB_HOST = window.WeiboHost && typeof window.WeiboHost === 'object' ? window.WeiboHost : null;
 
   // 参考酒馆原生预设的 in-chat depth：0 最靠近本次任务，数字越大越早注入。
@@ -783,6 +784,7 @@ body{display:grid;place-items:center;overflow:hidden}
       api: { mode:'main', source:'custom', url:'', model:'', models:[], temperature:0.8, maxTokens:4096 },
       context: { mode:'recent', recentMessages:3, manualSummary:'', includeChar:true, includePersona:true, includeScenario:true, includeWorldInfo:true, systemAddon:'', loreScanKeyword:'🩶', loreBookNames:'', lorePortableBindings:[], nativePrompt:'detailed', nativePromptText:'', hotMemeEnabled:true, hotMemePrompt:'', hotMemeManualText:'', hotMemeBookNames:'', hotMemeEntryNames:'', hotMemePortableBindings:[], hotMemeLoreIds:[], hotMemeLoreSnap:[], customIdPool:'', npcDmEnabled:false, npcDmPrompt:'', npcAccounts:[], generationCounts:{ feed:5, feedComments:5, comments:5, dm:10, dmThread:5, allFeed:5, allChar:1, allDm:10 }, presetDepths:{ ...DEFAULT_PRESET_DEPTHS }, customEntries:[], injectMain:false },
       presetTemplates: [],
+      rolePresetTemplates: {},
       activePresetTemplateId: 'system',
       embeddedPresetId: '',
       slots: [{ id:'default', name:'默认档位', initPrompt:'', wbLore:'' }],
@@ -809,6 +811,7 @@ body{display:grid;place-items:center;overflow:hidden}
     out.context.generationCounts = { ...base.context.generationCounts, ...(out.context.generationCounts || {}) };
     out.context.presetDepths = normalizePresetDepths(out.context.presetDepths);
     out.presetTemplates = Array.isArray(out.presetTemplates) ? out.presetTemplates.filter((item) => item && item.id && item.config) : [];
+    out.rolePresetTemplates = out.rolePresetTemplates && typeof out.rolePresetTemplates === 'object' ? out.rolePresetTemplates : {};
     out.activePresetTemplateId = String(out.activePresetTemplateId || 'system');
     out.slots = out.slots.map((slot) => ({
       ...slot,
@@ -845,17 +848,17 @@ body{display:grid;place-items:center;overflow:hidden}
   }
   function makeDefaultChatSlot(){
     const baseContext = globalConfig?.embeddedPresetId ? (globalConfig.context || {}) : defaultGlobalConfig().context;
-    return { id:'default', name:'默认档位', initPrompt:'', wbLore:'', account:{}, context:{ ...baseContext, npcAccounts:Array.isArray(baseContext.npcAccounts) ? baseContext.npcAccounts : [] } };
+    return { id:'default', name:'默认档位', presetTemplateId:'system', initPrompt:'', wbLore:'', account:{}, context:{ ...baseContext, npcAccounts:Array.isArray(baseContext.npcAccounts) ? baseContext.npcAccounts : [] } };
   }
   function normalizeChatSlots(binding){
-    if (Array.isArray(binding?.slots) && binding.slots.length) return binding.slots;
+    if (Array.isArray(binding?.slots) && binding.slots.length) return binding.slots.map((slot) => ({ ...slot, presetTemplateId:String(slot?.presetTemplateId || 'system') }));
     const legacy = Array.isArray(globalConfig?.slots) ? globalConfig.slots : [];
     const usedIds = new Set([
       ...Object.keys(binding?.slotRecords || {}),
       ...Object.keys(binding?.slotRecordIds || {}),
       binding?.activeSlotId,
     ].filter(Boolean).map(String));
-    const migrated = legacy.filter((slot) => usedIds.has(String(slot?.id || ''))).map((slot) => ({ ...slot }));
+    const migrated = legacy.filter((slot) => usedIds.has(String(slot?.id || ''))).map((slot) => ({ ...slot, presetTemplateId:'system' }));
     return migrated.length ? migrated : [makeDefaultChatSlot()];
   }
   let globalConfig = readGlobalConfig();
@@ -5390,19 +5393,22 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
   }
   function normalizePresetTemplate(item, fallbackName='未命名模板'){
     const value = item && typeof item === 'object' ? item : {};
-    return { id:String(value.id || ('tpl_' + Date.now().toString(36))), name:String(value.name || fallbackName).trim() || fallbackName, version:Math.max(1,Number(value.version)||1), config:{ ...systemPresetConfig(), ...(value.config || {}), charAccount:normalizePortableCharAccount(value.config?.charAccount), lorePortableBindings:normalizePortableLoreBindings(value.config?.lorePortableBindings), hotMemePortableBindings:normalizePortableLoreBindings(value.config?.hotMemePortableBindings), npcAccounts:Array.isArray(value.config?.npcAccounts) ? value.config.npcAccounts.map(normalizeNpcAccount) : [], generationCounts:{ ...systemPresetConfig().generationCounts, ...(value.config?.generationCounts || {}) }, presetDepths:normalizePresetDepths(value.config?.presetDepths), customEntries:Array.isArray(value.config?.customEntries) ? value.config.customEntries : [] } };
+    const scope = value.scope === 'role' ? 'role' : 'global';
+    return { id:String(value.id || ('tpl_' + Date.now().toString(36))), name:String(value.name || fallbackName).trim() || fallbackName, scope, roleKey:scope === 'role' ? String(value.roleKey || CURRENT_CHARACTER_TEMPLATE_KEY) : '', version:Math.max(1,Number(value.version)||1), config:{ ...systemPresetConfig(), ...(value.config || {}), charAccount:normalizePortableCharAccount(value.config?.charAccount), lorePortableBindings:normalizePortableLoreBindings(value.config?.lorePortableBindings), hotMemePortableBindings:normalizePortableLoreBindings(value.config?.hotMemePortableBindings), npcAccounts:Array.isArray(value.config?.npcAccounts) ? value.config.npcAccounts.map(normalizeNpcAccount) : [], generationCounts:{ ...systemPresetConfig().generationCounts, ...(value.config?.generationCounts || {}) }, presetDepths:normalizePresetDepths(value.config?.presetDepths), customEntries:Array.isArray(value.config?.customEntries) ? value.config.customEntries : [] } };
   }
-  function presetTemplates(){ return (globalConfig.presetTemplates || []).map((item) => normalizePresetTemplate(item)); }
+  function globalPresetTemplates(){ return (globalConfig.presetTemplates || []).map((item) => normalizePresetTemplate({ ...item, scope:'global' })); }
+  function rolePresetTemplates(){ return (globalConfig.rolePresetTemplates?.[CURRENT_CHARACTER_TEMPLATE_KEY] || []).map((item) => normalizePresetTemplate({ ...item, scope:'role', roleKey:CURRENT_CHARACTER_TEMPLATE_KEY })); }
+  function presetTemplates(){ return [...globalPresetTemplates(), ...rolePresetTemplates()]; }
   function renderPresetTemplateSelect(){
     const select = document.getElementById('setPresetTemplate');
     if (!select) return;
     const embeddedId = String(globalConfig.embeddedPresetId || '');
-    select.innerHTML = '<option value="system">系统默认预设（只读）</option>' + presetTemplates().map((item) => `<option value="${esc(item.id)}">${esc(item.name)}${String(item.id) === embeddedId ? ' · 脚本内置' : ''}</option>`).join('');
-    const wanted = String(globalConfig.activePresetTemplateId || 'system');
+    select.innerHTML = '<option value="system">系统默认预设（只读）</option>' + presetTemplates().map((item) => `<option value="${esc(item.id)}">${esc(item.name)} · ${item.scope === 'role' ? '当前角色' : '全局'}${String(item.id) === embeddedId ? ' · 脚本内置' : ''}</option>`).join('');
+    const wanted = String(currentSlot()?.presetTemplateId || 'system');
     select.value = [...select.options].some((opt) => opt.value === wanted) ? wanted : 'system';
     const isSystem = select.value === 'system';
     document.getElementById('settingsDeleteTemplate').disabled = isSystem;
-    document.getElementById('settingsSaveTemplate').textContent = isSystem ? '另存为新模板' : '保存到模板';
+    document.getElementById('settingsSaveTemplate').textContent = '保存到模板';
   }
   function applyPresetTemplateToForm(template){
     const config = normalizePresetTemplate(template || { id:'system', name:'系统默认', config:systemPresetConfig() }).config;
@@ -5452,9 +5458,13 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     return presetTemplates().find((item) => item.id === id) || null;
   }
   function saveTemplateCollection(list, activeId){
-    globalConfig.presetTemplates = list.map((item) => normalizePresetTemplate(item));
-    globalConfig.activePresetTemplateId = String(activeId || 'system');
+    const normalized = list.map((item) => normalizePresetTemplate(item));
+    globalConfig.presetTemplates = normalized.filter((item) => item.scope !== 'role');
+    globalConfig.rolePresetTemplates = { ...(globalConfig.rolePresetTemplates || {}), [CURRENT_CHARACTER_TEMPLATE_KEY]:normalized.filter((item) => item.scope === 'role') };
+    const slot = currentSlot();
+    if (slot) slot.presetTemplateId = String(activeId || 'system');
     writeGlobalConfig(globalConfig);
+    void saveChatBinding({ slots:chatSlots() });
     renderPresetTemplateSelect();
   }
   function downloadTextFile(name, text, type='application/json'){
@@ -5465,7 +5475,8 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
   }
   async function exportRoleScript(template, options={}){
     const pristine = !!options.pristine;
-    const value = pristine ? null : normalizePresetTemplate(template);
+    const normalizedTemplate = pristine ? null : normalizePresetTemplate(template);
+    const value = pristine ? null : { ...normalizedTemplate, scope:'global', roleKey:'' };
     const templateName = pristine ? '酱微博' : (String(value.name || '').trim() || '{{char}}微博模板');
     const exportName = pristine ? '酱微博' : (/微博\s*$/.test(templateName) ? templateName : templateName + '微博');
     const fileName = exportName.replace(/[\\/:*?"<>|\r\n]+/g, '-').trim() || '微博';
@@ -5706,32 +5717,32 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
   document.getElementById('setPresetTemplate').onchange = (event)=>{
     const isSystem = event.target.value === 'system';
     document.getElementById('settingsDeleteTemplate').disabled = isSystem;
-    document.getElementById('settingsSaveTemplate').textContent = isSystem ? '另存为新模板' : '保存到模板';
+    document.getElementById('settingsSaveTemplate').textContent = '保存到模板';
   };
   document.getElementById('settingsApplyTemplate').onclick = ()=>{
     const template = selectedPresetTemplate();
     if (!template) return showBubble('模板不存在');
-    globalConfig.activePresetTemplateId = template.id;
-    writeGlobalConfig(globalConfig);
+    const slot = currentSlot();
+    if (slot) { slot.presetTemplateId = template.id; void saveChatBinding({ slots:chatSlots() }); }
     applyPresetTemplateToForm(template);
     showBubble(`已载入模板「${template.name}」，点底部保存后应用到本档位`);
   };
-  document.getElementById('settingsNewTemplate').onclick = ()=>{
-    const name = String(prompt('新预设模板名称', '{{char}}微博模板') || '').trim();
+  function createPresetTemplate(scope){
+    const isRole = scope === 'role';
+    const name = String(prompt(isRole ? '新角色模板名称' : '新全局模板名称', '{{char}}微博模板') || '').trim();
     if (!name) return;
-    const template = normalizePresetTemplate({ id:'tpl_' + Date.now().toString(36), name, version:1, config:systemPresetConfig() });
+    const template = normalizePresetTemplate({ id:'tpl_' + Date.now().toString(36), name, scope:isRole ? 'role' : 'global', roleKey:isRole ? CURRENT_CHARACTER_TEMPLATE_KEY : '', version:1, config:systemPresetConfig() });
     const list = presetTemplates(); list.push(template); saveTemplateCollection(list, template.id);
     applyPresetTemplateToForm(template);
-    showBubble('已从系统默认新建模板，可修改后点“保存到模板”');
-  };
+    showBubble(`已新建${isRole ? '当前角色' : '全局'}模板，可修改后点“保存到模板”`);
+  }
+  document.getElementById('settingsNewGlobalTemplate').onclick = ()=>createPresetTemplate('global');
+  document.getElementById('settingsNewRoleTemplate').onclick = ()=>createPresetTemplate('role');
   document.getElementById('settingsSaveTemplate').onclick = ()=>{
     let template = selectedPresetTemplate();
     const list = presetTemplates();
     if (!template || template.id === 'system') {
-      const name = String(prompt('另存为模板名称', '{{char}}微博模板') || '').trim();
-      if (!name) return;
-      template = normalizePresetTemplate({ id:'tpl_' + Date.now().toString(36), name, version:1, config:presetTemplateConfigFromForm() });
-      list.push(template);
+      return showBubble('请先选择“新建全局模板”或“新建角色模板”');
     } else {
       template = { ...template, version:template.version + 1, config:presetTemplateConfigFromForm() };
       const index = list.findIndex((item) => item.id === template.id);
@@ -5744,6 +5755,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     const template = selectedPresetTemplate();
     if (!template || template.id === 'system') return showBubble('系统默认模板不能删除');
     if (!confirm(`删除预设模板「${template.name}」？不会删除系统默认模板。`)) return;
+    chatSlots().forEach((slot) => { if (String(slot.presetTemplateId || '') === String(template.id)) slot.presetTemplateId = 'system'; });
     saveTemplateCollection(presetTemplates().filter((item) => item.id !== template.id), 'system');
     applyPresetTemplateToForm({ id:'system', name:'系统默认预设', config:systemPresetConfig() });
     showBubble('模板已删除，已切回系统默认');
@@ -5908,7 +5920,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
   document.getElementById('settingsNewSlot').onclick = async ()=>{
     await persistSettingsForm(false);
     const id = 'slot_' + Date.now().toString(36);
-    chatSlots().push({ id, name:'新档位', initPrompt:'', wbLore:'', account:{}, context:{ ...systemPresetConfig(), manualSummary:'', npcAccounts:[] } });
+    chatSlots().push({ id, name:'新档位', presetTemplateId:'system', initPrompt:'', wbLore:'', account:{}, context:{ ...systemPresetConfig(), manualSummary:'', npcAccounts:[] } });
     await saveChatBinding({ slots:chatSlots() });
     renderSlotSelect();
     document.getElementById('setSlotSelect').value = id;
@@ -5944,8 +5956,9 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
   document.getElementById('settingsReset').onclick = async ()=>{
     const prevUser = collectUserNameCandidates();
     const prevChar = collectCharNameCandidates();
-    globalConfig.activePresetTemplateId = 'system';
-    writeGlobalConfig(globalConfig);
+    const slot = currentSlot();
+    if (slot) slot.presetTemplateId = 'system';
+    await saveChatBinding({ slots:chatSlots() });
     renderPresetTemplateSelect();
     applyPresetTemplateToForm({ id:'system', name:'系统默认预设', config:systemPresetConfig() });
     await persistSettingsForm(false);
