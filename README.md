@@ -11,7 +11,8 @@
 ## 存储分层
 
 - 全局设置：写入 SillyTavern `extension_settings.jiang_weibo_oneframe_v2`，跟随酒馆服务器配置。
-- 当前聊天记录：写入 `chatMetadata.jiang_weibo_oneframe_v2.slotRecords[档位ID]`，不同聊天、不同档位都有独立微博记录。
+- 角色／聊天档位：档位定义、档位配置与档位记录全部写入当前聊天的 `chatMetadata.jiang_weibo_oneframe_v2`。层级为“角色 → 聊天 → 档位”，切换角色或聊天不会看到别处创建的档位。
+- 档位记录：写入 `chatMetadata.jiang_weibo_oneframe_v2.slotRecords[档位ID]`，切换下拉选项会立即热切换，不需要再点“切入”。
 - 档位初始化：`wb_lore` 只写入当前档位；可手动从首楼读取并覆盖，不再向正文楼层回写。
 - 微博、评论、私信不写入正文楼层；`localStorage` 只作旧数据兼容和离线镜像。
 

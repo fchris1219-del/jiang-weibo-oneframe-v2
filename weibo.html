@@ -604,10 +604,9 @@ body{display:grid;place-items:center;overflow:hidden}
 
       <section class="settings-section" id="slotSection">
         <h3>档位</h3>
-        <div class="section-note">每个档位拥有独立微博、评论、私信与上下文配置；切换后不显示其它档的记录。</div>
+        <div class="section-note">档位严格绑定当前角色的当前聊天；换角色或换聊天后只显示该聊天自己的档位。选择档位会立即热切换。</div>
         <div class="settings-inline">
           <select id="setSlotSelect" aria-label="微博档位"></select>
-          <button type="button" class="mini-action primary" id="settingsActivateSlot">切入</button>
           <button type="button" class="mini-action" id="settingsNewSlot">新建</button>
           <button type="button" class="mini-action danger" id="settingsDeleteSlot">删除</button>
         </div>
@@ -844,21 +843,44 @@ body{display:grid;place-items:center;overflow:hidden}
     try { if (WB_HOST?.getChatStore) return WB_HOST.getChatStore() || {}; } catch (_) {}
     return {};
   }
+  function makeDefaultChatSlot(){
+    const baseContext = globalConfig?.embeddedPresetId ? (globalConfig.context || {}) : defaultGlobalConfig().context;
+    return { id:'default', name:'默认档位', initPrompt:'', wbLore:'', account:{}, context:{ ...baseContext, npcAccounts:Array.isArray(baseContext.npcAccounts) ? baseContext.npcAccounts : [] } };
+  }
+  function normalizeChatSlots(binding){
+    if (Array.isArray(binding?.slots) && binding.slots.length) return binding.slots;
+    const legacy = Array.isArray(globalConfig?.slots) ? globalConfig.slots : [];
+    const usedIds = new Set([
+      ...Object.keys(binding?.slotRecords || {}),
+      ...Object.keys(binding?.slotRecordIds || {}),
+      binding?.activeSlotId,
+    ].filter(Boolean).map(String));
+    const migrated = legacy.filter((slot) => usedIds.has(String(slot?.id || ''))).map((slot) => ({ ...slot }));
+    return migrated.length ? migrated : [makeDefaultChatSlot()];
+  }
   let globalConfig = readGlobalConfig();
   let chatBinding = readChatBinding();
-  let activeSlotId = String(chatBinding.activeSlotId || globalConfig.slots[0]?.id || 'default');
+  const chatSlotsNeededMigration = !Array.isArray(chatBinding.slots) || !chatBinding.slots.length;
+  chatBinding = { ...chatBinding, slots:normalizeChatSlots(chatBinding), slotScopeVersion:2 };
+  let activeSlotId = String(chatBinding.activeSlotId || chatBinding.slots[0]?.id || 'default');
+  if (!chatBinding.slots.some((slot) => String(slot.id) === activeSlotId)) activeSlotId = String(chatBinding.slots[0]?.id || 'default');
+  function chatSlots(){
+    if (!Array.isArray(chatBinding.slots) || !chatBinding.slots.length) chatBinding.slots = [makeDefaultChatSlot()];
+    return chatBinding.slots;
+  }
   function currentSlot(){
-    return globalConfig.slots.find((s) => String(s.id) === String(activeSlotId)) || globalConfig.slots[0];
+    return chatSlots().find((s) => String(s.id) === String(activeSlotId)) || chatSlots()[0];
   }
   function currentSlotContext(){
-    const base = globalConfig.context || {};
+    const base = globalConfig?.embeddedPresetId ? (globalConfig.context || {}) : defaultGlobalConfig().context;
     return { ...base, ...(currentSlot()?.context || {}) };
   }
   async function saveChatBinding(patch){
-    chatBinding = { ...chatBinding, ...(patch || {}), activeSlotId };
+    chatBinding = { ...chatBinding, ...(patch || {}), slots:chatSlots(), slotScopeVersion:2, activeSlotId };
     try { await WB_HOST?.saveChatStore?.(chatBinding); } catch (_) {}
     return chatBinding;
   }
+  if (chatSlotsNeededMigration) void saveChatBinding({ slots:chatSlots(), slotScopeVersion:2 });
 
   const PHONE_SETTINGS_KEY = 'weibo_phone_settings_v1';
   function normalizePortableCharAccount(value){
@@ -871,7 +893,7 @@ body{display:grid;place-items:center;overflow:hidden}
     };
   }
   function settingsBucketId(){
-    return (rawCharName || 'default') + '::' + (rawUserName || 'user') + '::slot:' + activeSlotId;
+    return (rawCharName || 'default') + '::chat:' + currentChatId() + '::' + (rawUserName || 'user') + '::slot:' + activeSlotId;
   }
   function defaultPhoneSettings(){
     const ctxSet = currentSlotContext();
@@ -950,8 +972,8 @@ body{display:grid;place-items:center;overflow:hidden}
         userFans: Number(cur.userFans) || 0, charFans: Number(cur.charFans) || 0,
         userFollowing: Number(cur.userFollowing) || 0, charFollowing: Number(cur.charFollowing) || 0,
       };
-      globalConfig.context = {
-        ...globalConfig.context,
+      slot.context = {
+        ...(slot.context || {}),
         includeWorldInfo: cur.includeBgLore !== false,
         includeChar: cur.includeChar !== false,
         includePersona: cur.includePersona !== false,
@@ -983,8 +1005,7 @@ body{display:grid;place-items:center;overflow:hidden}
         charAccount: normalizePortableCharAccount({ weiboId:cur.charWeiboId, bio:cur.charBio, fans:cur.charFans, following:cur.charFollowing }),
         injectMain: !!cur.injectMain,
       };
-      slot.context = { ...globalConfig.context };
-      writeGlobalConfig(globalConfig);
+      void saveChatBinding({ slots:chatSlots() });
     }
     applyDisplayNames();
     return cur;
@@ -1833,7 +1854,7 @@ body{display:grid;place-items:center;overflow:hidden}
   }
   function cleanWbLoreEditorText(raw){
     let text = String(raw || '').trim().replace(/^\[微博档位\|[^\]]*\]\s*/i, '');
-    const prompts = (globalConfig?.slots || []).map((slot) => String(slot?.initPrompt || '').trim()).filter(Boolean).sort((a, b) => b.length - a.length);
+    const prompts = chatSlots().map((slot) => String(slot?.initPrompt || '').trim()).filter(Boolean).sort((a, b) => b.length - a.length);
     for (const prompt of prompts) {
       const prefix = '[初始化提示词]\n' + prompt;
       if (text.startsWith(prefix)) { text = text.slice(prefix.length).trim(); break; }
@@ -1855,7 +1876,7 @@ body{display:grid;place-items:center;overflow:hidden}
   function readFirstFloorWbLoreFromChat(){
     const stripLauncherEnvelope = (text) => {
       let out = String(text || '').trim().replace(/^\[微博档位\|[^\]]*\]\s*/i, '');
-      const prompts = (globalConfig.slots || []).map((slot) => String(slot?.initPrompt || '').trim()).filter(Boolean).sort((a, b) => b.length - a.length);
+      const prompts = chatSlots().map((slot) => String(slot?.initPrompt || '').trim()).filter(Boolean).sort((a, b) => b.length - a.length);
       for (const prompt of prompts) {
         const prefix = '[初始化提示词]\n' + prompt;
         if (out.startsWith(prefix)) { out = out.slice(prefix.length).trim(); break; }
@@ -5269,16 +5290,15 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
 
   function renderSlotSelect(){
     const select = document.getElementById('setSlotSelect');
-    select.innerHTML = globalConfig.slots.map((slot) => `<option value="${esc(slot.id)}">${esc(slot.name || '未命名档位')}</option>`).join('');
+    select.innerHTML = chatSlots().map((slot) => `<option value="${esc(slot.id)}">${esc(slot.name || '未命名档位')}</option>`).join('');
     select.value = activeSlotId;
   }
   function updateSlotStatusForSelection(slotId){
     const selectedId = String(slotId || document.getElementById('setSlotSelect')?.value || activeSlotId || 'default');
-    const selectedSlot = globalConfig.slots.find((item) => item.id === selectedId) || currentSlot() || globalConfig.slots[0];
+    const selectedSlot = chatSlots().find((item) => item.id === selectedId) || currentSlot() || chatSlots()[0];
     const liveChatId = currentChatId() || '未读到';
     const recordedChatId = String(chatBinding.slotRecordIds?.[selectedId] || liveChatId);
-    const isActive = selectedId === activeSlotId;
-    document.getElementById('slotStatus').innerHTML = `${isActive ? '当前聊天已绑定' : '待切入档位'}「${esc(selectedSlot?.name || '默认档位')}」；本档位只显示自己的微博记录。<span class="slot-record-id">聊天记录 ID：${esc(recordedChatId)}<br>档位记录键：${esc(recordedChatId)}::slot:${esc(selectedId)}</span>`;
+    document.getElementById('slotStatus').innerHTML = `当前角色／聊天已热切换到「${esc(selectedSlot?.name || '默认档位')}」；只显示本档位记录。<span class="slot-record-id">聊天记录 ID：${esc(recordedChatId)}<br>档位记录键：${esc(recordedChatId)}::slot:${esc(selectedId)}</span>`;
   }
   function apiDraftFromForm(){
     return {
@@ -5460,9 +5480,11 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
   }
   function fillSettingsForm(){
     globalConfig = readGlobalConfig();
-    chatBinding = readChatBinding();
-    activeSlotId = String(chatBinding.activeSlotId || activeSlotId || globalConfig.slots[0]?.id || 'default');
-    const slot = currentSlot() || globalConfig.slots[0];
+    const latestChatBinding = readChatBinding();
+    chatBinding = { ...latestChatBinding, slots:normalizeChatSlots(latestChatBinding), slotScopeVersion:2 };
+    activeSlotId = String(chatBinding.activeSlotId || activeSlotId || chatSlots()[0]?.id || 'default');
+    if (!chatSlots().some((item) => String(item.id) === activeSlotId)) activeSlotId = String(chatSlots()[0]?.id || 'default');
+    const slot = currentSlot() || chatSlots()[0];
     phoneSettings = Object.assign(defaultPhoneSettings(), loadPhoneSettings(), slot?.account || {});
     ensureProfileStats();
     renderSlotSelect();
@@ -5650,38 +5672,6 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       };
     }
     globalConfig.api = { ...globalConfig.api, ...apiDraftFromForm() };
-    globalConfig.context = {
-      mode: settingsPatch.contextMode,
-      recentMessages: settingsPatch.recentMessages,
-      manualSummary: settingsPatch.manualSummary,
-      systemAddon: settingsPatch.systemAddon,
-      loreScanKeyword: settingsPatch.loreScanKeyword,
-      loreBookNames: settingsPatch.loreBookNames,
-      lorePortableBindings: settingsPatch.lorePortableBindings,
-      nativePrompt: settingsPatch.nativePrompt,
-      nativePromptText: settingsPatch.nativePromptText,
-      hotMemeEnabled: settingsPatch.hotMemeEnabled,
-      hotMemePrompt: settingsPatch.hotMemePrompt,
-      hotMemeManualText: settingsPatch.hotMemeManualText,
-      hotMemeBookNames: settingsPatch.hotMemeBookNames,
-      hotMemeEntryNames: settingsPatch.hotMemeEntryNames,
-      hotMemePortableBindings: settingsPatch.hotMemePortableBindings,
-      hotMemeLoreIds: settingsPatch.hotMemeLoreIds,
-      hotMemeLoreSnap: settingsPatch.hotMemeLoreSnap,
-      npcDmEnabled: settingsPatch.npcDmEnabled,
-      npcDmPrompt: settingsPatch.npcDmPrompt,
-      npcAccounts: settingsPatch.npcAccounts,
-      charAccount: normalizePortableCharAccount({ weiboId:settingsPatch.charWeiboId, bio:settingsPatch.charBio, fans:settingsPatch.charFans, following:settingsPatch.charFollowing }),
-      customIdPool: settingsPatch.customIdPool,
-      generationCounts: settingsPatch.generationCounts,
-      presetDepths: settingsPatch.presetDepths,
-      customEntries: settingsPatch.customEntries,
-      includeChar: settingsPatch.includeChar,
-      includePersona: settingsPatch.includePersona,
-      includeScenario: settingsPatch.includeScenario,
-      includeWorldInfo: settingsPatch.includeBgLore,
-      injectMain: settingsPatch.injectMain,
-    };
     writeGlobalConfig(globalConfig);
     try { WB_HOST?.saveApiSettings?.(globalConfig.api); } catch (_) {}
     if (userFans > 0) { state.userFans = userFans; state.fansFromStore = true; }
@@ -5774,7 +5764,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
   };
   document.querySelectorAll('input[name="apiMode"]').forEach((el) => el.onchange = updateApiVisibility);
   bindPresetEntryToggles(document);
-  document.getElementById('setSlotSelect').onchange = (event)=> updateSlotStatusForSelection(event.target.value);
+  document.getElementById('setSlotSelect').onchange = (event)=> switchActiveSlot(event.target.value);
   document.getElementById('setContextMode').onchange = ()=>{ updateContextModeVisibility(); refreshPresetUiSummaries(); };
   document.getElementById('setRecentMessages').oninput = refreshPresetUiSummaries;
   ['setIncludeChar','setIncludePersona','setIncludeScenario','setIncludeBg','setHotMemeEnabled','setNpcDmEnabled'].forEach((id) => {
@@ -5896,9 +5886,11 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     const hint = document.getElementById('wbLoreHint');
     if (hint) hint.textContent = 'wb_lore 仅保存到当前聊天的本档位，不会写入正文首楼。';
   })();
-  document.getElementById('settingsActivateSlot').onclick = async ()=>{
-    await persistSettingsForm(false);
-    activeSlotId = String(document.getElementById('setSlotSelect').value || 'default');
+  async function switchActiveSlot(targetId, options={}){
+    const nextId = String(targetId || 'default');
+    if (nextId === activeSlotId) { updateSlotStatusForSelection(nextId); return; }
+    if (options.persistCurrent !== false) await persistSettingsForm(false);
+    activeSlotId = nextId;
     const slot = currentSlot();
     if (!slot) return showBubble('档位不存在');
     resetPhoneStateForSlot();
@@ -5906,37 +5898,37 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     phoneSettings = Object.assign(defaultPhoneSettings(), slot.account || {});
     savePhoneSettings(phoneSettings);
     const slotRecordIds = { ...(chatBinding.slotRecordIds || {}), [activeSlotId]: currentChatId() || '' };
-    await saveChatBinding({ activeSlotId, slotRecordIds });
+    await saveChatBinding({ activeSlotId, slotRecordIds, slots:chatSlots() });
     await writePhoneBundleToMetadata();
-    try { WB_HOST?.setMainInjection?.(state.wbLore, !!globalConfig.context.injectMain); } catch (_) {}
+    try { WB_HOST?.setMainInjection?.(state.wbLore, !!currentSlotContext().injectMain); } catch (_) {}
     fillSettingsForm();
     renderAll();
-    showBubble(`已切入「${slot.name}」，已显示本档独立记录。`);
-  };
-  document.getElementById('settingsNewSlot').onclick = ()=>{
+    showBubble(`已热切换到「${slot.name}」，已显示本档独立记录。`);
+  }
+  document.getElementById('settingsNewSlot').onclick = async ()=>{
+    await persistSettingsForm(false);
     const id = 'slot_' + Date.now().toString(36);
-    globalConfig.slots.push({ id, name:'新档位', initPrompt:'', wbLore:'', account:{}, context:{ ...systemPresetConfig(), manualSummary:'', npcAccounts:[] } });
-    writeGlobalConfig(globalConfig);
+    chatSlots().push({ id, name:'新档位', initPrompt:'', wbLore:'', account:{}, context:{ ...systemPresetConfig(), manualSummary:'', npcAccounts:[] } });
+    await saveChatBinding({ slots:chatSlots() });
     renderSlotSelect();
     document.getElementById('setSlotSelect').value = id;
-    updateSlotStatusForSelection(id);
-    showBubble('已新建；点「切入」后绑定到本聊天');
+    await switchActiveSlot(id, { persistCurrent:false });
+    showBubble('已新建并热切换到当前聊天的新档位');
   };
   document.getElementById('settingsDeleteSlot').onclick = async ()=>{
-    if ((globalConfig.slots || []).length <= 1) return showBubble('至少需要保留一个档位');
+    if (chatSlots().length <= 1) return showBubble('当前聊天至少需要保留一个档位');
     const targetId = String(document.getElementById('setSlotSelect').value || activeSlotId);
-    const target = globalConfig.slots.find((slot) => String(slot.id) === targetId);
+    const target = chatSlots().find((slot) => String(slot.id) === targetId);
     if (!target) return showBubble('要删除的档位不存在');
     if (!confirm(`删除档位“${target.name || '未命名档位'}”？\n\n将删除该档位的设置和当前聊天中的微博、评论、私信记录，不影响其它档位。`)) return;
-    const oldSettingsKey = (rawCharName || 'default') + '::' + (rawUserName || 'user') + '::slot:' + targetId;
+    const oldSettingsKey = (rawCharName || 'default') + '::chat:' + currentChatId() + '::' + (rawUserName || 'user') + '::slot:' + targetId;
     const oldDataKey = currentChatId() + '::' + (rawCharName || 'char') + '::' + (rawUserName || 'user') + '::slot:' + targetId;
-    globalConfig.slots = globalConfig.slots.filter((slot) => String(slot.id) !== targetId);
-    if (activeSlotId === targetId) activeSlotId = String(globalConfig.slots[0].id);
-    writeGlobalConfig(globalConfig);
+    chatBinding.slots = chatSlots().filter((slot) => String(slot.id) !== targetId);
+    if (activeSlotId === targetId) activeSlotId = String(chatSlots()[0].id);
     const slotRecords = { ...(chatBinding.slotRecords || {}) };
     const slotRecordIds = { ...(chatBinding.slotRecordIds || {}) };
     delete slotRecords[targetId]; delete slotRecordIds[targetId];
-    await saveChatBinding({ slotRecords, slotRecordIds, activeSlotId });
+    await saveChatBinding({ slots:chatSlots(), slotRecords, slotRecordIds, activeSlotId });
     try {
       const settings = JSON.parse(localStorage.getItem(PHONE_SETTINGS_KEY) || '{}'); delete settings[oldSettingsKey]; localStorage.setItem(PHONE_SETTINGS_KEY, JSON.stringify(settings));
       const records = JSON.parse(localStorage.getItem(PHONE_DATA_KEY) || '{}'); delete records[oldDataKey]; localStorage.setItem(PHONE_DATA_KEY, JSON.stringify(records));
