@@ -670,6 +670,10 @@ body{display:grid;place-items:center;overflow:hidden}
         </div>
         <div class="preset-toolbar"><button type="button" class="mini-action primary" id="settingsPreviewContext">生成分组注入预览</button><button type="button" class="mini-action" id="settingsAddPresetEntry">+新增自定义条目</button></div>
         <div class="preset-stack" id="presetStack">
+          <article class="preset-entry" data-preset-entry="systemAddon" data-preset-pinned="true">
+            <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">系</div><div class="preset-entry-copy"><div class="preset-entry-title">System 附加说明</div><div class="preset-entry-note">置顶注入 · system 身份 · 默认空白</div></div><span class="preset-entry-state on">置顶 system</span><span class="preset-entry-chev">⌄</span></div>
+            <div class="preset-entry-editor"><div class="set-row"><label for="setSystemAddon">System 附加说明</label><textarea id="setSystemAddon" rows="8"></textarea></div></div>
+          </article>
           <article class="preset-entry" data-preset-entry="native">
             <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">规</div><div class="preset-entry-copy"><div class="preset-entry-title">微博原生提示词</div><div class="preset-entry-note" id="nativePromptSummary">详细原生版 · 含 ID 生成指导</div></div><span class="preset-entry-state on">必定注入</span><span class="preset-entry-chev">⌄</span></div>
             <div class="preset-entry-editor"><div class="set-row"><label for="setNativePrompt">默认版本</label><select id="setNativePrompt"><option value="detailed">详细原生版（含 ID 指导）</option><option value="compact">简约表达版</option></select></div><div class="set-row"><label for="setNativePromptText">表达与内容规则（可修改）</label><textarea id="setNativePromptText" rows="14"></textarea><div class="field-note">这里只编辑微博表达、账号口吻、生态与内容规则。输出标签、字段名称、分隔符和编号协议固定内嵌，不能被模板修改。</div></div><details style="margin-top:10px"><summary>查看固定输出格式（只读）</summary><div class="preset-readonly" id="fixedNativeFormatPreview">打开设置后载入…</div></details><div class="settings-inline"><button type="button" class="mini-action" id="settingsResetNativePrompt">恢复所选版本默认</button></div></div>
@@ -776,7 +780,7 @@ body{display:grid;place-items:center;overflow:hidden}
     return {
       version: 6,
       api: { mode:'main', source:'custom', url:'', model:'', models:[], temperature:0.8, maxTokens:4096 },
-      context: { mode:'recent', recentMessages:3, manualSummary:'', includeChar:true, includePersona:true, includeScenario:true, includeWorldInfo:true, loreScanKeyword:'🩶', loreBookNames:'', lorePortableBindings:[], nativePrompt:'detailed', nativePromptText:'', hotMemeEnabled:true, hotMemePrompt:'', hotMemeManualText:'', hotMemeBookNames:'', hotMemeEntryNames:'', hotMemePortableBindings:[], hotMemeLoreIds:[], hotMemeLoreSnap:[], customIdPool:'', npcDmEnabled:false, npcDmPrompt:'', npcAccounts:[], generationCounts:{ feed:5, feedComments:5, comments:5, dm:10, dmThread:5, allFeed:5, allChar:1, allDm:10 }, presetDepths:{ ...DEFAULT_PRESET_DEPTHS }, customEntries:[], injectMain:false },
+      context: { mode:'recent', recentMessages:3, manualSummary:'', includeChar:true, includePersona:true, includeScenario:true, includeWorldInfo:true, systemAddon:'', loreScanKeyword:'🩶', loreBookNames:'', lorePortableBindings:[], nativePrompt:'detailed', nativePromptText:'', hotMemeEnabled:true, hotMemePrompt:'', hotMemeManualText:'', hotMemeBookNames:'', hotMemeEntryNames:'', hotMemePortableBindings:[], hotMemeLoreIds:[], hotMemeLoreSnap:[], customIdPool:'', npcDmEnabled:false, npcDmPrompt:'', npcAccounts:[], generationCounts:{ feed:5, feedComments:5, comments:5, dm:10, dmThread:5, allFeed:5, allChar:1, allDm:10 }, presetDepths:{ ...DEFAULT_PRESET_DEPTHS }, customEntries:[], injectMain:false },
       presetTemplates: [],
       activePresetTemplateId: 'system',
       embeddedPresetId: '',
@@ -889,6 +893,7 @@ body{display:grid;place-items:center;overflow:hidden}
       contextMode: ['recent','summary','none'].includes(ctxSet.mode) ? ctxSet.mode : 'recent',
       recentMessages: Math.max(0, Math.min(60, Number(ctxSet.recentMessages ?? 3))),
       manualSummary: String(ctxSet.manualSummary || ''),
+      systemAddon: String(ctxSet.systemAddon || ''),
       loreScanKeyword: String(ctxSet.loreScanKeyword ?? '🩶'),
       loreBookNames: String(ctxSet.loreBookNames || ''),
       lorePortableBindings: Array.isArray(ctxSet.lorePortableBindings) ? ctxSet.lorePortableBindings : [],
@@ -952,6 +957,7 @@ body{display:grid;place-items:center;overflow:hidden}
         mode: ['recent','summary','none'].includes(cur.contextMode) ? cur.contextMode : 'recent',
         recentMessages: Math.max(0, Math.min(60, Number(cur.recentMessages ?? 3))),
         manualSummary: String(cur.manualSummary || ''),
+        systemAddon: String(cur.systemAddon || ''),
         loreScanKeyword: String(cur.loreScanKeyword ?? '🩶'),
         loreBookNames: String(cur.loreBookNames || ''),
         lorePortableBindings: Array.isArray(cur.lorePortableBindings) ? cur.lorePortableBindings : [],
@@ -4579,6 +4585,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       ].join('\n');
 
       const presetEntries = buildPresetInjectionEntries(contextSnap, generationMemory, forbid);
+      const systemAddon = String(phoneSettings.systemAddon || currentSlotContext().systemAddon || '').trim();
       const taskText = [
         '【本次微博任务】',
         context,
@@ -4590,10 +4597,10 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       ].join('\n');
 
       // 手机生成：不走 world_info / 原生 chat_history，避免灌入 HTML 输出条目与未清洗楼层
-      const requestMessages = presetEntries.map((entry) => ({
+      const requestMessages = (systemAddon ? [{ role:'system', content:systemAddon }] : []).concat(presetEntries.map((entry) => ({
         role:'system',
         content:`<weibo_preset_entry name="${entry.title}" depth="${entry.depth}">\n${entry.content}\n</weibo_preset_entry>`,
-      })).concat([{ role:'user', content:taskText }]);
+      }))).concat([{ role:'user', content:taskText }]);
 
       const logMeta = [
         'mode=' + mode,
@@ -4601,6 +4608,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
         opts.postIndex != null ? ('postIndex=' + opts.postIndex) : '',
         opts.threadName ? ('thread=' + opts.threadName) : '',
         'generateRaw=' + !!AI_GENERATE_RAW,
+        'system_addon_chars=' + systemAddon.length,
         'preset_depths=' + presetEntries.map((entry) => `${entry.title}:${entry.depth}`).join(','),
         'note=no_world_info_no_raw_chat_history',
         'contextSnapChars=' + (contextSnap || '').length,
@@ -4618,7 +4626,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
               ...extra,
             }
           : {
-              ordered_prompts: presetEntries.map((entry) => ({ role:'system', content:entry.content, position:'in_chat', depth:entry.depth, should_scan:false })).concat([
+              ordered_prompts: (systemAddon ? [{ role:'system', content:systemAddon, position:'in_chat', depth:20, should_scan:false }] : []).concat(presetEntries.map((entry) => ({ role:'system', content:entry.content, position:'in_chat', depth:entry.depth, should_scan:false }))).concat([
                 { role: 'user', content: taskText, position: 'in_chat', depth: 0, should_scan: false },
               ]),
             };
@@ -4929,6 +4937,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       if (card.dataset.presetStatic === 'true') return;
       const title = card.querySelector('.preset-entry-title');
       if (title && !title.querySelector('.preset-token')) title.insertAdjacentHTML('beforeend', `<span class="preset-token" data-preset-token="${key}">≈0 tokens</span>`);
+      if (card.dataset.presetPinned === 'true') return;
       const editor = card.querySelector('.preset-entry-editor');
       if (editor && !editor.querySelector(`[data-preset-depth="${key}"]`)) {
         editor.insertAdjacentHTML('afterbegin', `<div class="preset-depth-row"><label>注入深度</label>${depthNumberInput(`data-preset-depth="${key}"`, DEFAULT_PRESET_DEPTHS[key] ?? 4)}<div class="preset-depth-help">与酒馆 in-chat depth 一致：0 最靠近本次生成任务，数字越大越早注入。可点上下箭头或直接输入 0–20。</div></div>`);
@@ -5000,6 +5009,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     box.onchange = () => { refreshPresetUiSummaries(); };
   }
   function presetContentForToken(key){
+    if (key === 'systemAddon') return String(document.getElementById('setSystemAddon')?.value || '');
     if (key === 'native') return sanitizeEditableNativePrompt(document.getElementById('setNativePromptText')?.value, document.getElementById('setNativePrompt')?.value) + '\n\n' + fixedNativeFormat();
     if (key === 'init') return [document.getElementById('setInitPrompt')?.value, document.getElementById('loreRawText')?.value].filter(Boolean).join('\n\n');
     if (key === 'npcAccounts') return buildNpcRegistryPrompt(readNpcAccountsFromForm());
@@ -5292,6 +5302,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     return {
       mode:base.mode, recentMessages:base.recentMessages,
       includeChar:base.includeChar, includePersona:base.includePersona, includeScenario:base.includeScenario, includeWorldInfo:base.includeWorldInfo,
+      systemAddon:'',
       loreScanKeyword:base.loreScanKeyword, loreBookNames:base.loreBookNames, lorePortableBindings:[],
       nativePrompt:base.nativePrompt, nativePromptText:'',
       hotMemeEnabled:base.hotMemeEnabled, hotMemePrompt:'', hotMemeManualText:'', hotMemeBookNames:'', hotMemeEntryNames:'', hotMemePortableBindings:[],
@@ -5307,6 +5318,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       includePersona:!!document.getElementById('setIncludePersona').checked,
       includeScenario:!!document.getElementById('setIncludeScenario').checked,
       includeWorldInfo:!!document.getElementById('setIncludeBg').checked,
+      systemAddon:document.getElementById('setSystemAddon').value.trim(),
       loreScanKeyword:document.getElementById('setLoreScanKeyword').value.trim() || '🩶',
       loreBookNames:document.getElementById('setLoreBookNames').value.trim(),
       lorePortableBindings:collectPortableLoreBindings(),
@@ -5362,6 +5374,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     document.getElementById('setIncludePersona').checked = config.includePersona !== false;
     document.getElementById('setIncludeScenario').checked = config.includeScenario !== false;
     document.getElementById('setIncludeBg').checked = config.includeWorldInfo !== false;
+    document.getElementById('setSystemAddon').value = String(config.systemAddon || '');
     document.getElementById('setLoreScanKeyword').value = config.loreScanKeyword || '🩶';
     document.getElementById('setLoreBookNames').value = config.loreBookNames || '';
     document.getElementById('setNativePrompt').value = config.nativePrompt === 'compact' ? 'compact' : 'detailed';
@@ -5449,6 +5462,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     document.getElementById('setContextMode').value = ['recent','summary','none'].includes(context.mode) ? context.mode : 'recent';
     document.getElementById('setRecentMessages').value = String(context.recentMessages ?? 3);
     document.getElementById('setManualSummary').value = String(context.manualSummary || '');
+    document.getElementById('setSystemAddon').value = String(context.systemAddon || '');
     document.getElementById('setLoreScanKeyword').value = String(context.loreScanKeyword ?? '🩶');
     document.getElementById('setLoreBookNames').value = String(context.loreBookNames || '');
     document.getElementById('setNativePrompt').value = context.nativePrompt === 'compact' ? 'compact' : 'detailed';
@@ -5542,6 +5556,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       contextMode: document.getElementById('setContextMode').value || 'recent',
       recentMessages: Math.max(0, Math.min(60, Number(document.getElementById('setRecentMessages').value) || 0)),
       manualSummary: document.getElementById('setManualSummary').value.trim(),
+      systemAddon: document.getElementById('setSystemAddon').value.trim(),
       loreScanKeyword: document.getElementById('setLoreScanKeyword').value.trim(),
       loreBookNames: document.getElementById('setLoreBookNames').value.trim(),
       lorePortableBindings: collectPortableLoreBindings(),
@@ -5585,6 +5600,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
         mode: settingsPatch.contextMode,
         recentMessages: settingsPatch.recentMessages,
         manualSummary: settingsPatch.manualSummary,
+        systemAddon: settingsPatch.systemAddon,
         loreScanKeyword: settingsPatch.loreScanKeyword,
         loreBookNames: settingsPatch.loreBookNames,
         lorePortableBindings: settingsPatch.lorePortableBindings,
@@ -5618,6 +5634,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       mode: settingsPatch.contextMode,
       recentMessages: settingsPatch.recentMessages,
       manualSummary: settingsPatch.manualSummary,
+      systemAddon: settingsPatch.systemAddon,
       loreScanKeyword: settingsPatch.loreScanKeyword,
       loreBookNames: settingsPatch.loreBookNames,
       lorePortableBindings: settingsPatch.lorePortableBindings,
@@ -5748,7 +5765,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     el.oninput = update;
     el.onchange = update;
   });
-  ['setNativePromptText','setInitPrompt','loreRawText','setManualSummary','setHotMemePrompt','setHotMemeManualText','setHotMemeBookNames','setHotMemeEntryNames','setNpcDmPrompt'].forEach((id) => {
+  ['setSystemAddon','setNativePromptText','setInitPrompt','loreRawText','setManualSummary','setHotMemePrompt','setHotMemeManualText','setHotMemeBookNames','setHotMemeEntryNames','setNpcDmPrompt'].forEach((id) => {
     document.getElementById(id)?.addEventListener('input', refreshPresetUiSummaries);
   });
   ['setFeedCount','setFeedCommentCount','setCommentCount','setDmCount','setDmThreadCount','setAllFeedCount','setAllCharCount','setAllDmCount'].forEach((id) => {
@@ -5967,6 +5984,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       const groups = splitSnapshotForPresetPreview(snapshot);
       const depths = normalizePresetDepths(phoneSettings.presetDepths);
       renderPresetPreviewCards([
+        { title:'System 附加说明｜置顶 system', depth:null, text:String(phoneSettings.systemAddon || '').trim() },
         { title:'微博提示词', depth:depths.native, text:selectedNativePrompt() },
         { title:'wb_lore 初始化', depth:depths.init, text:groups.init.join('\n\n') || '（未填写）' },
         { title:'NPC 微博账号', depth:depths.npcAccounts, text:buildNpcRegistryPrompt() || '（未注册账号）' },
