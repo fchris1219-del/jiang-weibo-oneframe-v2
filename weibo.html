@@ -720,7 +720,7 @@ body{display:grid;place-items:center;overflow:hidden}
           </article>
           <article class="preset-entry" data-preset-entry="worldbook">
             <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">书</div><div class="preset-entry-copy"><div class="preset-entry-title">世界书</div><div class="preset-entry-note" id="worldbookPresetSummary">尚未扫描</div></div><label class="preset-entry-switch"><input type="checkbox" id="setIncludeBg" checked><span class="preset-entry-state on" id="worldbookPresetState">已启用</span></label><span class="preset-entry-chev">⌄</span></div>
-            <div class="preset-entry-editor"><div class="settings-grid"><div class="set-row"><label for="setLoreBookNames">世界书名称扫描</label><textarea id="setLoreBookNames" rows="3" placeholder="命中后整本勾选；可用逗号或换行输入"></textarea><div class="scan-term-tools"><button type="button" class="mini-action" data-scan-split="setLoreBookNames">拆分词条</button><div class="scan-term-chips" data-scan-chips="setLoreBookNames"></div></div></div><div class="set-row"><label for="setLoreScanKeyword">条目名称扫描</label><textarea id="setLoreScanKeyword" rows="3" placeholder="🩶，微博关系"></textarea><div class="scan-term-tools"><button type="button" class="mini-action" data-scan-split="setLoreScanKeyword">拆分词条</button><div class="scan-term-chips" data-scan-chips="setLoreScanKeyword"></div></div></div></div><div class="field-note">世界书名称命中后只勾选其中原本未禁用的条目；条目名称命中任意扫描词即勾选。输入多个名词后点“拆分词条”，会分别显示并可单独删除。</div><div class="settings-inline"><button type="button" class="mini-action" id="settingsRefreshLore">刷新并自动扫描</button><button type="button" class="mini-action" id="settingsClearLorePick">清空勾选</button></div><div id="lorePickList" class="lore-pick-list"><div class="lore-empty">打开设置时自动加载…</div></div></div>
+            <div class="preset-entry-editor"><div class="settings-grid"><div class="set-row"><label for="setLoreBookNames">世界书名称扫描</label><textarea id="setLoreBookNames" rows="3" placeholder="命中后整本勾选；可用逗号或换行输入"></textarea><div class="scan-term-tools"><button type="button" class="mini-action" data-scan-split="setLoreBookNames">拆分词条</button><div class="scan-term-chips" data-scan-chips="setLoreBookNames"></div></div></div><div class="set-row"><label for="setLoreScanKeyword">条目名称扫描</label><textarea id="setLoreScanKeyword" rows="3" placeholder="🩶，微博关系"></textarea><div class="scan-term-tools"><button type="button" class="mini-action" data-scan-split="setLoreScanKeyword">拆分词条</button><div class="scan-term-chips" data-scan-chips="setLoreScanKeyword"></div></div></div></div><div class="field-note">世界书名称命中后只勾选其中原本未禁用的条目；条目名称命中任意扫描词即勾选。热梗或 NPC 已绑定的条目会在这里默认勾选，同一条世界书正文在一次请求中只注入一次。输入多个名词后点“拆分词条”，会分别显示并可单独删除。</div><div class="settings-inline"><button type="button" class="mini-action" id="settingsRefreshLore">刷新并自动扫描</button><button type="button" class="mini-action" id="settingsClearLorePick">清空勾选</button></div><div id="lorePickList" class="lore-pick-list"><div class="lore-empty">打开设置时自动加载…</div></div></div>
           </article>
           <article class="preset-entry" data-preset-entry="boundary"><div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">隔</div><div class="preset-entry-copy"><div class="preset-entry-title">信息隔离</div><div class="preset-entry-note">非公开信息不得被路人、粉丝、媒体或其它账号随意得知</div></div><span class="preset-entry-state on">必定注入</span><span class="preset-entry-chev">⌄</span></div><div class="preset-entry-editor"><div class="preset-readonly" id="presetBoundaryPreview"></div></div></article>
           <div id="customPresetEntries"></div>
@@ -1585,6 +1585,13 @@ body{display:grid;place-items:center;overflow:hidden}
     syncLorePendingFromDom();
     return portableBindingsFromIds([..._lorePickPending], state.selectedLoreSnap);
   }
+  function collectUnifiedPortableLoreBindings(){
+    const bindings = [...collectPortableLoreBindings()];
+    const hot = hotMemeLoreSelectionFromForm();
+    bindings.push(...portableBindingsFromIds(hot.ids, hot.snap));
+    readNpcAccountsFromForm().forEach((npc) => bindings.push(...normalizePortableLoreBindings(npc.lorePortableBindings)));
+    return normalizePortableLoreBindings(bindings);
+  }
   function scanNameHit(value, terms){
     const text = String(value || '').replace(/^(世界书:|角色书:)/, '').trim().toLowerCase();
     return terms.some((term) => text.includes(String(term).toLowerCase()));
@@ -1684,6 +1691,12 @@ body{display:grid;place-items:center;overflow:hidden}
         autoIds.forEach((id) => _lorePickPending.add(id));
         portableLoreIds(books, phoneSettings.lorePortableBindings || currentSlotContext().lorePortableBindings || []).forEach((id) => _lorePickPending.add(id));
       }
+      // 同一预设共用一份世界书选择：热梗/NPC 已绑定的条目在主世界书里默认显示为已选。
+      portableLoreIds(books, phoneSettings.hotMemePortableBindings || currentSlotContext().hotMemePortableBindings || []).forEach((id) => _lorePickPending.add(id));
+      npcAccounts().forEach((npc) => {
+        (npc.loreIds || []).forEach((id) => _lorePickPending.add(String(id)));
+        portableLoreIds(books, npc.lorePortableBindings || []).forEach((id) => _lorePickPending.add(id));
+      });
       if (!books.length && !flat.length) {
         box.innerHTML = '<div class="lore-empty">未扫描到当前聊天可读的世界书。<br>请确认已挂载世界书，或点「刷新并自动扫描」。</div>';
         const summary = document.getElementById('worldbookPresetSummary');
@@ -4261,19 +4274,32 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     const list = phoneSettings?.npcAccounts || currentSlotContext().npcAccounts || [];
     return Array.isArray(list) ? list.filter((npc) => npc && String(npc.id || npc.name || '').trim()) : [];
   }
-  function npcBoundLore(npc){
+  function loreClaimKey(item, fallbackId=''){
+    const book = String(item?.book || '').replace(/^(世界书:|角色书:)/, '').trim().toLowerCase();
+    const name = String(item?.name || item?.entry || '').trim().toLowerCase();
+    return book && name ? `${book}\u0000${name}` : `id\u0000${String(item?.id || fallbackId)}`;
+  }
+  function npcBoundLore(npc, claimedLoreIds){
     const ids = new Set(Array.isArray(npc?.loreIds) ? npc.loreIds.map(String) : []);
     portableLoreIds(_loreCatalogCache?.books || [], npc?.lorePortableBindings || []).forEach((id) => ids.add(id));
     const live = _loreCatalogCache?.flat || [];
     const snap = [...(state.selectedLoreSnap || []), ...(Array.isArray(npc?.loreSnap) ? npc.loreSnap : [])];
     const map = new Map([...live, ...snap].map((item) => [String(item.id), item]));
-    return [...ids].map((id) => map.get(id)).filter(Boolean).map((item) => `【${item.name || id}】\n${item.content || ''}`).join('\n\n');
+    return [...ids].map((id) => {
+      const item = map.get(id);
+      if (!item) return '';
+      const claimKey = loreClaimKey(item, id);
+      if (claimedLoreIds?.has(claimKey)) return `【${item.name || id}】（完整内容已由统一世界书条目注入；此处只约束该 NPC）`;
+      claimedLoreIds?.add(claimKey);
+      return `【${item.name || id}】\n${item.content || ''}`;
+    }).filter(Boolean).join('\n\n');
   }
-  function buildNpcRegistryPrompt(source){
+  function buildNpcRegistryPrompt(source, claimedLoreIds){
     const list = Array.isArray(source) ? source.filter((npc) => npc && String(npc.id || npc.name || '').trim()) : npcAccounts();
     if (!list.length) return '';
     const blocks = list.map((npc) => {
       const id = String(npc.id || npc.name || '').trim();
+      const boundLore = npcBoundLore(npc, claimedLoreIds);
       return [
         `NPC 账号 ID：${id}`,
         npc.name && npc.name !== id ? `正文姓名：${npc.name}` : '',
@@ -4281,7 +4307,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
         `粉丝：${Number(npc.fans) || 0}｜关注：${Number(npc.following) || 0}`,
         npc.manualLore ? `手动设定：\n${npc.manualLore}` : '',
         npc.postPrompt ? `发帖要求：\n${npc.postPrompt}` : '',
-        npcBoundLore(npc) ? `绑定世界书（只约束该 NPC 的身份/知情）：\n${npcBoundLore(npc)}` : '',
+        boundLore ? `绑定世界书（只约束该 NPC 的身份/知情）：\n${boundLore}` : '',
       ].filter(Boolean).join('\n');
     });
     return `<weibo_registered_npc>\n${blocks.join('\n\n---\n\n')}\n上述 NPC 微博 ID 是锁定值，不得自由改名或用正文姓名替换。不得把某个 NPC 的绑定设定泄露给其他账号。\n</weibo_registered_npc>`;
@@ -4391,13 +4417,20 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     if (!list.length) return '';
     return `<weibo_custom_id_pool>\n生成路人、粉丝、评论者或私信联系人昵称时，以下自定义 ID 是高权重候选，其选用优先级必须高于临时自然生成；权重越大越优先。但同一次输出不得重复同一 ID，候选不适合当前身份或语境时仍可自然生成新 ID。账号属性若有填写，必须约束该账号的立场、语气和知情范围。不得把这些 ID 用作已锁定的 user、char 或注册 NPC 账号。\n${list.map((item) => `- ${item.id}｜权重 ${item.weight}${item.attributes ? `｜账号属性：${item.attributes}` : ''}`).join('\n')}\n</weibo_custom_id_pool>`;
   }
-  function hotMemeBoundLore(){
+  function hotMemeBoundLore(claimedLoreIds){
     const ids = new Set((phoneSettings.hotMemeLoreIds || currentSlotContext().hotMemeLoreIds || []).map(String));
     const live = _loreCatalogCache?.flat || [];
     const snap = Array.isArray(phoneSettings.hotMemeLoreSnap) ? phoneSettings.hotMemeLoreSnap : (currentSlotContext().hotMemeLoreSnap || []);
     const map = new Map([...live, ...snap].map((item) => [String(item.id), item]));
     const manual = String(phoneSettings.hotMemeManualText || currentSlotContext().hotMemeManualText || '').trim();
-    const blocks = [...ids].map((id) => map.get(id)).filter(Boolean).map((item) => `【${item.name || item.id}】\n${item.content || ''}`);
+    const blocks = [...ids].map((id) => {
+      const item = map.get(id);
+      if (!item) return '';
+      const claimKey = loreClaimKey(item, id);
+      if (claimedLoreIds?.has(claimKey)) return `【${item.name || item.id}】（完整内容已由统一世界书条目注入；此处仅标记为可用梗）`;
+      claimedLoreIds?.add(claimKey);
+      return `【${item.name || item.id}】\n${item.content || ''}`;
+    }).filter(Boolean);
     if (manual) blocks.unshift(`【手动热梗内容】\n${manual}`);
     return blocks.length ? `<weibo_meme_library>\n以下是本档位允许使用的梗。请在合适时积极使用，但继续遵守账号身份与信息隔离：\n\n${blocks.join('\n\n')}\n</weibo_meme_library>` : '';
   }
@@ -4405,22 +4438,42 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     const bookNames = String(phoneSettings.hotMemeBookNames || currentSlotContext().hotMemeBookNames || '');
     const entryNames = String(phoneSettings.hotMemeEntryNames || currentSlotContext().hotMemeEntryNames || '');
     const hotPortable = normalizePortableLoreBindings(phoneSettings.hotMemePortableBindings || currentSlotContext().hotMemePortableBindings || []);
-    const npcPortable = npcAccounts().some((npc) => normalizePortableLoreBindings(npc.lorePortableBindings).length);
+    const npcPortable = npcAccounts().some((npc) => (npc.loreIds || []).length || normalizePortableLoreBindings(npc.lorePortableBindings).length);
     const mainPortable = normalizePortableLoreBindings(phoneSettings.lorePortableBindings || currentSlotContext().lorePortableBindings || []).length;
-    if (!splitScanTerms(bookNames).length && !splitScanTerms(entryNames).length && !hotPortable.length && !npcPortable && !mainPortable) return;
+    const existingHotIds = (phoneSettings.hotMemeLoreIds || currentSlotContext().hotMemeLoreIds || []).length;
+    if (!splitScanTerms(bookNames).length && !splitScanTerms(entryNames).length && !hotPortable.length && !existingHotIds && !npcPortable && !mainPortable) return;
     if (!_loreCatalogCache) _loreCatalogCache = await listWorldLoreCatalog();
+    const books = _loreCatalogCache.books || [];
     const ids = new Set((phoneSettings.hotMemeLoreIds || []).map(String));
-    scannedLoreIds(_loreCatalogCache.books || [], bookNames, entryNames).forEach((id) => ids.add(id));
-    portableLoreIds(_loreCatalogCache.books || [], hotPortable).forEach((id) => ids.add(id));
+    scannedLoreIds(books, bookNames, entryNames).forEach((id) => ids.add(id));
+    portableLoreIds(books, hotPortable).forEach((id) => ids.add(id));
     const map = new Map((_loreCatalogCache.flat || []).map((item) => [String(item.id), item]));
     phoneSettings.hotMemeLoreIds = [...ids];
     phoneSettings.hotMemeLoreSnap = [...ids].map((id) => map.get(id) || (phoneSettings.hotMemeLoreSnap || []).find((item) => String(item.id) === id)).filter(Boolean).map((item) => ({ id:item.id, book:item.book, name:item.name, content:String(item.content || '').slice(0,12000) }));
+    // 合并本预设所有世界书来源；主世界书勾选作为统一入口，避免同一正文由热梗/NPC 再注入一次。
+    const unifiedIds = new Set(readSelectedLoreIds().map(String));
+    if (!state.loreAutoSuppressed) {
+      scannedLoreIds(books, phoneSettings.loreBookNames || currentSlotContext().loreBookNames || '', phoneSettings.loreScanKeyword || currentSlotContext().loreScanKeyword || '🩶').forEach((id) => unifiedIds.add(id));
+    }
+    portableLoreIds(books, phoneSettings.lorePortableBindings || currentSlotContext().lorePortableBindings || []).forEach((id) => unifiedIds.add(id));
+    ids.forEach((id) => unifiedIds.add(id));
+    npcAccounts().forEach((npc) => {
+      (npc.loreIds || []).forEach((id) => unifiedIds.add(String(id)));
+      portableLoreIds(books, npc.lorePortableBindings || []).forEach((id) => unifiedIds.add(id));
+    });
+    const oldSnap = new Map([...(state.selectedLoreSnap || []), ...(phoneSettings.hotMemeLoreSnap || [])].map((item) => [String(item.id), item]));
+    const unifiedSnap = [...unifiedIds].map((id) => map.get(id) || oldSnap.get(id)).filter(Boolean).map((item) => ({ id:item.id, book:item.book, name:item.name, content:String(item.content || '').slice(0,12000) }));
+    _lorePickPending = new Set(unifiedIds);
+    await persistLorePicks([...unifiedIds], unifiedSnap);
     savePhoneSettings(phoneSettings);
   }
   function buildPresetInjectionEntries(snapshot, generationMemory, forbid){
     const groups = splitSnapshotForPresetPreview(snapshot);
     const depths = normalizePresetDepths(phoneSettings.presetDepths || currentSlotContext().presetDepths);
     const historyContext = normalizeHistoryContext({ mode:phoneSettings.contextMode, includeRecentContext:phoneSettings.includeRecentContext, includeSummaryContext:phoneSettings.includeSummaryContext });
+    // 主世界书已注入的条目先占位；NPC/热梗再次引用时只保留用途说明，不重复正文。
+    const loreMap = new Map([...(state.selectedLoreSnap || []), ...(_loreCatalogCache?.flat || [])].map((item) => [String(item.id), item]));
+    const claimedLoreIds = new Set(phoneSettings.includeBgLore !== false ? readSelectedLoreIds().map((id) => loreClaimKey(loreMap.get(String(id)), id)) : []);
     const entries = [];
     const add = (key, title, content, enabled=true, depthOverride=null) => {
       const text = String(content || '').trim();
@@ -4433,10 +4486,10 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     add('worldbook', '世界书', groups.worldbook.join('\n\n'), phoneSettings.includeBgLore !== false);
     add('history', '聊天前文', groups.history.join('\n\n'), historyContext.includeRecentContext || historyContext.includeSummaryContext);
     add('init', '档位初始化与 wb_lore', groups.init.join('\n\n'));
-    add('npcAccounts', 'NPC 微博账号', buildNpcRegistryPrompt());
+    add('npcAccounts', 'NPC 微博账号', buildNpcRegistryPrompt(undefined, claimedLoreIds));
     (phoneSettings.customEntries || []).forEach((item, index) => add('custom', String(item.title || ('自定义条目 ' + (index + 1))), item.content, item.enabled !== false, item.depth ?? 4));
     add('idPool', '自定义 ID 池', buildCustomIdPoolPrompt());
-    add('hotMeme', '热梗注入', [selectedHotMemePrompt(), hotMemeBoundLore()].filter(Boolean).join('\n\n'), phoneSettings.hotMemeEnabled !== false);
+    add('hotMeme', '热梗注入', [selectedHotMemePrompt(), hotMemeBoundLore(claimedLoreIds)].filter(Boolean).join('\n\n'), phoneSettings.hotMemeEnabled !== false);
     add('npcDm', '正文 NPC 私信', String(phoneSettings.npcDmPrompt || '').trim() || WEIBO_NPC_DM_DEFAULT, !!phoneSettings.npcDmEnabled);
     add('dedupe', '防止重复', WEIBO_ANTI_REPEAT_RULES + '\n\n' + generationMemory);
     add('boundary', '信息隔离', WEIBO_INFORMATION_BOUNDARY);
@@ -4547,7 +4600,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       context = [
         `【小微博任务｜关键词 weibo｜${npc ? 'NPC' : '角色'}发博】`,
         `请以微博账号「${postWho}」的口吻发微博（作者必须是 ${postWho}，头像字段写 ${npc ? 'npc.png' : 'char'}）。`,
-        npc ? `该 NPC 的独立设定：\n${buildNpcRegistryPrompt()}` : '',
+        npc ? `该 NPC 的独立账号：ID=${npc.id || npc.name}${npc.name ? `｜正文姓名=${npc.name}` : ''}${npc.bio ? `｜简介=${npc.bio}` : ''}${npc.manualLore ? `\n手动设定：${npc.manualLore}` : ''}` : '',
         npc?.postPrompt ? `该 NPC 的固定发帖要求（必须遵守）：\n${npc.postPrompt}` : '',
         hint
           ? ('用户提示词（必须紧扣）：' + hint)
@@ -5397,7 +5450,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       systemAddon:document.getElementById('setSystemAddon').value.trim(),
       loreScanKeyword:document.getElementById('setLoreScanKeyword').value.trim() || '🩶',
       loreBookNames:document.getElementById('setLoreBookNames').value.trim(),
-      lorePortableBindings:collectPortableLoreBindings(),
+      lorePortableBindings:collectUnifiedPortableLoreBindings(),
       nativePrompt:document.getElementById('setNativePrompt').value === 'compact' ? 'compact' : 'detailed',
       nativePromptText:sanitizeEditableNativePrompt(document.getElementById('setNativePromptText').value, document.getElementById('setNativePrompt').value),
       hotMemeEnabled:!!document.getElementById('setHotMemeEnabled').checked,
@@ -5638,6 +5691,19 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     const customEntries = readCustomPresetEntries();
     const npcAccountsDraft = readNpcAccountsFromForm();
     const hotMemeLore = hotMemeLoreSelectionFromForm();
+    const unifiedLoreIds = new Set(picks.ids.map(String));
+    hotMemeLore.ids.forEach((id) => unifiedLoreIds.add(String(id)));
+    npcAccountsDraft.forEach((npc) => {
+      (npc.loreIds || []).forEach((id) => unifiedLoreIds.add(String(id)));
+      portableLoreIds(_loreCatalogCache?.books || [], npc.lorePortableBindings || []).forEach((id) => unifiedLoreIds.add(id));
+    });
+    const loreSnapMap = new Map([
+      ...(state.selectedLoreSnap || []), ...picks.snap, ...hotMemeLore.snap,
+      ...npcAccountsDraft.flatMap((npc) => npc.loreSnap || []), ...(_loreCatalogCache?.flat || []),
+    ].map((item) => [String(item.id), item]));
+    picks.ids = [...unifiedLoreIds];
+    picks.snap = picks.ids.map((id) => loreSnapMap.get(String(id))).filter(Boolean).map((item) => ({ id:item.id, book:item.book, name:item.name, content:String(item.content || '').slice(0,12000) }));
+    _lorePickPending = new Set(picks.ids);
     const settingsPatch = {
       userWeiboId: document.getElementById('setUserId').value.trim(),
       charWeiboId: document.getElementById('setCharId').value.trim(),
@@ -5659,7 +5725,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       systemAddon: document.getElementById('setSystemAddon').value.trim(),
       loreScanKeyword: document.getElementById('setLoreScanKeyword').value.trim(),
       loreBookNames: document.getElementById('setLoreBookNames').value.trim(),
-      lorePortableBindings: collectPortableLoreBindings(),
+      lorePortableBindings: collectUnifiedPortableLoreBindings(),
       nativePrompt: nativePromptMode,
       nativePromptText: nativePromptDraft === nativePromptDefault(nativePromptMode) ? '' : nativePromptDraft,
       hotMemeEnabled: !!document.getElementById('setHotMemeEnabled').checked,
