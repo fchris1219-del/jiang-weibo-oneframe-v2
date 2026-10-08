@@ -696,9 +696,9 @@ body{display:grid;place-items:center;overflow:hidden}
             <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">人</div><div class="preset-entry-copy"><div class="preset-entry-title">User Personality</div><div class="preset-entry-note">可选择是否注入，内容只读取自酒馆当前 Persona</div></div><span class="preset-entry-state on" id="personaPresetState">已启用</span><span class="preset-entry-chev">⌄</span></div>
             <div class="preset-entry-editor"><label class="settings-switch"><input type="checkbox" id="setIncludePersona" checked><span>注入用户 Persona</span></label><div class="preset-readonly" id="presetPersonaPreview">打开设置后读取…</div></div>
           </article>
-          <article class="preset-entry" data-preset-entry="history">
+          <article class="preset-entry" data-preset-entry="history" data-preset-pinned="true">
             <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">前</div><div class="preset-entry-copy"><div class="preset-entry-title">聊天前文</div><div class="preset-entry-note" id="historyPresetSummary">最近 3 条</div></div><span class="preset-entry-state on">可配置</span><span class="preset-entry-chev">⌄</span></div>
-            <div class="preset-entry-editor"><div class="field-note">最近聊天和手动总结可以同时注入，也可以单独开关。</div><label class="settings-switch"><input type="checkbox" id="setIncludeRecentContext"><span>注入最近聊天记录</span></label><div class="settings-subbox" id="recentContextBox"><div class="set-row" style="margin-top:0"><label for="setRecentMessages">最近聊天条数（默认 3）</label><input type="number" id="setRecentMessages" min="0" max="60" step="1" /></div></div><label class="settings-switch"><input type="checkbox" id="setIncludeSummaryContext"><span>注入手动前文总结</span></label><div class="settings-subbox" id="summaryContextBox"><div class="set-row" style="margin-top:0"><label for="setManualSummary">粘贴前文总结</label><textarea id="setManualSummary" rows="6" placeholder="可与最近聊天记录一起注入……"></textarea></div></div></div>
+            <div class="preset-entry-editor"><div class="field-note">最近正文、柏宝书历史摘要、手动总结与开场白可以分别开关。最近正文单独放在更靠近本次生成任务的位置。</div><div class="preset-depth-row"><label>历史摘要 / 开场白深度</label><input type="number" data-preset-depth="history" min="0" max="20" step="1" inputmode="numeric" value="3" aria-label="历史摘要与开场白注入深度"><div class="preset-depth-help">用于柏宝书历史摘要、手动总结和可选开场白；数字越大越早注入。</div></div><div class="preset-depth-row"><label>最近聊天正文深度</label><input type="number" data-preset-depth="recent" min="0" max="20" step="1" inputmode="numeric" value="0" aria-label="最近聊天正文注入深度"><div class="preset-depth-help">默认 0，紧靠本次微博生成任务，确保最新状态优先。</div></div><label class="settings-switch"><input type="checkbox" id="setIncludeRecentContext"><span>注入最近聊天完整正文</span></label><div class="settings-subbox" id="recentContextBox"><div class="set-row" style="margin-top:0"><label for="setRecentMessages">最近聊天条数（默认 3）</label><input type="number" id="setRecentMessages" min="0" max="60" step="1" /></div></div><label class="settings-switch"><input type="checkbox" id="setIncludeBaiBaiHistory"><span>检测并注入柏宝书历史摘要</span></label><div class="field-note">安装柏宝书时读取它当前实际注入的摘要森林；最近 N 条仍使用完整正文，不重复注入对应的单楼摘要。未安装时自动跳过。</div><label class="settings-switch"><input type="checkbox" id="setIncludeOpeningContext"><span>单独注入本聊天开场白</span></label><div class="field-note">关闭后仍可使用最近聊天与柏宝书摘要；开场白不会再作为独立上下文挤占当前状态。</div><label class="settings-switch"><input type="checkbox" id="setIncludeSummaryContext"><span>注入手动前文总结</span></label><div class="settings-subbox" id="summaryContextBox"><div class="set-row" style="margin-top:0"><label for="setManualSummary">粘贴前文总结</label><textarea id="setManualSummary" rows="6" placeholder="可与最近聊天记录和柏宝书摘要一起注入……"></textarea></div></div></div>
           </article>
           <article class="preset-entry" data-preset-entry="generationCounts" data-preset-static="true">
             <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">数</div><div class="preset-entry-copy"><div class="preset-entry-title">拉取数量</div><div class="preset-entry-note" id="generationCountsPresetSummary">推荐、评论、私信与全部拉取数量</div></div><span class="preset-entry-state on">模板可携带</span><span class="preset-entry-chev">⌄</span></div>
@@ -770,7 +770,7 @@ body{display:grid;place-items:center;overflow:hidden}
   // 参考酒馆原生预设的 in-chat depth：0 最靠近本次任务，数字越大越早注入。
   // AshenBridge 的辅助条目普遍为 depth 4；微博协议/隔离/去重则放到更靠近请求的深度。
   const DEFAULT_PRESET_DEPTHS = Object.freeze({
-    native:0, boundary:0, dedupe:1, idPool:1, hotMeme:2, npcDm:2, npcAccounts:2, init:2, history:3,
+    native:0, boundary:0, recent:0, dedupe:1, idPool:1, hotMeme:2, npcDm:2, npcAccounts:2, init:2, history:3,
     character:4, persona:4, worldbook:4,
   });
   function normalizePresetDepths(value){
@@ -787,14 +787,16 @@ body{display:grid;place-items:center;overflow:hidden}
     const includeRecent = hasRecentFlag ? src.includeRecentContext : (legacyMode === 'recent' || legacyMode === 'both');
     const includeSummary = hasSummaryFlag ? src.includeSummaryContext : (legacyMode === 'summary' || legacyMode === 'both');
     const mode = includeRecent ? (includeSummary ? 'both' : 'recent') : (includeSummary ? 'summary' : 'none');
-    return { includeRecentContext:!!includeRecent, includeSummaryContext:!!includeSummary, mode };
+    const includeOpening = typeof src.includeOpeningContext === 'boolean' ? src.includeOpeningContext : false;
+    const includeBaiBai = typeof src.includeBaiBaiHistory === 'boolean' ? src.includeBaiBaiHistory : true;
+    return { includeRecentContext:!!includeRecent, includeSummaryContext:!!includeSummary, includeOpeningContext:includeOpening, includeBaiBaiHistory:includeBaiBai, mode };
   }
 
   function defaultGlobalConfig(){
     return {
       version: 6,
       api: { mode:'main', source:'custom', url:'', model:'', models:[], temperature:0.8, maxTokens:4096 },
-      context: { mode:'recent', includeRecentContext:true, includeSummaryContext:false, recentMessages:3, manualSummary:'', includeChar:true, includePersona:true, includeScenario:true, includeWorldInfo:true, systemAddon:'', loreScanKeyword:'🩶', loreBookNames:'', lorePortableBindings:[], nativePrompt:'detailed', nativePromptText:'', hotMemeEnabled:true, hotMemePrompt:'', hotMemeManualText:'', hotMemeBookNames:'', hotMemeEntryNames:'', hotMemePortableBindings:[], hotMemeLoreIds:[], hotMemeLoreSnap:[], customIdPool:'', idGenerateCount:20, idGenerateExtra:'', idGenerateAllLore:true, idGenerateIncludeChar:true, idGenerateIncludePersona:true, idGenerateLorePortableBindings:[], npcGenerateCount:6, npcGenerateExtra:'', npcGenerateAllLore:true, npcGenerateIncludeChar:true, npcGenerateIncludePersona:true, npcGenerateLorePortableBindings:[], npcDmEnabled:false, npcDmPrompt:'', npcAccounts:[], generationCounts:{ feed:5, feedComments:5, comments:5, dm:10, dmThread:5, allFeed:5, allChar:1, allDm:10 }, presetDepths:{ ...DEFAULT_PRESET_DEPTHS }, customEntries:[], injectMain:false },
+      context: { mode:'recent', includeRecentContext:true, includeSummaryContext:false, includeOpeningContext:false, includeBaiBaiHistory:true, recentMessages:3, manualSummary:'', includeChar:true, includePersona:true, includeScenario:true, includeWorldInfo:true, systemAddon:'', loreScanKeyword:'🩶', loreBookNames:'', lorePortableBindings:[], nativePrompt:'detailed', nativePromptText:'', hotMemeEnabled:true, hotMemePrompt:'', hotMemeManualText:'', hotMemeBookNames:'', hotMemeEntryNames:'', hotMemePortableBindings:[], hotMemeLoreIds:[], hotMemeLoreSnap:[], customIdPool:'', idGenerateCount:20, idGenerateExtra:'', idGenerateAllLore:true, idGenerateIncludeChar:true, idGenerateIncludePersona:true, idGenerateLorePortableBindings:[], npcGenerateCount:6, npcGenerateExtra:'', npcGenerateAllLore:true, npcGenerateIncludeChar:true, npcGenerateIncludePersona:true, npcGenerateLorePortableBindings:[], npcDmEnabled:false, npcDmPrompt:'', npcAccounts:[], generationCounts:{ feed:5, feedComments:5, comments:5, dm:10, dmThread:5, allFeed:5, allChar:1, allDm:10 }, presetDepths:{ ...DEFAULT_PRESET_DEPTHS }, customEntries:[], injectMain:false },
       presetTemplates: [],
       rolePresetTemplates: {},
       activePresetTemplateId: 'system',
@@ -940,6 +942,8 @@ body{display:grid;place-items:center;overflow:hidden}
       contextMode: history.mode,
       includeRecentContext: history.includeRecentContext,
       includeSummaryContext: history.includeSummaryContext,
+      includeOpeningContext: history.includeOpeningContext,
+      includeBaiBaiHistory: history.includeBaiBaiHistory,
       recentMessages: Math.max(0, Math.min(60, Number(ctxSet.recentMessages ?? 3))),
       manualSummary: String(ctxSet.manualSummary || ''),
       systemAddon: String(ctxSet.systemAddon || ''),
@@ -1000,6 +1004,8 @@ body{display:grid;place-items:center;overflow:hidden}
     cur.contextMode = history.mode;
     cur.includeRecentContext = history.includeRecentContext;
     cur.includeSummaryContext = history.includeSummaryContext;
+    cur.includeOpeningContext = history.includeOpeningContext;
+    cur.includeBaiBaiHistory = history.includeBaiBaiHistory;
     try {
       const all = JSON.parse(localStorage.getItem(PHONE_SETTINGS_KEY) || '{}');
       all[settingsBucketId()] = cur;
@@ -1022,6 +1028,8 @@ body{display:grid;place-items:center;overflow:hidden}
         mode: history.mode,
         includeRecentContext: history.includeRecentContext,
         includeSummaryContext: history.includeSummaryContext,
+        includeOpeningContext: history.includeOpeningContext,
+        includeBaiBaiHistory: history.includeBaiBaiHistory,
         recentMessages: Math.max(0, Math.min(60, Number(cur.recentMessages ?? 3))),
         manualSummary: String(cur.manualSummary || ''),
         systemAddon: String(cur.systemAddon || ''),
@@ -1151,6 +1159,47 @@ body{display:grid;place-items:center;overflow:hidden}
       }
     } catch (_) {}
     return null;
+  }
+  function getBaiBaiBookApi(){
+    const roots = [];
+    try { roots.push(window); } catch (_) {}
+    try { if (window.parent && window.parent !== window) roots.push(window.parent); } catch (_) {}
+    try { if (window.top && !roots.includes(window.top)) roots.push(window.top); } catch (_) {}
+    for (const root of roots) {
+      try {
+        const api = root?.STBaiBaiBook;
+        if (api && typeof api.getInjectedHistory === 'function') return api;
+      } catch (_) {}
+    }
+    return null;
+  }
+  function readBaiBaiInjectedHistory(beforeFloor = null){
+    const api = getBaiBaiBookApi();
+    const hostAvailable = WB_HOST?.hasBaiBaiBook?.() === true;
+    if (!api && !hostAvailable) return { available:false, text:'', nodes:0, complete:true };
+    try {
+      // 有最近正文时以第一条保留消息为截止点，历史中不再包含它及后续楼层。
+      // getHistory({before}) 是柏宝书公开 API，能正确选择多层总结与失效叶子。
+      const data = WB_HOST?.getBaiBaiHistory
+        ? WB_HOST.getBaiBaiHistory(beforeFloor)
+        : (Number.isInteger(beforeFloor) && beforeFloor >= 0 && typeof api?.getHistory === 'function'
+          ? api.getHistory({ before:beforeFloor }) : api.getInjectedHistory());
+      if (!data) return { available:false, text:'', nodes:0, complete:true };
+      const expectedChat = String(currentChatId() || '');
+      const actualChat = String(data?.chat?.id || '');
+      if (expectedChat && actualChat && expectedChat !== actualChat) {
+        return { available:true, text:'', nodes:0, complete:false, mismatch:true };
+      }
+      return {
+        available:true,
+        text:String(data.relativeText || data.text || '').trim(),
+        nodes:Array.isArray(data.nodes) ? data.nodes.length : 0,
+        complete:data?.coverage?.complete !== false,
+        missing:Array.isArray(data?.coverage?.missingAiFloors) ? data.coverage.missingAiFloors : [],
+      };
+    } catch (error) {
+      return { available:true, text:'', nodes:0, complete:false, error:String(error?.message || error) };
+    }
   }
   function readFullChatMessageList(context = null){
     const ctx = context || getSillyContextSafe();
@@ -2263,13 +2312,13 @@ body{display:grid;place-items:center;overflow:hidden}
   /**
    * 小微博专用上下文（精简）。
    * 依据左宥之卡结构：
-   * - 卡面 first_mes 常是占位；本局开场只认当前聊天第 1 楼，禁止从 alternate_greetings 乱挑
+   * - 开场白仅在用户开启时独立注入；只认当前聊天第 1 楼，禁止从 alternate_greetings 乱挑
    * - 角色书里「微博热搜输出」「脆文输出」「UpdateVariable」会抢格式，禁止整本灌进手机 prompt
-   * - 只保留：人设摘要、本局开场、近期聊天（截断）、知情范围、微博协议世界书
+   * - 只保留：人设摘要、可选开场、柏宝书历史摘要、近期完整聊天、知情范围与微博协议世界书
    */
   async function collectStContextSnapshot(maxMsgs = 3, maxChars = 14000, scanKeyword = ''){
     maxMsgs = Math.max(0, Math.min(60, Number(phoneSettings.recentMessages ?? maxMsgs) || 0));
-    const historyContext = normalizeHistoryContext({ mode:phoneSettings.contextMode, includeRecentContext:phoneSettings.includeRecentContext, includeSummaryContext:phoneSettings.includeSummaryContext });
+    const historyContext = normalizeHistoryContext({ ...phoneSettings, mode:phoneSettings.contextMode });
     const chunks = [];
     const push = (title, text) => {
       const t = String(text || '').trim();
@@ -2313,6 +2362,9 @@ body{display:grid;place-items:center;overflow:hidden}
       // 若检测到 content 容器，只读取最后一个容器；后续再移除其中的 draft/audit/锚定注释。
       const contentBlocks = [...s.matchAll(/<content(?:\s[^>]*)?>([\s\S]*?)<\/content>/gi)];
       if (contentBlocks.length) s = String(contentBlocks[contentBlocks.length - 1][1] || '');
+      // 柏宝书的正文时间标签保留时间语义，但转成普通文本，避免把插件协议标签交给微博模型。
+      s = s.replace(/<bbs_start(?:\s[^>]*)?>([\s\S]*?)<\/bbs_start>/gi, (_, t) => `(起始时间:${String(t || '').trim()})`)
+        .replace(/<bbs_end(?:\s[^>]*)?>([\s\S]*?)<\/bbs_end>/gi, (_, t) => `(结束时间:${String(t || '').trim()})`);
       s = s.replace(/<script[\s\S]*?<\/script>/gi, '');
       s = s.replace(/```html[\s\S]*?```/gi, '[界面已省略]');
       s = s.replace(/```[\s\S]*?```/g, '');
@@ -2413,28 +2465,50 @@ body{display:grid;place-items:center;overflow:hidden}
           if (persona) push('用户 Persona', clip(persona, 1400));
         }
 
-        // 卡面 first_mes 常是占位；本局开场只认「当前聊天首楼」，绝不从 alternate_greetings 乱挑
-        const cardFirst = String(data.first_mes || ch?.first_mes || '').trim();
-        if (cardFirst && /^不喜欢我吗/.test(cardFirst)) {
-          push('卡面 first_mes', '（占位句，已忽略；本局开场见下方「本局开场」）');
-        } else if (cardFirst && cardFirst.length >= 40) {
-          // 仅当卡面 first_mes 本身就是长开场且与聊天一致时才作参考；仍以聊天首楼为准
-          push('卡面 first_mes（仅参考，以本局开场为准）', clip(cleanFloorText(cardFirst), 1200));
-        }
+        // 开场白只取当前聊天首楼，避免卡面 first_mes / 备用开场污染本局。
       }
     } catch (e) {
       push('角色卡读取异常', String(e && e.message || e));
     }
 
-    // —— 前文来源：最近聊天与手动总结可同时注入 ——
+    // 同一批最近楼层用于历史截止点和完整正文；保持前后口径完全一致。
+    const chatList = readFullChatMessageList(ctx);
+    const baiAvailable = historyContext.includeBaiBaiHistory &&
+      (WB_HOST?.hasBaiBaiBook?.() === true || !!getBaiBaiBookApi());
+    const recentEntries = [];
+    if (historyContext.includeRecentContext && maxMsgs > 0) {
+      let aiCount = 0;
+      for (let abs = chatList.length - 1; abs >= 1; abs--) {
+        if (baiAvailable ? aiCount >= maxMsgs : recentEntries.length >= maxMsgs) break;
+        const m = chatList[abs];
+        if (m?.extra?.bbs_omit === true || m?.is_system === true) continue;
+        const mes = cleanFloorText(m?.mes || m?.message || m?.content || '');
+        if (!mes || /^\[小微博界面已省略\]$/.test(mes)) continue;
+        recentEntries.unshift({ m, abs, mes });
+        const isUser = m?.is_user === true || m?.role === 'user' || m?.is_name === 'User';
+        if (!isUser) aiCount++;
+      }
+    }
+    const historyCutoff = recentEntries.length ? recentEntries[0].abs : null;
+
+    // —— 前文来源：柏宝书摘要 / 手动总结 / 可选开场 / 最近完整正文可同时注入 ——
     if (historyContext.includeSummaryContext) {
       push('用户手动前文总结', clip(phoneSettings.manualSummary || '（未填写总结）', 10000));
     }
-    if (!historyContext.includeRecentContext && !historyContext.includeSummaryContext) {
+    if (historyContext.includeBaiBaiHistory) {
+      const baibai = readBaiBaiInjectedHistory(historyCutoff);
+      if (baibai.text) {
+        const coverage = baibai.complete ? '' : `\n\n（柏宝书提示：仍有 ${baibai.missing?.length || 0} 个隐藏 AI 楼层缺少摘要）`;
+        push(`柏宝书历史剧情摘要（${baibai.nodes} 个有效节点）`, baibai.text + coverage);
+      } else if (baibai.available && baibai.error) {
+        push('柏宝书历史剧情摘要', '（读取失败：' + baibai.error + '）');
+      }
+    }
+    if (!historyContext.includeRecentContext && !historyContext.includeSummaryContext && !historyContext.includeOpeningContext && !historyContext.includeBaiBaiHistory) {
       push('聊天前文', '（本档位已关闭前文注入）');
     }
-    if (historyContext.includeRecentContext) try {
-      const list = readFullChatMessageList(ctx);
+    try {
+      const list = chatList;
 
       if (Array.isArray(list) && list.length) {
         const first = list[0];
@@ -2448,38 +2522,34 @@ body{display:grid;place-items:center;overflow:hidden}
             titleM ? ('标题: ' + titleM[1].trim()) : '',
             descM ? ('简介: ' + descM[1].trim()) : '',
           ].filter(Boolean).join(' | ');
-          push('本局开场（当前聊天第 1 楼，已去界面壳）', (meta ? meta + '\n\n' : '') + clip(firstMes, 6000));
           openingHaystack = ((meta ? meta + '\n' : '') + firstMes).slice(0, 10000);
-        } else {
+          if (historyContext.includeOpeningContext) {
+            push('本局开场（可选独立注入｜当前聊天第 1 楼）', (meta ? meta + '\n\n' : '') + clip(firstMes, 6000));
+          }
+        } else if (historyContext.includeOpeningContext) {
           push('本局开场', '（首楼为空或未能清洗出文本）');
         }
 
-        // 首楼已经单独作为「本局开场」注入，不占最近 N 条额度；
-        // 从末尾向前收集 N 条有效剧情消息，空楼与纯微博界面壳也不占额度。
-        const recentEntries = [];
-        for (let abs = list.length - 1; abs >= 1 && recentEntries.length < maxMsgs; abs--) {
-          const m = list[abs];
-          const mes = cleanFloorText(m?.mes || m?.message || m?.content || '');
-          if (!mes || /^\[小微博界面已省略\]$/.test(mes)) continue;
-          recentEntries.unshift({ m, abs, mes });
-        }
-        const lines = [];
-        recentEntries.forEach(({ m, abs, mes }) => {
-          const isUser = m?.is_user === true || m?.role === 'user' || m?.is_name === 'User';
-          const name = isUser ? (m?.name || displayName || 'USER') : (m?.name || displayChar || charName || 'CHAR');
-          // 最近 N 条按清洗后的完整正文注入，不再设置单条字符上限。
-          lines.push(`[#${abs}] ${isUser ? 'USER' : 'AI'}(${name}):\n${clip(mes, Infinity)}`);
-        });
-        if (lines.length) {
-          push('聊天记录（本会话已清洗，完整注入最近' + lines.length + '条）', lines.join('\n\n'));
-          push('当前时序与世界状态判定（最高优先级）', WEIBO_LATEST_CONTEXT_PRIORITY);
+        if (historyContext.includeRecentContext) {
+          // 柏宝书模式按 N 条 AI 消息计数，包含期间用户消息；普通模式按 N 条消息计数。
+          const lines = [];
+          recentEntries.forEach(({ m, abs, mes }) => {
+            const isUser = m?.is_user === true || m?.role === 'user' || m?.is_name === 'User';
+            const name = isUser ? (m?.name || displayName || 'USER') : (m?.name || displayChar || charName || 'CHAR');
+            // 最近 N 条按清洗后的完整正文注入，不再设置单条字符上限。
+            lines.push(`[#${abs}] ${isUser ? 'USER' : 'AI'}(${name}):\n${clip(mes, Infinity)}`);
+          });
+          if (lines.length) {
+            push('最近聊天完整正文（本会话已清洗，最近' + lines.length + '条消息' + (baiAvailable ? '，按 AI 楼层窗口计数' : '') + '）', lines.join('\n\n'));
+            push('最新聊天时序判定（最高优先级）', WEIBO_LATEST_CONTEXT_PRIORITY);
+          }
         }
       } else {
-        push('本局开场', '（未读到当前聊天；请确认已进入本局对话）');
-        push('聊天记录', '（未读到）');
+        if (historyContext.includeOpeningContext) push('本局开场', '（未读到当前聊天；请确认已进入本局对话）');
+        if (historyContext.includeRecentContext) push('最近聊天完整正文', '（未读到）');
       }
     } catch (e) {
-      push('聊天记录读取异常', String(e && e.message || e));
+      if (historyContext.includeOpeningContext || historyContext.includeRecentContext) push('聊天记录读取异常', String(e && e.message || e));
     }
 
     // —— 世界书：手动勾选优先；否则自动扫描知情范围/背景 ——
@@ -4615,7 +4685,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
   function buildPresetInjectionEntries(snapshot, generationMemory, forbid){
     const groups = splitSnapshotForPresetPreview(snapshot);
     const depths = normalizePresetDepths(phoneSettings.presetDepths || currentSlotContext().presetDepths);
-    const historyContext = normalizeHistoryContext({ mode:phoneSettings.contextMode, includeRecentContext:phoneSettings.includeRecentContext, includeSummaryContext:phoneSettings.includeSummaryContext });
+    const historyContext = normalizeHistoryContext({ ...phoneSettings, mode:phoneSettings.contextMode });
     // 主世界书已注入的条目先占位；NPC/热梗再次引用时只保留用途说明，不重复正文。
     const loreMap = new Map([...(state.selectedLoreSnap || []), ...(_loreCatalogCache?.flat || [])].map((item) => [String(item.id), item]));
     const claimedLoreIds = new Set(phoneSettings.includeBgLore !== false ? readSelectedLoreIds().map((id) => loreClaimKey(loreMap.get(String(id)), id)) : []);
@@ -4629,7 +4699,8 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     add('character', 'Character Card', groups.character.concat(groups.other).join('\n\n'), phoneSettings.includeChar !== false || phoneSettings.includeScenario !== false);
     add('persona', 'User Personality', groups.persona.join('\n\n'), phoneSettings.includePersona !== false);
     add('worldbook', '世界书', groups.worldbook.join('\n\n'), phoneSettings.includeBgLore !== false);
-    add('history', '聊天前文', groups.history.join('\n\n'), historyContext.includeRecentContext || historyContext.includeSummaryContext);
+    add('history', '历史摘要、手动总结与开场白', groups.history.join('\n\n'), historyContext.includeSummaryContext || historyContext.includeOpeningContext || historyContext.includeBaiBaiHistory);
+    add('recent', '最近聊天完整正文', groups.recent.join('\n\n'), historyContext.includeRecentContext);
     add('init', '档位初始化与 wb_lore', groups.init.join('\n\n'));
     add('npcAccounts', 'NPC 微博账号', buildNpcRegistryPrompt(undefined, claimedLoreIds));
     (phoneSettings.customEntries || []).forEach((item, index) => add('custom', String(item.title || ('自定义条目 ' + (index + 1))), item.content, item.enabled !== false, item.depth ?? 4));
@@ -4712,9 +4783,8 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     }else if(mode==='feed'){
       context = [
         '【小微博任务｜关键词 feed｜推荐页拉取】',
-        '剧情依据以快照中的「本局开场（当前聊天第 1 楼）」为准；禁止使用其它线路/其它备用开场的设定。',
-        '卡面 first_mes 若是占位句请忽略。',
-        '请结合人物关系与开场已知公开信息，生成与故事相关的推荐流；只输出微博协议，不要写正文剧情旁白。',
+        '剧情当前状态必须以编号最大的最近聊天正文为准；柏宝书历史摘要、手动总结与可选开场白只补充更早背景。禁止使用其它线路/备用开场。',
+        '请结合人物关系与当前已公开信息，生成与故事相关的推荐流；只输出微博协议，不要写正文剧情旁白。',
         '硬性数量：',
         `1. 恰好新增 ${qty.feed} 条微博（post:1 … post:${qty.feed}），发布者多为路人/热门博主/相关路人号，也可偶有 {{char}}；禁止代替 {{user}} 发博。`,
         `2. 每条微博正文下实际评论行恰好 ${qty.feedComments} 条（设为 0 时不输出评论行）；同一帖子评论者昵称全部不同。`,
@@ -4750,7 +4820,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
         npc?.postPrompt ? `该 NPC 的固定发帖要求（必须遵守）：\n${npc.postPrompt}` : '',
         hint
           ? ('用户提示词（必须紧扣）：' + hint)
-          : '用户未给提示词：请空 roll——结合人设、开场与最近剧情，发一条自然、可公开的角色碎碎念/动态（勿剧透未发生情节，勿替 {{user}} 发博）。',
+          : '用户未给提示词：请空 roll——结合人设与最新剧情，发一条自然、可公开的角色碎碎念/动态（勿剧透未发生情节，勿替 {{user}} 发博）。',
         '硬性：',
         '1. 恰好输出 1 条微博（一个 <post:1>）。',
         `2. 微博行格式：[微博|${postWho}|${npc ? 'npc.png' : 'char'}|正文|时间|赞数|转发数|评论数]。当前账号粉丝约 ${fansHint}，赞/转/评展示数大约在 ${engHint} 量级。`,
@@ -5224,14 +5294,20 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
   function recentHistoryForTokenEstimate(){
     const includeRecent = document.getElementById('setIncludeRecentContext')?.checked ?? phoneSettings.includeRecentContext ?? true;
     const includeSummary = document.getElementById('setIncludeSummaryContext')?.checked ?? phoneSettings.includeSummaryContext ?? false;
+    const includeOpening = document.getElementById('setIncludeOpeningContext')?.checked ?? phoneSettings.includeOpeningContext ?? false;
+    const includeBaiBai = document.getElementById('setIncludeBaiBaiHistory')?.checked ?? phoneSettings.includeBaiBaiHistory ?? true;
     const chunks = [];
     if (includeSummary) chunks.push(String(document.getElementById('setManualSummary')?.value || phoneSettings.manualSummary || ''));
+    if (includeBaiBai) chunks.push(readBaiBaiInjectedHistory().text || '');
     if (includeRecent) {
       const count = Math.max(0, Math.min(60, Number(document.getElementById('setRecentMessages')?.value ?? phoneSettings.recentMessages ?? 3) || 0));
       try {
         const chat = getSillyContextSafe()?.chat || [];
         if (count > 0) chunks.push(chat.slice(-count).map((msg) => String(msg?.mes || msg?.content || '')).join('\n\n'));
       } catch (_) {}
+    }
+    if (includeOpening) {
+      try { chunks.push(String(readFullChatMessageList()[0]?.mes || '')); } catch (_) {}
     }
     return chunks.filter(Boolean).join('\n\n');
   }
@@ -5590,8 +5666,8 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
   }
 
   function splitSnapshotForPresetPreview(snapshot){
-    const groups = { init:[], character:[], persona:[], history:[], worldbook:[], custom:[], other:[] };
-    const re = /^### ([^\n]+)\n([\s\S]*?)(?=\n\n### |$)/gm;
+    const groups = { init:[], character:[], persona:[], history:[], recent:[], worldbook:[], custom:[], other:[] };
+    const re = /^### ([^\n]+)\n([\s\S]*?)(?=\n\n### |(?![\s\S]))/gm;
     let match;
     while ((match = re.exec(String(snapshot || '')))) {
       const title = match[1].trim();
@@ -5601,7 +5677,8 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       else if (/角色|性格|场景|显示名/.test(title)) groups.character.push(block);
       else if (/世界书|手机相关设定/.test(title)) groups.worldbook.push(block);
       else if (/自定义条目/.test(title)) groups.custom.push(block);
-      else if (/聊天|开场|前文/.test(title)) groups.history.push(block);
+      else if (/最近聊天完整正文|最新聊天时序判定/.test(title)) groups.recent.push(block);
+      else if (/聊天|开场|前文|柏宝书历史剧情摘要/.test(title)) groups.history.push(block);
       else groups.other.push(block);
     }
     return groups;
@@ -5626,9 +5703,16 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     const history = document.getElementById('historyPresetSummary');
     const includeRecent = !!document.getElementById('setIncludeRecentContext')?.checked;
     const includeSummary = !!document.getElementById('setIncludeSummaryContext')?.checked;
-    if (history) history.textContent = includeRecent && includeSummary
-      ? `手动总结 + 最近 ${document.getElementById('setRecentMessages')?.value || 3} 条`
-      : (includeRecent ? `最近 ${document.getElementById('setRecentMessages')?.value || 3} 条` : (includeSummary ? '手动前文总结' : '不注入聊天前文'));
+    const includeOpening = !!document.getElementById('setIncludeOpeningContext')?.checked;
+    const includeBaiBai = !!document.getElementById('setIncludeBaiBaiHistory')?.checked;
+    if (history) {
+      const sources = [];
+      if (includeBaiBai) sources.push('柏宝书摘要');
+      if (includeSummary) sources.push('手动总结');
+      if (includeOpening) sources.push('开场白');
+      if (includeRecent) sources.push(`最近 ${document.getElementById('setRecentMessages')?.value || 3} 条完整正文`);
+      history.textContent = sources.join(' + ') || '不注入聊天前文';
+    }
     const charEnabled = !!(document.getElementById('setIncludeChar')?.checked || document.getElementById('setIncludeScenario')?.checked);
     const charState = document.getElementById('characterPresetState');
     if (charState) { charState.textContent = charEnabled ? '已启用' : '已停用'; charState.classList.toggle('on', charEnabled); }
@@ -5728,7 +5812,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     const base = defaultGlobalConfig().context;
     return {
       initPrompt:'', wbLore:'',
-      mode:base.mode, includeRecentContext:true, includeSummaryContext:false, recentMessages:base.recentMessages,
+      mode:base.mode, includeRecentContext:true, includeSummaryContext:false, includeOpeningContext:false, includeBaiBaiHistory:true, recentMessages:base.recentMessages,
       includeChar:base.includeChar, includePersona:base.includePersona, includeScenario:base.includeScenario, includeWorldInfo:base.includeWorldInfo,
       systemAddon:'',
       loreScanKeyword:base.loreScanKeyword, loreBookNames:base.loreBookNames, lorePortableBindings:[],
@@ -5748,6 +5832,8 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       mode:document.getElementById('setIncludeRecentContext').checked ? (document.getElementById('setIncludeSummaryContext').checked ? 'both' : 'recent') : (document.getElementById('setIncludeSummaryContext').checked ? 'summary' : 'none'),
       includeRecentContext:!!document.getElementById('setIncludeRecentContext').checked,
       includeSummaryContext:!!document.getElementById('setIncludeSummaryContext').checked,
+      includeOpeningContext:!!document.getElementById('setIncludeOpeningContext').checked,
+      includeBaiBaiHistory:!!document.getElementById('setIncludeBaiBaiHistory').checked,
       recentMessages:Math.max(0,Math.min(60,Number(document.getElementById('setRecentMessages').value)||0)),
       includeChar:!!document.getElementById('setIncludeChar').checked,
       includePersona:!!document.getElementById('setIncludePersona').checked,
@@ -5839,6 +5925,8 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     fillWbLoreEditor(String(config.wbLore || ''), { forceAccount:false });
     document.getElementById('setIncludeRecentContext').checked = history.includeRecentContext;
     document.getElementById('setIncludeSummaryContext').checked = history.includeSummaryContext;
+    document.getElementById('setIncludeOpeningContext').checked = history.includeOpeningContext;
+    document.getElementById('setIncludeBaiBaiHistory').checked = history.includeBaiBaiHistory;
     document.getElementById('setRecentMessages').value = config.recentMessages ?? 3;
     document.getElementById('setIncludeChar').checked = config.includeChar !== false;
     document.getElementById('setIncludePersona').checked = config.includePersona !== false;
@@ -5955,6 +6043,8 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     const history = normalizeHistoryContext(context);
     document.getElementById('setIncludeRecentContext').checked = history.includeRecentContext;
     document.getElementById('setIncludeSummaryContext').checked = history.includeSummaryContext;
+    document.getElementById('setIncludeOpeningContext').checked = history.includeOpeningContext;
+    document.getElementById('setIncludeBaiBaiHistory').checked = history.includeBaiBaiHistory;
     document.getElementById('setRecentMessages').value = String(context.recentMessages ?? 3);
     document.getElementById('setManualSummary').value = String(context.manualSummary || '');
     document.getElementById('setSystemAddon').value = String(context.systemAddon || '');
@@ -6077,6 +6167,8 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       contextMode: document.getElementById('setIncludeRecentContext').checked ? (document.getElementById('setIncludeSummaryContext').checked ? 'both' : 'recent') : (document.getElementById('setIncludeSummaryContext').checked ? 'summary' : 'none'),
       includeRecentContext: !!document.getElementById('setIncludeRecentContext').checked,
       includeSummaryContext: !!document.getElementById('setIncludeSummaryContext').checked,
+      includeOpeningContext: !!document.getElementById('setIncludeOpeningContext').checked,
+      includeBaiBaiHistory: !!document.getElementById('setIncludeBaiBaiHistory').checked,
       recentMessages: Math.max(0, Math.min(60, Number(document.getElementById('setRecentMessages').value) || 0)),
       manualSummary: document.getElementById('setManualSummary').value.trim(),
       systemAddon: document.getElementById('setSystemAddon').value.trim(),
@@ -6135,6 +6227,8 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
         mode: settingsPatch.contextMode,
         includeRecentContext: settingsPatch.includeRecentContext,
         includeSummaryContext: settingsPatch.includeSummaryContext,
+        includeOpeningContext: settingsPatch.includeOpeningContext,
+        includeBaiBaiHistory: settingsPatch.includeBaiBaiHistory,
         recentMessages: settingsPatch.recentMessages,
         manualSummary: settingsPatch.manualSummary,
         systemAddon: settingsPatch.systemAddon,
@@ -6321,7 +6415,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
   document.querySelectorAll('input[name="apiMode"]').forEach((el) => el.onchange = updateApiVisibility);
   bindPresetEntryToggles(document);
   document.getElementById('setSlotSelect').onchange = (event)=> switchActiveSlot(event.target.value);
-  ['setIncludeRecentContext','setIncludeSummaryContext'].forEach((id) => {
+  ['setIncludeRecentContext','setIncludeSummaryContext','setIncludeOpeningContext','setIncludeBaiBaiHistory'].forEach((id) => {
     document.getElementById(id).onchange = ()=>{ updateContextModeVisibility(); refreshPresetUiSummaries(); };
   });
   document.getElementById('setRecentMessages').oninput = refreshPresetUiSummaries;
@@ -6597,7 +6691,8 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
         { title:'NPC 微博账号', depth:depths.npcAccounts, text:buildNpcRegistryPrompt() || '（未注册账号）' },
         { title:'Character Card', depth:depths.character, text:groups.character.concat(groups.other).join('\n\n') || readCharacterPresetSource() },
         { title:'User Personality', depth:depths.persona, text:groups.persona.join('\n\n') || readPersonaPresetSource() },
-        { title:'聊天前文', depth:depths.history, text:groups.history.join('\n\n') || '（当前未注入聊天前文）' },
+        { title:'历史摘要、手动总结与开场白', depth:depths.history, text:groups.history.join('\n\n') || '（当前未注入历史摘要、手动总结或开场白）' },
+        { title:'最近聊天完整正文', depth:depths.recent, text:groups.recent.join('\n\n') || '（当前未注入最近聊天正文）' },
         { title:'防止重复', depth:depths.dedupe, text:WEIBO_ANTI_REPEAT_RULES + '\n\n' + buildSlotGenerationMemory() },
         { title:'自定义 ID 池', depth:depths.idPool, text:buildCustomIdPoolPrompt() || '（未填写）' },
         { title:'热梗注入', depth:depths.hotMeme, text:phoneSettings.hotMemeEnabled === false ? '（已停用）' : [selectedHotMemePrompt(), hotMemeBoundLore()].filter(Boolean).join('\n\n') },
@@ -6773,7 +6868,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     if (!chatBinding.activeSlotId) {
       writePhoneBundleToMetadata().catch(() => {});
     }
-    try { WB_HOST.setMainInjection?.(state.wbLore || slot?.wbLore || '', !!globalConfig.context.injectMain); } catch (_) {}
+    try { WB_HOST.setMainInjection?.(state.wbLore || slot?.wbLore || '', !!currentSlotContext().injectMain); } catch (_) {}
   }
   if (restored) console.log('[小微博] 已从' + restored + '恢复', state.posts.length, '帖 /', state.threads.length, '私信 / lore', (state.wbLore || '').length);
 })();
