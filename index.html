@@ -662,11 +662,11 @@ body{display:grid;place-items:center;overflow:hidden}
         <h3>微博预设</h3>
         <div class="section-note">微博生成时的所有注入统一在这里管理。条目默认收起，点击后才展开详情；角色卡和世界书正文只读。</div>
         <div class="template-box">
-          <div class="template-title">预设模板 <span>系统默认永远保留</span></div>
+          <div class="template-title">预设模板 <span>系统默认不可覆盖</span></div>
           <div class="set-row" style="margin-top:8px"><select id="setPresetTemplate" aria-label="预设模板"></select></div>
           <div class="template-actions"><button type="button" class="mini-action primary" id="settingsNewGlobalTemplate">新建全局模板</button><button type="button" class="mini-action primary" id="settingsNewRoleTemplate">新建角色模板</button><button type="button" class="mini-action" id="settingsSaveTemplate">保存到模板</button><button type="button" class="mini-action" id="settingsDeleteTemplate">删除模板</button></div>
           <div class="settings-inline"><button type="button" class="mini-action primary" id="settingsExportRoleScript">导出角色酒馆脚本 JSON</button></div>
-          <div class="field-note" id="presetTemplateHint">下拉选择后会立即热切换并保存到当前档位。全局模板对所有角色、聊天和档位可见；角色模板只对当前角色可见，但在该角色的不同聊天与档位中都能使用。选择“系统默认预设”导出时仍只导出原始酱微博脚本。</div>
+          <div class="field-note" id="presetTemplateHint">下拉选择后会立即热切换并保存到当前档位。系统默认是不可覆盖、不可删除的内置基准，但载入后仍可编辑，编辑只影响当前档位。全局模板对所有角色、聊天和档位可见；角色模板只对当前角色可见。选择系统默认导出时，仍只导出原始酱微博脚本。</div>
         </div>
         <div class="preset-toolbar"><button type="button" class="mini-action primary" id="settingsPreviewContext">生成分组注入预览</button><button type="button" class="mini-action" id="settingsAddPresetEntry">+新增自定义条目</button></div>
         <div class="preset-stack" id="presetStack">
@@ -5406,7 +5406,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     const select = document.getElementById('setPresetTemplate');
     if (!select) return;
     const embeddedId = String(globalConfig.embeddedPresetId || '');
-    select.innerHTML = '<option value="system">系统默认预设（只读）</option>' + presetTemplates().map((item) => `<option value="${esc(item.id)}">${esc(item.name)} · ${item.scope === 'role' ? '当前角色' : '全局'}${String(item.id) === embeddedId ? ' · 脚本内置' : ''}</option>`).join('');
+    select.innerHTML = '<option value="system">系统默认预设（内置基准）</option>' + presetTemplates().map((item) => `<option value="${esc(item.id)}">${esc(item.name)} · ${item.scope === 'role' ? '当前角色' : '全局'}${String(item.id) === embeddedId ? ' · 脚本内置' : ''}</option>`).join('');
     const wanted = String(currentSlot()?.presetTemplateId || 'system');
     select.value = [...select.options].some((opt) => opt.value === wanted) ? wanted : 'system';
     const isSystem = select.value === 'system';
