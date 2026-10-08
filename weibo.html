@@ -1201,7 +1201,10 @@ body{display:grid;place-items:center;overflow:hidden}
     ].filter(Boolean).join('\n');
   }
   function extractContentOnly(raw){
-    const source = String(raw ?? '');
+    // Strip entire CoT comments before identifying <content> boundaries.
+    const source=String(raw??'')
+      .replace(/<!--[\s\S]*?-->/g,'')
+      .replace(/<!--[\s\S]*$/g,'');
     const re = /<content\b[^>]*>([\s\S]*?)<\/content\s*>/gi;
     const sections=[]; let match;
     while((match=re.exec(source))){
