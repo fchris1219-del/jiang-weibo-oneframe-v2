@@ -679,7 +679,7 @@ body{display:grid;place-items:center;overflow:hidden}
             <div class="preset-entry-editor"><div class="set-row"><label for="setNativePrompt">默认版本</label><select id="setNativePrompt"><option value="detailed">详细原生版（含 ID 指导）</option><option value="compact">简约表达版</option></select></div><div class="set-row"><label for="setNativePromptText">表达与内容规则（可修改）</label><textarea id="setNativePromptText" rows="14"></textarea><div class="field-note">这里只编辑微博表达、账号口吻、生态与内容规则。输出标签、字段名称、分隔符和编号协议固定内嵌，不能被模板修改。</div></div><details style="margin-top:10px"><summary>查看固定输出格式（只读）</summary><div class="preset-readonly" id="fixedNativeFormatPreview">打开设置后载入…</div></details><div class="settings-inline"><button type="button" class="mini-action" id="settingsResetNativePrompt">恢复所选版本默认</button></div></div>
           </article>
           <article class="preset-entry" data-preset-entry="init">
-            <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">初</div><div class="preset-entry-copy"><div class="preset-entry-title">档位初始化与 wb_lore</div><div class="preset-entry-note" id="wbLoreSummary">仅保存到本档位；可手动从首楼拉取覆盖</div></div><span class="preset-entry-state on">档位</span><span class="preset-entry-chev">⌄</span></div>
+            <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">初</div><div class="preset-entry-copy"><div class="preset-entry-title">档位初始化与 wb_lore</div><div class="preset-entry-note" id="wbLoreSummary">可随模板携带；应用后保存到当前档位</div></div><span class="preset-entry-state on">模板可携带</span><span class="preset-entry-chev">⌄</span></div>
             <div class="preset-entry-editor"><div class="set-row"><label for="setInitPrompt">档位初始化提示词</label><textarea id="setInitPrompt" rows="5" placeholder="这一档微博生成时始终优先遵守的设定……"></textarea></div><div class="set-row"><label for="loreRawText">完整 wb_lore</label><textarea id="loreRawText" rows="8" placeholder="直接写设定正文，不用写 &lt;wb_lore&gt; 或 [微博档位|…]"></textarea><div class="field-note">直接写自然语言即可。可填：世界线/时间点、人物关系与知情范围、账号身份与口径、已发生的关键事件、群像/圈子状态和不应外泄的私密信息。</div></div><details style="margin-top:10px" hidden><summary>旧版拆分编辑</summary><div id="loreSecList" class="lore-sec-box"></div><textarea id="loreRestText" rows="4"></textarea></details><label class="settings-switch"><input type="checkbox" id="setInjectMain"><span>同时把当前 wb_lore 注入酒馆主对话（默认关闭）</span></label><div class="settings-inline"><button type="button" class="mini-action" id="settingsReadFirstLore">从首楼读取覆盖</button><button type="button" class="mini-action" id="settingsParseLoreRaw" hidden>从原文拆分</button><button type="button" class="mini-action primary" id="settingsSaveLoreSlot">保存到本档位</button><button type="button" class="mini-action" id="settingsClearLore">清空</button></div><div class="field-note" id="wbLoreHint">wb_lore 仅保存到当前聊天的本档位，不会写入正文首楼。</div></div>
           </article>
           <article class="preset-entry" data-preset-entry="npcAccounts">
@@ -848,7 +848,7 @@ body{display:grid;place-items:center;overflow:hidden}
   }
   function makeDefaultChatSlot(){
     const baseContext = globalConfig?.embeddedPresetId ? (globalConfig.context || {}) : defaultGlobalConfig().context;
-    return { id:'default', name:'默认档位', presetTemplateId:'system', initPrompt:'', wbLore:'', account:{}, context:{ ...baseContext, npcAccounts:Array.isArray(baseContext.npcAccounts) ? baseContext.npcAccounts : [] } };
+    return { id:'default', name:'默认档位', presetTemplateId:'system', initPrompt:String(baseContext.initPrompt || ''), wbLore:String(baseContext.wbLore || ''), account:{}, context:{ ...baseContext, npcAccounts:Array.isArray(baseContext.npcAccounts) ? baseContext.npcAccounts : [] } };
   }
   function normalizeChatSlots(binding){
     if (Array.isArray(binding?.slots) && binding.slots.length) return binding.slots.map((slot) => ({ ...slot, presetTemplateId:String(slot?.presetTemplateId || 'system') }));
@@ -5341,6 +5341,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
   function systemPresetConfig(){
     const base = defaultGlobalConfig().context;
     return {
+      initPrompt:'', wbLore:'',
       mode:base.mode, recentMessages:base.recentMessages,
       includeChar:base.includeChar, includePersona:base.includePersona, includeScenario:base.includeScenario, includeWorldInfo:base.includeWorldInfo,
       systemAddon:'',
@@ -5353,6 +5354,8 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
   }
   function presetTemplateConfigFromForm(){
     return {
+      initPrompt:document.getElementById('setInitPrompt').value.trim(),
+      wbLore:String(document.getElementById('loreRawText').value || '').trim(),
       mode:document.getElementById('setContextMode').value || 'recent',
       recentMessages:Math.max(0,Math.min(60,Number(document.getElementById('setRecentMessages').value)||0)),
       includeChar:!!document.getElementById('setIncludeChar').checked,
@@ -5412,6 +5415,8 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
   }
   function applyPresetTemplateToForm(template){
     const config = normalizePresetTemplate(template || { id:'system', name:'系统默认', config:systemPresetConfig() }).config;
+    document.getElementById('setInitPrompt').value = String(config.initPrompt || '');
+    fillWbLoreEditor(String(config.wbLore || ''), { forceAccount:false });
     document.getElementById('setContextMode').value = ['recent','summary','none'].includes(config.mode) ? config.mode : 'recent';
     document.getElementById('setRecentMessages').value = config.recentMessages ?? 3;
     document.getElementById('setIncludeChar').checked = config.includeChar !== false;
@@ -5890,7 +5895,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     if (raw) raw.placeholder = '直接写设定正文，不用写 <wb_lore> 或 [微博档位|…]';
     if (raw?.nextElementSibling?.classList.contains('field-note')) raw.nextElementSibling.textContent = '直接写自然语言即可。可填：这一档的世界线/时间点、人物关系与知情范围、微博账号身份与口径、已发生的关键事件、群像/圈子状态、不应让路人知道的私密信息。不需要写 &lt;wb_lore&gt;、[微博档位|…] 或账号分栏格式。';
     const loreSummary = document.getElementById('wbLoreSummary');
-    if (loreSummary) loreSummary.textContent = '仅保存到本档位；可手动从首楼拉取覆盖';
+    if (loreSummary) loreSummary.textContent = '可随模板携带；应用后保存到当前档位';
     const details = document.getElementById('loreSecList')?.closest('details');
     if (details) details.hidden = true;
     const parse = document.getElementById('settingsParseLoreRaw');
