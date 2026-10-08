@@ -20,6 +20,7 @@ let jwr2Frame = null;
 let jwr2RemotePromise = null;
 let jwr2ChatListener = null;
 let jwr2DragCleanup = null;
+let jwr2ViewportCleanup = null;
 
 function jwr2ScriptId() {
   try { return typeof getScriptId === 'function' ? String(getScriptId() || '') : ''; }
@@ -465,27 +466,47 @@ function jwr2Mount() {
   root.id = JWR2_ROOT_ID;
   if (jwr2ScriptId()) root.setAttribute('script_id', jwr2ScriptId());
   root.innerHTML = `<style>
-  #${JWR2_ROOT_ID}{all:initial;position:fixed;inset:auto;top:0;left:0;width:100vw;height:100vh;height:100dvh;z-index:2147483000;pointer-events:none;overflow:visible;isolation:isolate;font-family:-apple-system,"PingFang SC",sans-serif}
+  #${JWR2_ROOT_ID}{all:initial;position:fixed;inset:auto;top:0;left:0;width:100vw;height:100vh;z-index:2147483000;pointer-events:none;overflow:visible;isolation:isolate;font-family:-apple-system,"PingFang SC",sans-serif}
   #jwr2-fab{all:unset;box-sizing:border-box;position:absolute;right:18px;bottom:72px;width:54px;height:54px;border-radius:18px;display:grid;place-items:center;pointer-events:auto;cursor:pointer;color:#fff;background:linear-gradient(145deg,#ff9639,#e94738);border:1px solid #ffffff70;box-shadow:0 10px 28px #c7352f66;font:800 22px "Songti SC",serif}
   #jwr2-overlay{position:absolute;inset:0;display:none;place-items:center;pointer-events:auto;background:#07101bbd;backdrop-filter:blur(12px)}#jwr2-overlay.on{display:grid}
   #jwr2-backdrop{position:absolute;inset:0}
-  #jwr2-frame{position:relative;width:min(420px,calc(100vw - 24px));height:min(760px,calc(100dvh - 24px));border:0;border-radius:22px;background:#f7f7f7;box-shadow:0 30px 100px #0009;overflow:hidden}
-  #jwr2-status{position:absolute;width:min(420px,calc(100vw - 24px));height:min(760px,calc(100dvh - 24px));border-radius:22px;display:grid;place-items:center;padding:24px;box-sizing:border-box;text-align:center;background:#fff;color:#555;font-size:13px;pointer-events:none}#jwr2-status.bad{color:#b72f2f}
-  @media(max-width:520px){#jwr2-fab{right:10px;bottom:62px}#jwr2-overlay{place-items:stretch}#jwr2-frame,#jwr2-status{width:100vw;height:100dvh;border-radius:0}}
+  #jwr2-frame{position:relative;width:min(420px,calc(100% - 24px));height:min(760px,calc(100% - 24px));border:0;border-radius:22px;background:#f7f7f7;box-shadow:0 30px 100px #0009;overflow:hidden}
+  #jwr2-status{position:absolute;width:min(420px,calc(100% - 24px));height:min(760px,calc(100% - 24px));border-radius:22px;display:grid;place-items:center;padding:24px;box-sizing:border-box;text-align:center;background:#fff;color:#555;font-size:13px;pointer-events:none}#jwr2-status.bad{color:#b72f2f}
+  @media(max-width:520px){#jwr2-fab{right:10px;bottom:62px}#jwr2-overlay{place-items:stretch;padding:max(10px,env(safe-area-inset-top)) 6px max(8px,env(safe-area-inset-bottom));box-sizing:border-box}#jwr2-frame,#jwr2-status{width:100%;height:100%;border-radius:14px}}
   </style>
   <button id="jwr2-fab" type="button" aria-label="打开微博">博</button>
   <section id="jwr2-overlay"><div id="jwr2-backdrop"></div><iframe id="jwr2-frame" title="微博" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads"></iframe><div id="jwr2-status">准备加载…</div></section>`;
   JWR2_DOC.body.appendChild(root);
   jwr2Root = root;
   jwr2Frame = root.querySelector('#jwr2-frame');
+  const syncViewport = () => {
+    const viewport = JWR2_HOST.visualViewport;
+    const width = Math.max(1, Math.round(viewport?.width || JWR2_HOST.innerWidth || 390));
+    const height = Math.max(1, Math.round(viewport?.height || JWR2_HOST.innerHeight || 760));
+    const left = Math.round(viewport?.offsetLeft || 0);
+    const top = Math.round(viewport?.offsetTop || 0);
+    root.style.left = left + 'px'; root.style.top = top + 'px';
+    root.style.width = width + 'px'; root.style.height = height + 'px';
+  };
+  syncViewport();
+  JWR2_HOST.visualViewport?.addEventListener?.('resize', syncViewport);
+  JWR2_HOST.visualViewport?.addEventListener?.('scroll', syncViewport);
+  JWR2_HOST.addEventListener?.('resize', syncViewport);
+  JWR2_HOST.addEventListener?.('orientationchange', syncViewport);
+  jwr2ViewportCleanup = () => {
+    JWR2_HOST.visualViewport?.removeEventListener?.('resize', syncViewport);
+    JWR2_HOST.visualViewport?.removeEventListener?.('scroll', syncViewport);
+    JWR2_HOST.removeEventListener?.('resize', syncViewport);
+    JWR2_HOST.removeEventListener?.('orientationchange', syncViewport);
+  };
   JWR2_HOST[JWR2_INSTANCE_KEY] = jwr2Cleanup;
   jwr2InstallBridge();
   const fab = root.querySelector('#jwr2-fab');
   const posKey = 'jwr2_fab_position_v1';
   let moved = false;
   const clampFab = (x, y) => ({
-    x: Math.max(8, Math.min((JWR2_HOST.innerWidth || 390) - 62, Number(x) || 8)),
-    y: Math.max(8, Math.min((JWR2_HOST.innerHeight || 760) - 62, Number(y) || 8)),
+    x: Math.max(8, Math.min((root.clientWidth || JWR2_HOST.innerWidth || 390) - 62, Number(x) || 8)),
+    y: Math.max(8, Math.min((root.clientHeight || JWR2_HOST.innerHeight || 760) - 62, Number(y) || 8)),
   });
   const placeFab = (value) => {
     const p = clampFab(value?.x, value?.y);
@@ -528,6 +549,8 @@ function jwr2Mount() {
 function jwr2Cleanup() {
   try { jwr2DragCleanup?.(); } catch (_) {}
   jwr2DragCleanup = null;
+  try { jwr2ViewportCleanup?.(); } catch (_) {}
+  jwr2ViewportCleanup = null;
   try { jwr2ChatListener?.stop?.(); } catch (_) {}
   jwr2ChatListener = null;
   try { jwr2Root?.remove(); } catch (_) {}
