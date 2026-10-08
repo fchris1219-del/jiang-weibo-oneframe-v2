@@ -2309,6 +2309,10 @@ body{display:grid;place-items:center;overflow:hidden}
         if (t) loreChunks.push(t);
         return '\n';
       });
+      // 某些正文 CoT 会把草稿/审核都放在 HTML 注释里，只把最终正文包进 <content>。
+      // 若检测到 content 容器，只读取最后一个容器；后续再移除其中的 draft/audit/锚定注释。
+      const contentBlocks = [...s.matchAll(/<content(?:\s[^>]*)?>([\s\S]*?)<\/content>/gi)];
+      if (contentBlocks.length) s = String(contentBlocks[contentBlocks.length - 1][1] || '');
       s = s.replace(/<script[\s\S]*?<\/script>/gi, '');
       s = s.replace(/```html[\s\S]*?```/gi, '[界面已省略]');
       s = s.replace(/```[\s\S]*?```/g, '');
@@ -2463,10 +2467,13 @@ body{display:grid;place-items:center;overflow:hidden}
         recentEntries.forEach(({ m, abs, mes }) => {
           const isUser = m?.is_user === true || m?.role === 'user' || m?.is_name === 'User';
           const name = isUser ? (m?.name || displayName || 'USER') : (m?.name || displayChar || charName || 'CHAR');
-          const budget = isUser ? 900 : 1200;
-          lines.push(`[#${abs}] ${isUser ? 'USER' : 'AI'}(${name}):\n${clip(mes, budget)}`);
+          // 最近 N 条按清洗后的完整正文注入，不再设置单条字符上限。
+          lines.push(`[#${abs}] ${isUser ? 'USER' : 'AI'}(${name}):\n${clip(mes, Infinity)}`);
         });
-        if (lines.length) push('聊天记录（本会话已清洗截断，最近' + lines.length + '条）', lines.join('\n\n'));
+        if (lines.length) {
+          push('聊天记录（本会话已清洗，完整注入最近' + lines.length + '条）', lines.join('\n\n'));
+          push('当前时序与世界状态判定（最高优先级）', WEIBO_LATEST_CONTEXT_PRIORITY);
+        }
       } else {
         push('本局开场', '（未读到当前聊天；请确认已进入本局对话）');
         push('聊天记录', '（未读到）');
@@ -2570,11 +2577,9 @@ body{display:grid;place-items:center;overflow:hidden}
       push('世界书读取异常', String(e && e.message || e));
     }
 
-    let text = chunks.join('\n\n');
-    if (text.length > maxChars) {
-      text = text.slice(0, maxChars) + '\n\n…[上下文快照总长截断 ' + maxChars + ' 字]';
-    }
-    return text;
+    // 最近聊天要求完整注入，因此不再对整个快照做总长硬截断。
+    // 世界书等其它来源仍在各自采集阶段保留独立限额，避免无关内容失控。
+    return chunks.join('\n\n');
   }
 
   const AI_GENERATE = typeof generate === 'function' ? generate : null;
@@ -4289,6 +4294,11 @@ user 发布的「仅自己可见」微博不得被任何 char/NPC/路人知道�
 user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改名、缩写或用角色本名替代；未设置的账号不得由模型擅自补齐。
 </weibo_anti_repeat>`;
 
+  const WEIBO_LATEST_CONTEXT_PRIORITY = String.raw`<weibo_latest_context_priority>
+判断当前时间、地点、人物关系、已发生事件及世界状态时，必须以「聊天记录」中编号最大的最新注入条目为最终依据。
+较早聊天条目只代表历史过程；首楼/开场只代表故事起点和背景，不能覆盖后续变化。若首楼、旧设定或较早消息与最新聊天条目不一致，一律服从最新聊天条目，禁止把时间线或人物状态回退到开场。
+</weibo_latest_context_priority>`;
+
   const WEIBO_HOT_MEME_DEFAULT = String.raw`<weibo_hot_meme>
 本条目与其绑定的世界书内容是「本档位允许使用的梗库」。请主动留意适合玩梗的位置，在账号身份、语境、时机、表达节奏和知情范围都合适时优先使用这些梗，让微博更有真实圈层感。但“多使用”不等于每句都带梗：普通叙述、认真交流、情绪铺垫和不适合玩梗的内容应自然表达，不得句句抖机灵；不得为了显得“冲浪”而生硬堆叠、机械复读或强塞无关热词。
 热梗、黑梗、圈内梗应从本梗库、当前前文、wb_lore、已有微博或可合理推断的圈层文化中生长。绑定条目只说明梗可以用，不代表其中所有信息已经公开，也不代表所有账号都知道。
@@ -4846,6 +4856,9 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
         '',
         // 不要附带 weibo 触发词，避免点亮卡内「微博热搜输出」HTML 条目
         '协议模式关键词：' + keyword,
+        '',
+        '【当前时序与世界状态｜最终判定】',
+        WEIBO_LATEST_CONTEXT_PRIORITY,
         '',
         '现在请只输出协议标签内容。',
       ].join('\n');
