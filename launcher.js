@@ -383,75 +383,23 @@ function jwr2InstallBridge() {
       return api.getInjectedHistory();
     },
     hasBaiBaiBook: () => !!(JWR2_HOST.STBaiBaiBook?.getInjectedHistory),
-    // 柏宝书原生模式：直接读取它已写入 ST 的三个 setExtensionPrompt 槽位。
-    // 这三个 value/depth 由柏宝书自己决策；小微博不计算 keepRecent/getHistory 截止楼层。
-    getBaiBaiNativeContext: () => {
-      const api = JWR2_HOST.STBaiBaiBook;
-      const ctx = jwr2Context();
-      const slots = ctx?.extensionPrompts;
-      if (!api || typeof api.getInjectedHistory !== 'function' || !slots) {
-        return { available: false, reason: !api ? '柏宝书尚未加载' : '酒馆未开放扩展注入槽读取' };
-      }
-      const required = ['baibai_book_memory_history', 'baibai_book_memory_state', 'baibai_book_time_tag'];
-      const missing = required.filter(key => !Object.prototype.hasOwnProperty.call(slots, key) || typeof slots[key]?.value !== 'string');
-      if (missing.length) return { available:false, reason:'未读到柏宝书原生注入槽：' + missing.join(', ') + '。请先在该聊天启动柏宝书并刷新注入。' };
-      if (required.every(key => slots[key].value.length === 0)) {
-        return { available:false, reason:'柏宝书三个注入槽均为空；请检查记忆引擎是否启用、当前角色是否被排除，以及是否已在此聊天刷新注入。' };
-      }
-      const pick = (key, fallbackDepth) => {
-        const value = slots[key];
-        return {
-          text: typeof value?.value === 'string' ? value.value : '',
-          depth: Number.isFinite(Number(value?.depth)) ? Number(value.depth) : fallbackDepth,
-          position: Number.isFinite(Number(value?.position)) ? Number(value.position) : 1,
-        };
-      };
-      // 检查当前聊天的摘要覆盖状况只用于预览/诊断，不更改柏宝书自己的注入内容。
-      let coverage = null, nodes = 0, chatId = '';
-      try {
-        const history = api.getInjectedHistory();
-        coverage = history?.coverage || null;
-        nodes = Array.isArray(history?.nodes) ? history.nodes.length : 0;
-        chatId = String(history?.chat?.id || '');
-      } catch (_) {}
-      return {
-        available: true, chatId, nodes, coverage,
-        history: pick('baibai_book_memory_history', 9999),
-        state: pick('baibai_book_memory_state', 1),
-        timeTag: pick('baibai_book_time_tag', 0),
-      };
-    },
-    // 柏宝书原生模式：直接读取它已写入 ST 的三个 setExtensionPrompt 槽位。
-    // 这三个 value/depth 由柏宝书自己决策；小微博不计算 keepRecent/getHistory 截止楼层。
-    getBaiBaiNativeContext: () => {
-      const api = JWR2_HOST.STBaiBaiBook;
-      const ctx = jwr2Context();
-      const slots = ctx?.extensionPrompts;
-      if (!api || typeof api.getInjectedHistory !== 'function' || !slots) {
-        return { available: false, reason: !api ? '柏宝书尚未加载' : '酒馆未开放扩展注入槽读取' };
-      }
-      const pick = (key, fallbackDepth) => {
-        const value = slots[key];
-        return {
-          text: typeof value?.value === 'string' ? value.value : '',
-          depth: Number.isFinite(Number(value?.depth)) ? Number(value.depth) : fallbackDepth,
-          position: Number.isFinite(Number(value?.position)) ? Number(value.position) : 1,
-        };
-      };
-      // 检查当前聊天的摘要覆盖状况只用于预览/诊断，不更改柏宝书自己的注入内容。
-      let coverage = null, nodes = 0, chatId = '';
-      try {
-        const history = api.getInjectedHistory();
-        coverage = history?.coverage || null;
-        nodes = Array.isArray(history?.nodes) ? history.nodes.length : 0;
-        chatId = String(history?.chat?.id || '');
-      } catch (_) {}
-      return {
-        available: true, chatId, nodes, coverage,
-        history: pick('baibai_book_memory_history', 9999),
-        state: pick('baibai_book_memory_state', 1),
-        timeTag: pick('baibai_book_time_tag', 0),
-      };
+    // 仅读取柏宝书公开快照中的「眼下局势」，不读取历史摘要或原生提示词槽。
+    getBaiBaiSceneFocus: () => {
+      const api=JWR2_HOST.STBaiBaiBook;
+      if(!api||typeof api.getSnapshot!=='function')return {available:false,reason:'柏宝书公开 API 尚未加载'};
+      try{
+        const snap=api.getSnapshot();
+        if(!snap||typeof snap!=='object')return {available:false,reason:'柏宝书未返回当前聊天快照'};
+        const f=snap.state?.sceneFocus;
+        const sceneFocus=f&&typeof f==='object'?{
+          situation:String(f.situation||'').trim(),
+          participants:Array.isArray(f.participants)?f.participants.map(String):[],
+          tension:String(f.tension||'').trim(),
+          pendingBeat:String(f.pendingBeat||'').trim(),
+          updatedTime:String(f.updatedTime||'').trim()
+        }:null;
+        return {available:true,chatId:String(snap.chat?.id||''),sceneFocus};
+      }catch(error){return {available:false,reason:String(error?.message||error)};}
     },
     getSettings: () => jwr2PublicSettings(),
     getEmbeddedPreset: () => jwr2Clone(JWR2_EMBEDDED_PRESET, null),
