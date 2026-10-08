@@ -665,6 +665,7 @@ body{display:grid;place-items:center;overflow:hidden}
           <div class="template-title">预设模板 <span>系统默认不可覆盖</span></div>
           <div class="set-row" style="margin-top:8px"><select id="setPresetTemplate" aria-label="预设模板"></select></div>
           <div class="template-actions"><button type="button" class="mini-action primary" id="settingsNewGlobalTemplate">新建全局模板</button><button type="button" class="mini-action primary" id="settingsNewRoleTemplate">新建角色模板</button><button type="button" class="mini-action" id="settingsSaveTemplate">保存到模板</button><button type="button" class="mini-action" id="settingsDeleteTemplate">删除模板</button></div>
+          <div class="settings-grid" style="margin-top:8px"><div class="set-row" style="margin-top:0"><label for="setPresetCopyScope">复制到</label><select id="setPresetCopyScope" aria-label="模板复制目标"></select></div><button type="button" class="mini-action" id="settingsCopyTemplate" style="align-self:end">复制所选模板</button></div>
           <div class="settings-inline"><button type="button" class="mini-action primary" id="settingsExportRoleScript">导出角色酒馆脚本 JSON</button></div>
           <div class="field-note" id="presetTemplateHint">下拉选择后会立即热切换并保存到当前档位。系统默认是不可覆盖、不可删除的内置基准，但载入后仍可编辑，编辑只影响当前档位。全局模板对所有角色、聊天和档位可见；角色模板只对当前角色可见。选择系统默认导出时，仍只导出原始酱微博脚本。</div>
         </div>
@@ -5489,6 +5490,18 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
   function globalPresetTemplates(){ return (globalConfig.presetTemplates || []).map((item) => normalizePresetTemplate({ ...item, scope:'global' })); }
   function rolePresetTemplates(){ return (globalConfig.rolePresetTemplates?.[CURRENT_CHARACTER_TEMPLATE_KEY] || []).map((item) => normalizePresetTemplate({ ...item, scope:'role', roleKey:CURRENT_CHARACTER_TEMPLATE_KEY })); }
   function presetTemplates(){ return [...globalPresetTemplates(), ...rolePresetTemplates()]; }
+  function currentTemplateRoleName(){
+    const candidates = [rawCharName, charName, displayChar];
+    return String(candidates.find((name) => name && !String(name).includes('{{')) || '当前角色').trim();
+  }
+  function renderPresetCopyScope(){
+    const select = document.getElementById('setPresetCopyScope');
+    if (!select) return;
+    const previous = select.value || 'role';
+    const roleName = currentTemplateRoleName();
+    select.innerHTML = `<option value="role">复制给当前角色：${esc(roleName)}</option><option value="global">复制到全局</option>`;
+    select.value = ['role','global'].includes(previous) ? previous : 'role';
+  }
   function renderPresetTemplateSelect(){
     const select = document.getElementById('setPresetTemplate');
     if (!select) return;
@@ -5499,6 +5512,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     const isSystem = select.value === 'system';
     document.getElementById('settingsDeleteTemplate').disabled = isSystem;
     document.getElementById('settingsSaveTemplate').textContent = '保存到模板';
+    renderPresetCopyScope();
   }
   function applyPresetTemplateToForm(template){
     const config = normalizePresetTemplate(template || { id:'system', name:'系统默认', config:systemPresetConfig() }).config;
@@ -5863,6 +5877,28 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
   }
   document.getElementById('settingsNewGlobalTemplate').onclick = ()=>createPresetTemplate('global');
   document.getElementById('settingsNewRoleTemplate').onclick = ()=>createPresetTemplate('role');
+  document.getElementById('settingsCopyTemplate').onclick = async ()=>{
+    const source = selectedPresetTemplate();
+    if (!source) return showBubble('请先选择要复制的模板');
+    const scope = document.getElementById('setPresetCopyScope')?.value === 'global' ? 'global' : 'role';
+    const roleName = currentTemplateRoleName();
+    const targetLabel = scope === 'role' ? `当前角色「${roleName}」` : '全局';
+    const baseName = source.id === 'system' ? '{{char}}微博模板' : `${source.name} 副本`;
+    const name = String(prompt(`复制到${targetLabel}，请输入新模板名称`, baseName) || '').trim();
+    if (!name) return;
+    const copied = normalizePresetTemplate({
+      id:'tpl_' + Date.now().toString(36), name, scope,
+      roleKey:scope === 'role' ? CURRENT_CHARACTER_TEMPLATE_KEY : '', version:1,
+      config:JSON.parse(JSON.stringify(source.config || systemPresetConfig())),
+    });
+    const list = presetTemplates();
+    list.push(copied);
+    saveTemplateCollection(list, copied.id);
+    applyPresetTemplateToForm(copied);
+    await renderLorePickList(false, { hydrateStored:false });
+    await persistSettingsForm(false, { quiet:true });
+    showBubble(`已把「${source.name}」复制到${targetLabel}，新模板为「${copied.name}」`);
+  };
   document.getElementById('settingsSaveTemplate').onclick = ()=>{
     let template = selectedPresetTemplate();
     const list = presetTemplates();
