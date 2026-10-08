@@ -373,6 +373,16 @@ function jwr2InstallBridge() {
     getContext: () => jwr2SafeContext(),
     getCurrentChatId: () => jwr2ChatId(),
     getChatMessages: (...args) => typeof getChatMessages === 'function' ? getChatMessages(...args) : [],
+    // Bridge access to BaiBai Book's documented read-only API.
+    getBaiBaiHistory: (beforeFloor = null) => {
+      const api = JWR2_HOST.STBaiBaiBook;
+      if (!api || typeof api.getInjectedHistory !== 'function') return null;
+      if (Number.isInteger(beforeFloor) && beforeFloor >= 0 && typeof api.getHistory === 'function') {
+        return api.getHistory({ before: beforeFloor });
+      }
+      return api.getInjectedHistory();
+    },
+    hasBaiBaiBook: () => !!(JWR2_HOST.STBaiBaiBook?.getInjectedHistory),
     getSettings: () => jwr2PublicSettings(),
     getEmbeddedPreset: () => jwr2Clone(JWR2_EMBEDDED_PRESET, null),
     saveSettings: (value) => jwr2WriteSettings(value),
@@ -547,6 +557,8 @@ function jwr2Mount() {
 }
 
 function jwr2Cleanup() {
+  // Clear persistent SillyTavern prompt after stopping the script.
+  if (JWR2_HOST[JWR2_INSTANCE_KEY] === jwr2Cleanup) jwr2SetMainInjection('', false);
   try { jwr2DragCleanup?.(); } catch (_) {}
   jwr2DragCleanup = null;
   try { jwr2ViewportCleanup?.(); } catch (_) {}
@@ -566,6 +578,8 @@ function jwr2Cleanup() {
     jwr2Mount();
     if (typeof eventOn === 'function' && typeof tavern_events !== 'undefined' && tavern_events.CHAT_CHANGED) {
       jwr2ChatListener = eventOn(tavern_events.CHAT_CHANGED, () => {
+        // Avoid injecting the previous chat's wb_lore into the new chat.
+        jwr2SetMainInjection('', false);
         if (jwr2Frame) jwr2Frame.srcdoc = '';
         jwr2RemotePromise = null;
         jwr2Close();
