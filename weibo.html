@@ -1152,6 +1152,20 @@ body{display:grid;place-items:center;overflow:hidden}
     } catch (_) {}
     return null;
   }
+  function readFullChatMessageList(context = null){
+    const ctx = context || getSillyContextSafe();
+    const candidates = [];
+    if (Array.isArray(ctx?.chat)) candidates.push(ctx.chat);
+    try {
+      if (typeof getChatMessages === 'function') {
+        const all = getChatMessages();
+        if (Array.isArray(all)) candidates.push(all);
+      }
+    } catch (_) {}
+    // 不使用 getChatMessages(-99999)：不同助手版本会把它解释成单楼/特殊索引，
+    // 非空但不完整的结果会误挡住 ctx.chat。优先采用消息数量最多的完整来源。
+    return candidates.reduce((best, list) => list.length > best.length ? list : best, []);
+  }
   function currentChatId(){
     try {
       const ctx = getSillyContextSafe();
@@ -1959,21 +1973,7 @@ body{display:grid;place-items:center;overflow:hidden}
       if (!Array.isArray(list) || !list.length) return '';
       return stripLauncherEnvelope(joinWbLoreChunks(extractWbLoreBlocks(extractRawMessageText(list[0]))));
     };
-    try {
-      const ctx = getSillyContextSafe();
-      const hit = pickFirst(ctx?.chat);
-      if (hit) return hit;
-    } catch (_) {}
-    try {
-      if (typeof getChatMessages === 'function') {
-        let list = [];
-        try { list = getChatMessages(-99999) || []; } catch (_) {}
-        if (!Array.isArray(list) || !list.length) {
-          try { list = getChatMessages() || []; } catch (_) {}
-        }
-        return pickFirst(list);
-      }
-    } catch (_) {}
+    try { return pickFirst(readFullChatMessageList()); } catch (_) {}
     return '';
   }
   function readChatMetadataLore(){
@@ -2430,14 +2430,7 @@ body{display:grid;place-items:center;overflow:hidden}
       push('聊天前文', '（本档位已关闭前文注入）');
     }
     if (historyContext.includeRecentContext) try {
-      let list = [];
-      if (typeof getChatMessages === 'function') {
-        try { list = getChatMessages(-99999) || []; } catch (_) {}
-        if (!Array.isArray(list) || !list.length) {
-          try { list = getChatMessages() || []; } catch (_) {}
-        }
-      }
-      if ((!Array.isArray(list) || !list.length) && ctx && Array.isArray(ctx.chat)) list = ctx.chat;
+      const list = readFullChatMessageList(ctx);
 
       if (Array.isArray(list) && list.length) {
         const first = list[0];
@@ -2457,17 +2450,20 @@ body{display:grid;place-items:center;overflow:hidden}
           push('本局开场', '（首楼为空或未能清洗出文本）');
         }
 
-        const keep = Math.min(maxMsgs, list.length);
-        const slice = list.slice(Math.max(0, list.length - keep));
+        // 首楼已经单独作为「本局开场」注入，不占最近 N 条额度；
+        // 从末尾向前收集 N 条有效剧情消息，空楼与纯微博界面壳也不占额度。
+        const recentEntries = [];
+        for (let abs = list.length - 1; abs >= 1 && recentEntries.length < maxMsgs; abs--) {
+          const m = list[abs];
+          const mes = cleanFloorText(m?.mes || m?.message || m?.content || '');
+          if (!mes || /^\[小微博界面已省略\]$/.test(mes)) continue;
+          recentEntries.unshift({ m, abs, mes });
+        }
         const lines = [];
-        slice.forEach((m, idx) => {
-          const abs = list.length - slice.length + idx;
+        recentEntries.forEach(({ m, abs, mes }) => {
           const isUser = m?.is_user === true || m?.role === 'user' || m?.is_name === 'User';
           const name = isUser ? (m?.name || displayName || 'USER') : (m?.name || displayChar || charName || 'CHAR');
-          let mes = cleanFloorText(m?.mes || m?.message || m?.content || '');
-          if (!mes) return;
-          // 第 1 楼已在「本局开场」给出，列表里只留极短索引避免重复占额度
-          const budget = abs === 0 ? 280 : (isUser ? 900 : 1200);
+          const budget = isUser ? 900 : 1200;
           lines.push(`[#${abs}] ${isUser ? 'USER' : 'AI'}(${name}):\n${clip(mes, budget)}`);
         });
         if (lines.length) push('聊天记录（本会话已清洗截断，最近' + lines.length + '条）', lines.join('\n\n'));
