@@ -374,16 +374,18 @@ function jwr2InstallBridge() {
     getCurrentChatId: () => jwr2ChatId(),
     getChatMessages: (...args) => typeof getChatMessages === 'function' ? getChatMessages(...args) : [],
     // 柏宝书仅通过公开只读 API 获取；桥接由酒馆主窗口执行，避免 iframe 作用域差异。
-    getBaiBaiHistory: (beforeFloor = null) => {
-      const api = JWR2_HOST.STBaiBaiBook;
-      if (!api || typeof api.getInjectedHistory !== 'function') return null;
-      if (Number.isInteger(beforeFloor) && beforeFloor >= 0 && typeof api.getHistory === 'function') {
-        return api.getHistory({ before: beforeFloor });
-      }
-      return api.getInjectedHistory();
+    // 柏宝书只读 API：不设 before，包含最近已生成有效摘要的楼层。
+    getBaiBaiHistory: () => {
+      const api=JWR2_HOST.STBaiBaiBook;
+      if(!api || typeof api.getHistory!=='function')return {available:false,reason:'柏宝书 getHistory 公共接口未就绪'};
+      try{
+        const history=api.getHistory();
+        if(!history || typeof history!=='object')return {available:false,reason:'柏宝书未返回剧情摘要'};
+        return {available:true,chatId:String(history.chat?.id||''),text:String(history.relativeText||history.text||''),nodes:Array.isArray(history.nodes)?history.nodes.length:0,coverage:history.coverage||null};
+      }catch(error){return {available:false,reason:String(error?.message||error)};}
     },
-    hasBaiBaiBook: () => !!(JWR2_HOST.STBaiBaiBook?.getInjectedHistory),
-    // 仅读取柏宝书公开快照中的「眼下局势」，不读取历史摘要或原生提示词槽。
+    hasBaiBaiBook: () => !!(JWR2_HOST.STBaiBaiBook?.getHistory),
+    // 仅读取柏宝书公开快照中的「眼下局势」。
     getBaiBaiSceneFocus: () => {
       const api=JWR2_HOST.STBaiBaiBook;
       if(!api||typeof api.getSnapshot!=='function')return {available:false,reason:'柏宝书公开 API 尚未加载'};
