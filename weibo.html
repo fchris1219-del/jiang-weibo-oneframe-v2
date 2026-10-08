@@ -696,7 +696,7 @@ body{display:grid;place-items:center;overflow:hidden}
           </article>
           <article class="preset-entry" data-preset-entry="history">
             <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">前</div><div class="preset-entry-copy"><div class="preset-entry-title">聊天前文</div><div class="preset-entry-note" id="historyPresetSummary">最近 3 条</div></div><span class="preset-entry-state on">可配置</span><span class="preset-entry-chev">⌄</span></div>
-            <div class="preset-entry-editor"><div class="set-row"><label for="setContextMode">前文方式</label><select id="setContextMode"><option value="recent">注入最近聊天</option><option value="summary">使用手动总结</option><option value="none">不注入聊天前文</option></select></div><div class="settings-subbox" id="recentContextBox"><div class="set-row" style="margin-top:0"><label for="setRecentMessages">最近聊天条数（默认 3）</label><input type="number" id="setRecentMessages" min="0" max="60" step="1" /></div></div><div class="settings-subbox" id="summaryContextBox" hidden><div class="set-row" style="margin-top:0"><label for="setManualSummary">粘贴前文总结</label><textarea id="setManualSummary" rows="6" placeholder="只会用这段总结代替聊天前文……"></textarea></div></div></div>
+            <div class="preset-entry-editor"><div class="field-note">最近聊天和手动总结可以同时注入，也可以单独开关。</div><label class="settings-switch"><input type="checkbox" id="setIncludeRecentContext"><span>注入最近聊天记录</span></label><div class="settings-subbox" id="recentContextBox"><div class="set-row" style="margin-top:0"><label for="setRecentMessages">最近聊天条数（默认 3）</label><input type="number" id="setRecentMessages" min="0" max="60" step="1" /></div></div><label class="settings-switch"><input type="checkbox" id="setIncludeSummaryContext"><span>注入手动前文总结</span></label><div class="settings-subbox" id="summaryContextBox"><div class="set-row" style="margin-top:0"><label for="setManualSummary">粘贴前文总结</label><textarea id="setManualSummary" rows="6" placeholder="可与最近聊天记录一起注入……"></textarea></div></div></div>
           </article>
           <article class="preset-entry" data-preset-entry="generationCounts" data-preset-static="true">
             <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">数</div><div class="preset-entry-copy"><div class="preset-entry-title">拉取数量</div><div class="preset-entry-note" id="generationCountsPresetSummary">推荐、评论、私信与全部拉取数量</div></div><span class="preset-entry-state on">模板可携带</span><span class="preset-entry-chev">⌄</span></div>
@@ -777,12 +777,22 @@ body{display:grid;place-items:center;overflow:hidden}
     Object.keys(out).forEach((key) => { out[key] = Math.max(0, Math.min(20, Number(src[key] ?? out[key]) || 0)); });
     return out;
   }
+  function normalizeHistoryContext(value){
+    const src = value && typeof value === 'object' ? value : {};
+    const legacyMode = ['recent','summary','both','none'].includes(src.mode) ? src.mode : 'recent';
+    const hasRecentFlag = typeof src.includeRecentContext === 'boolean';
+    const hasSummaryFlag = typeof src.includeSummaryContext === 'boolean';
+    const includeRecent = hasRecentFlag ? src.includeRecentContext : (legacyMode === 'recent' || legacyMode === 'both');
+    const includeSummary = hasSummaryFlag ? src.includeSummaryContext : (legacyMode === 'summary' || legacyMode === 'both');
+    const mode = includeRecent ? (includeSummary ? 'both' : 'recent') : (includeSummary ? 'summary' : 'none');
+    return { includeRecentContext:!!includeRecent, includeSummaryContext:!!includeSummary, mode };
+  }
 
   function defaultGlobalConfig(){
     return {
       version: 6,
       api: { mode:'main', source:'custom', url:'', model:'', models:[], temperature:0.8, maxTokens:4096 },
-      context: { mode:'recent', recentMessages:3, manualSummary:'', includeChar:true, includePersona:true, includeScenario:true, includeWorldInfo:true, systemAddon:'', loreScanKeyword:'🩶', loreBookNames:'', lorePortableBindings:[], nativePrompt:'detailed', nativePromptText:'', hotMemeEnabled:true, hotMemePrompt:'', hotMemeManualText:'', hotMemeBookNames:'', hotMemeEntryNames:'', hotMemePortableBindings:[], hotMemeLoreIds:[], hotMemeLoreSnap:[], customIdPool:'', npcDmEnabled:false, npcDmPrompt:'', npcAccounts:[], generationCounts:{ feed:5, feedComments:5, comments:5, dm:10, dmThread:5, allFeed:5, allChar:1, allDm:10 }, presetDepths:{ ...DEFAULT_PRESET_DEPTHS }, customEntries:[], injectMain:false },
+      context: { mode:'recent', includeRecentContext:true, includeSummaryContext:false, recentMessages:3, manualSummary:'', includeChar:true, includePersona:true, includeScenario:true, includeWorldInfo:true, systemAddon:'', loreScanKeyword:'🩶', loreBookNames:'', lorePortableBindings:[], nativePrompt:'detailed', nativePromptText:'', hotMemeEnabled:true, hotMemePrompt:'', hotMemeManualText:'', hotMemeBookNames:'', hotMemeEntryNames:'', hotMemePortableBindings:[], hotMemeLoreIds:[], hotMemeLoreSnap:[], customIdPool:'', npcDmEnabled:false, npcDmPrompt:'', npcAccounts:[], generationCounts:{ feed:5, feedComments:5, comments:5, dm:10, dmThread:5, allFeed:5, allChar:1, allDm:10 }, presetDepths:{ ...DEFAULT_PRESET_DEPTHS }, customEntries:[], injectMain:false },
       presetTemplates: [],
       rolePresetTemplates: {},
       activePresetTemplateId: 'system',
@@ -802,6 +812,7 @@ body{display:grid;place-items:center;overflow:hidden}
     };
     if (Number(value.version || 0) < 3 && Number(value.context?.recentMessages) === 12) out.context.recentMessages = 3;
     out.context.customEntries = Array.isArray(out.context.customEntries) ? out.context.customEntries : [];
+    Object.assign(out.context, normalizeHistoryContext(value.context || out.context));
     out.context.charAccount = normalizePortableCharAccount(out.context.charAccount);
     out.context.npcAccounts = Array.isArray(out.context.npcAccounts) ? out.context.npcAccounts : [];
     out.context.lorePortableBindings = normalizePortableLoreBindings(out.context.lorePortableBindings);
@@ -818,6 +829,7 @@ body{display:grid;place-items:center;overflow:hidden}
       context: {
         ...base.context,
         ...(slot?.context || {}),
+        ...normalizeHistoryContext(slot?.context || out.context),
         charAccount: normalizePortableCharAccount(slot?.context?.charAccount || out.context.charAccount),
         presetDepths: normalizePresetDepths(slot?.context?.presetDepths || out.context.presetDepths),
         npcAccounts: Array.isArray(slot?.context?.npcAccounts) ? slot.context.npcAccounts : out.context.npcAccounts,
@@ -900,6 +912,7 @@ body{display:grid;place-items:center;overflow:hidden}
   }
   function defaultPhoneSettings(){
     const ctxSet = currentSlotContext();
+    const history = normalizeHistoryContext(ctxSet);
     const slot = currentSlot() || {};
     const account = slot.account || {};
     const portableChar = normalizePortableCharAccount(ctxSet.charAccount);
@@ -917,7 +930,9 @@ body{display:grid;place-items:center;overflow:hidden}
       includeChar: ctxSet.includeChar !== false,
       includePersona: ctxSet.includePersona !== false,
       includeScenario: ctxSet.includeScenario !== false,
-      contextMode: ['recent','summary','none'].includes(ctxSet.mode) ? ctxSet.mode : 'recent',
+      contextMode: history.mode,
+      includeRecentContext: history.includeRecentContext,
+      includeSummaryContext: history.includeSummaryContext,
       recentMessages: Math.max(0, Math.min(60, Number(ctxSet.recentMessages ?? 3))),
       manualSummary: String(ctxSet.manualSummary || ''),
       systemAddon: String(ctxSet.systemAddon || ''),
@@ -962,6 +977,10 @@ body{display:grid;place-items:center;overflow:hidden}
   }
   function savePhoneSettings(next){
     const cur = Object.assign(defaultPhoneSettings(), phoneSettings || {}, next || {});
+    const history = normalizeHistoryContext(cur);
+    cur.contextMode = history.mode;
+    cur.includeRecentContext = history.includeRecentContext;
+    cur.includeSummaryContext = history.includeSummaryContext;
     try {
       const all = JSON.parse(localStorage.getItem(PHONE_SETTINGS_KEY) || '{}');
       all[settingsBucketId()] = cur;
@@ -981,7 +1000,9 @@ body{display:grid;place-items:center;overflow:hidden}
         includeChar: cur.includeChar !== false,
         includePersona: cur.includePersona !== false,
         includeScenario: cur.includeScenario !== false,
-        mode: ['recent','summary','none'].includes(cur.contextMode) ? cur.contextMode : 'recent',
+        mode: history.mode,
+        includeRecentContext: history.includeRecentContext,
+        includeSummaryContext: history.includeSummaryContext,
         recentMessages: Math.max(0, Math.min(60, Number(cur.recentMessages ?? 3))),
         manualSummary: String(cur.manualSummary || ''),
         systemAddon: String(cur.systemAddon || ''),
@@ -2200,7 +2221,7 @@ body{display:grid;place-items:center;overflow:hidden}
    */
   async function collectStContextSnapshot(maxMsgs = 3, maxChars = 14000, scanKeyword = ''){
     maxMsgs = Math.max(0, Math.min(60, Number(phoneSettings.recentMessages ?? maxMsgs) || 0));
-    const contextMode = ['recent','summary','none'].includes(phoneSettings.contextMode) ? phoneSettings.contextMode : 'recent';
+    const historyContext = normalizeHistoryContext({ mode:phoneSettings.contextMode, includeRecentContext:phoneSettings.includeRecentContext, includeSummaryContext:phoneSettings.includeSummaryContext });
     const chunks = [];
     const push = (title, text) => {
       const t = String(text || '').trim();
@@ -2353,12 +2374,14 @@ body{display:grid;place-items:center;overflow:hidden}
       push('角色卡读取异常', String(e && e.message || e));
     }
 
-    // —— 前文来源：最近聊天 / 手动总结 / 不注入 ——
-    if (contextMode === 'summary') {
+    // —— 前文来源：最近聊天与手动总结可同时注入 ——
+    if (historyContext.includeSummaryContext) {
       push('用户手动前文总结', clip(phoneSettings.manualSummary || '（未填写总结）', 10000));
-    } else if (contextMode === 'none') {
+    }
+    if (!historyContext.includeRecentContext && !historyContext.includeSummaryContext) {
       push('聊天前文', '（本档位已关闭前文注入）');
-    } else try {
+    }
+    if (historyContext.includeRecentContext) try {
       let list = [];
       if (typeof getChatMessages === 'function') {
         try { list = getChatMessages(-99999) || []; } catch (_) {}
@@ -4397,6 +4420,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
   function buildPresetInjectionEntries(snapshot, generationMemory, forbid){
     const groups = splitSnapshotForPresetPreview(snapshot);
     const depths = normalizePresetDepths(phoneSettings.presetDepths || currentSlotContext().presetDepths);
+    const historyContext = normalizeHistoryContext({ mode:phoneSettings.contextMode, includeRecentContext:phoneSettings.includeRecentContext, includeSummaryContext:phoneSettings.includeSummaryContext });
     const entries = [];
     const add = (key, title, content, enabled=true, depthOverride=null) => {
       const text = String(content || '').trim();
@@ -4407,7 +4431,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     add('character', 'Character Card', groups.character.concat(groups.other).join('\n\n'), phoneSettings.includeChar !== false || phoneSettings.includeScenario !== false);
     add('persona', 'User Personality', groups.persona.join('\n\n'), phoneSettings.includePersona !== false);
     add('worldbook', '世界书', groups.worldbook.join('\n\n'), phoneSettings.includeBgLore !== false);
-    add('history', '聊天前文', groups.history.join('\n\n'), phoneSettings.contextMode !== 'none');
+    add('history', '聊天前文', groups.history.join('\n\n'), historyContext.includeRecentContext || historyContext.includeSummaryContext);
     add('init', '档位初始化与 wb_lore', groups.init.join('\n\n'));
     add('npcAccounts', 'NPC 微博账号', buildNpcRegistryPrompt());
     (phoneSettings.customEntries || []).forEach((item, index) => add('custom', String(item.title || ('自定义条目 ' + (index + 1))), item.content, item.enabled !== false, item.depth ?? 4));
@@ -4996,14 +5020,18 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     return Math.max(1, Math.ceil(cjk * 1.05 + rest.length / 3.8));
   }
   function recentHistoryForTokenEstimate(){
-    const mode = document.getElementById('setContextMode')?.value || phoneSettings.contextMode || 'recent';
-    if (mode === 'none') return '';
-    if (mode === 'summary') return String(document.getElementById('setManualSummary')?.value || phoneSettings.manualSummary || '');
-    const count = Math.max(0, Math.min(60, Number(document.getElementById('setRecentMessages')?.value ?? phoneSettings.recentMessages ?? 3) || 0));
-    try {
-      const chat = getSillyContextSafe()?.chat || [];
-      return chat.slice(-count).map((msg) => String(msg?.mes || msg?.content || '')).join('\n\n');
-    } catch (_) { return ''; }
+    const includeRecent = document.getElementById('setIncludeRecentContext')?.checked ?? phoneSettings.includeRecentContext ?? true;
+    const includeSummary = document.getElementById('setIncludeSummaryContext')?.checked ?? phoneSettings.includeSummaryContext ?? false;
+    const chunks = [];
+    if (includeSummary) chunks.push(String(document.getElementById('setManualSummary')?.value || phoneSettings.manualSummary || ''));
+    if (includeRecent) {
+      const count = Math.max(0, Math.min(60, Number(document.getElementById('setRecentMessages')?.value ?? phoneSettings.recentMessages ?? 3) || 0));
+      try {
+        const chat = getSillyContextSafe()?.chat || [];
+        if (count > 0) chunks.push(chat.slice(-count).map((msg) => String(msg?.mes || msg?.content || '')).join('\n\n'));
+      } catch (_) {}
+    }
+    return chunks.filter(Boolean).join('\n\n');
   }
   function worldbookForTokenEstimate(){
     if (!document.getElementById('setIncludeBg')?.checked) return '';
@@ -5240,8 +5268,11 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     const nativeSummary = document.getElementById('nativePromptSummary');
     if (nativeSummary) nativeSummary.textContent = mode === 'compact' ? '简约表达版 · 固定格式内嵌' : '详细原生版 · 含 ID 生成指导 · 固定格式内嵌';
     const history = document.getElementById('historyPresetSummary');
-    const contextMode = document.getElementById('setContextMode')?.value || 'recent';
-    if (history) history.textContent = contextMode === 'recent' ? `最近 ${document.getElementById('setRecentMessages')?.value || 3} 条` : (contextMode === 'summary' ? '手动前文总结' : '不注入聊天前文');
+    const includeRecent = !!document.getElementById('setIncludeRecentContext')?.checked;
+    const includeSummary = !!document.getElementById('setIncludeSummaryContext')?.checked;
+    if (history) history.textContent = includeRecent && includeSummary
+      ? `手动总结 + 最近 ${document.getElementById('setRecentMessages')?.value || 3} 条`
+      : (includeRecent ? `最近 ${document.getElementById('setRecentMessages')?.value || 3} 条` : (includeSummary ? '手动前文总结' : '不注入聊天前文'));
     const charEnabled = !!(document.getElementById('setIncludeChar')?.checked || document.getElementById('setIncludeScenario')?.checked);
     const charState = document.getElementById('characterPresetState');
     if (charState) { charState.textContent = charEnabled ? '已启用' : '已停用'; charState.classList.toggle('on', charEnabled); }
@@ -5324,9 +5355,8 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     el.value = chosen && list.includes(chosen) ? chosen : (list[0] || '');
   }
   function updateContextModeVisibility(){
-    const mode = document.getElementById('setContextMode').value || 'recent';
-    document.getElementById('recentContextBox').hidden = mode !== 'recent';
-    document.getElementById('summaryContextBox').hidden = mode !== 'summary';
+    document.getElementById('recentContextBox').hidden = !document.getElementById('setIncludeRecentContext').checked;
+    document.getElementById('summaryContextBox').hidden = !document.getElementById('setIncludeSummaryContext').checked;
   }
   function updateApiVisibility(){
     const side = document.getElementById('setApiSide').checked;
@@ -5342,7 +5372,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     const base = defaultGlobalConfig().context;
     return {
       initPrompt:'', wbLore:'',
-      mode:base.mode, recentMessages:base.recentMessages,
+      mode:base.mode, includeRecentContext:true, includeSummaryContext:false, recentMessages:base.recentMessages,
       includeChar:base.includeChar, includePersona:base.includePersona, includeScenario:base.includeScenario, includeWorldInfo:base.includeWorldInfo,
       systemAddon:'',
       loreScanKeyword:base.loreScanKeyword, loreBookNames:base.loreBookNames, lorePortableBindings:[],
@@ -5356,7 +5386,9 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     return {
       initPrompt:document.getElementById('setInitPrompt').value.trim(),
       wbLore:String(document.getElementById('loreRawText').value || '').trim(),
-      mode:document.getElementById('setContextMode').value || 'recent',
+      mode:document.getElementById('setIncludeRecentContext').checked ? (document.getElementById('setIncludeSummaryContext').checked ? 'both' : 'recent') : (document.getElementById('setIncludeSummaryContext').checked ? 'summary' : 'none'),
+      includeRecentContext:!!document.getElementById('setIncludeRecentContext').checked,
+      includeSummaryContext:!!document.getElementById('setIncludeSummaryContext').checked,
       recentMessages:Math.max(0,Math.min(60,Number(document.getElementById('setRecentMessages').value)||0)),
       includeChar:!!document.getElementById('setIncludeChar').checked,
       includePersona:!!document.getElementById('setIncludePersona').checked,
@@ -5397,7 +5429,9 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
   function normalizePresetTemplate(item, fallbackName='未命名模板'){
     const value = item && typeof item === 'object' ? item : {};
     const scope = value.scope === 'role' ? 'role' : 'global';
-    return { id:String(value.id || ('tpl_' + Date.now().toString(36))), name:String(value.name || fallbackName).trim() || fallbackName, scope, roleKey:scope === 'role' ? String(value.roleKey || CURRENT_CHARACTER_TEMPLATE_KEY) : '', version:Math.max(1,Number(value.version)||1), config:{ ...systemPresetConfig(), ...(value.config || {}), charAccount:normalizePortableCharAccount(value.config?.charAccount), lorePortableBindings:normalizePortableLoreBindings(value.config?.lorePortableBindings), hotMemePortableBindings:normalizePortableLoreBindings(value.config?.hotMemePortableBindings), npcAccounts:Array.isArray(value.config?.npcAccounts) ? value.config.npcAccounts.map(normalizeNpcAccount) : [], generationCounts:{ ...systemPresetConfig().generationCounts, ...(value.config?.generationCounts || {}) }, presetDepths:normalizePresetDepths(value.config?.presetDepths), customEntries:Array.isArray(value.config?.customEntries) ? value.config.customEntries : [] } };
+    const configValue = value.config && typeof value.config === 'object' ? value.config : {};
+    const history = normalizeHistoryContext(configValue);
+    return { id:String(value.id || ('tpl_' + Date.now().toString(36))), name:String(value.name || fallbackName).trim() || fallbackName, scope, roleKey:scope === 'role' ? String(value.roleKey || CURRENT_CHARACTER_TEMPLATE_KEY) : '', version:Math.max(1,Number(value.version)||1), config:{ ...systemPresetConfig(), ...configValue, ...history, charAccount:normalizePortableCharAccount(configValue.charAccount), lorePortableBindings:normalizePortableLoreBindings(configValue.lorePortableBindings), hotMemePortableBindings:normalizePortableLoreBindings(configValue.hotMemePortableBindings), npcAccounts:Array.isArray(configValue.npcAccounts) ? configValue.npcAccounts.map(normalizeNpcAccount) : [], generationCounts:{ ...systemPresetConfig().generationCounts, ...(configValue.generationCounts || {}) }, presetDepths:normalizePresetDepths(configValue.presetDepths), customEntries:Array.isArray(configValue.customEntries) ? configValue.customEntries : [] } };
   }
   function globalPresetTemplates(){ return (globalConfig.presetTemplates || []).map((item) => normalizePresetTemplate({ ...item, scope:'global' })); }
   function rolePresetTemplates(){ return (globalConfig.rolePresetTemplates?.[CURRENT_CHARACTER_TEMPLATE_KEY] || []).map((item) => normalizePresetTemplate({ ...item, scope:'role', roleKey:CURRENT_CHARACTER_TEMPLATE_KEY })); }
@@ -5415,9 +5449,11 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
   }
   function applyPresetTemplateToForm(template){
     const config = normalizePresetTemplate(template || { id:'system', name:'系统默认', config:systemPresetConfig() }).config;
+    const history = normalizeHistoryContext(config);
     document.getElementById('setInitPrompt').value = String(config.initPrompt || '');
     fillWbLoreEditor(String(config.wbLore || ''), { forceAccount:false });
-    document.getElementById('setContextMode').value = ['recent','summary','none'].includes(config.mode) ? config.mode : 'recent';
+    document.getElementById('setIncludeRecentContext').checked = history.includeRecentContext;
+    document.getElementById('setIncludeSummaryContext').checked = history.includeSummaryContext;
     document.getElementById('setRecentMessages').value = config.recentMessages ?? 3;
     document.getElementById('setIncludeChar').checked = config.includeChar !== false;
     document.getElementById('setIncludePersona').checked = config.includePersona !== false;
@@ -5519,7 +5555,9 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     document.getElementById('setUserFollowing').value = String(Number(state.userFollowing) || Number(phoneSettings.userFollowing) || 0);
     document.getElementById('setCharFollowing').value = String(Number(state.charFollowing) || Number(phoneSettings.charFollowing) || 0);
     const context = currentSlotContext();
-    document.getElementById('setContextMode').value = ['recent','summary','none'].includes(context.mode) ? context.mode : 'recent';
+    const history = normalizeHistoryContext(context);
+    document.getElementById('setIncludeRecentContext').checked = history.includeRecentContext;
+    document.getElementById('setIncludeSummaryContext').checked = history.includeSummaryContext;
     document.getElementById('setRecentMessages').value = String(context.recentMessages ?? 3);
     document.getElementById('setManualSummary').value = String(context.manualSummary || '');
     document.getElementById('setSystemAddon').value = String(context.systemAddon || '');
@@ -5613,7 +5651,9 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       includeChar: !!document.getElementById('setIncludeChar').checked,
       includePersona: !!document.getElementById('setIncludePersona').checked,
       includeScenario: !!document.getElementById('setIncludeScenario').checked,
-      contextMode: document.getElementById('setContextMode').value || 'recent',
+      contextMode: document.getElementById('setIncludeRecentContext').checked ? (document.getElementById('setIncludeSummaryContext').checked ? 'both' : 'recent') : (document.getElementById('setIncludeSummaryContext').checked ? 'summary' : 'none'),
+      includeRecentContext: !!document.getElementById('setIncludeRecentContext').checked,
+      includeSummaryContext: !!document.getElementById('setIncludeSummaryContext').checked,
       recentMessages: Math.max(0, Math.min(60, Number(document.getElementById('setRecentMessages').value) || 0)),
       manualSummary: document.getElementById('setManualSummary').value.trim(),
       systemAddon: document.getElementById('setSystemAddon').value.trim(),
@@ -5658,6 +5698,8 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       slot.account = { ...(slot.account || {}), ...settingsPatch };
       slot.context = {
         mode: settingsPatch.contextMode,
+        includeRecentContext: settingsPatch.includeRecentContext,
+        includeSummaryContext: settingsPatch.includeSummaryContext,
         recentMessages: settingsPatch.recentMessages,
         manualSummary: settingsPatch.manualSummary,
         systemAddon: settingsPatch.systemAddon,
@@ -5796,7 +5838,9 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
   document.querySelectorAll('input[name="apiMode"]').forEach((el) => el.onchange = updateApiVisibility);
   bindPresetEntryToggles(document);
   document.getElementById('setSlotSelect').onchange = (event)=> switchActiveSlot(event.target.value);
-  document.getElementById('setContextMode').onchange = ()=>{ updateContextModeVisibility(); refreshPresetUiSummaries(); };
+  ['setIncludeRecentContext','setIncludeSummaryContext'].forEach((id) => {
+    document.getElementById(id).onchange = ()=>{ updateContextModeVisibility(); refreshPresetUiSummaries(); };
+  });
   document.getElementById('setRecentMessages').oninput = refreshPresetUiSummaries;
   ['setIncludeChar','setIncludePersona','setIncludeScenario','setIncludeBg','setHotMemeEnabled','setNpcDmEnabled'].forEach((id) => {
     document.getElementById(id).onchange = refreshPresetUiSummaries;
