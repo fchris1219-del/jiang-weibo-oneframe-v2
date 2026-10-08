@@ -373,7 +373,7 @@ function jwr2InstallBridge() {
     getContext: () => jwr2SafeContext(),
     getCurrentChatId: () => jwr2ChatId(),
     getChatMessages: (...args) => typeof getChatMessages === 'function' ? getChatMessages(...args) : [],
-    // Bridge access to BaiBai Book's documented read-only API.
+    // 柏宝书仅通过公开只读 API 获取；桥接由酒馆主窗口执行，避免 iframe 作用域差异。
     getBaiBaiHistory: (beforeFloor = null) => {
       const api = JWR2_HOST.STBaiBaiBook;
       if (!api || typeof api.getInjectedHistory !== 'function') return null;
@@ -383,6 +383,70 @@ function jwr2InstallBridge() {
       return api.getInjectedHistory();
     },
     hasBaiBaiBook: () => !!(JWR2_HOST.STBaiBaiBook?.getInjectedHistory),
+    // 柏宝书原生模式：直接读取它已写入 ST 的三个 setExtensionPrompt 槽位。
+    // 这三个 value/depth 由柏宝书自己决策；小微博不计算 keepRecent/getHistory 截止楼层。
+    getBaiBaiNativeContext: () => {
+      const api = JWR2_HOST.STBaiBaiBook;
+      const ctx = jwr2Context();
+      const slots = ctx?.extensionPrompts;
+      if (!api || typeof api.getInjectedHistory !== 'function' || !slots) {
+        return { available: false, reason: !api ? '柏宝书尚未加载' : '酒馆未开放扩展注入槽读取' };
+      }
+      const pick = (key, fallbackDepth) => {
+        const value = slots[key];
+        return {
+          text: typeof value?.value === 'string' ? value.value : '',
+          depth: Number.isFinite(Number(value?.depth)) ? Number(value.depth) : fallbackDepth,
+          position: Number.isFinite(Number(value?.position)) ? Number(value.position) : 1,
+        };
+      };
+      // 检查当前聊天的摘要覆盖状况只用于预览/诊断，不更改柏宝书自己的注入内容。
+      let coverage = null, nodes = 0, chatId = '';
+      try {
+        const history = api.getInjectedHistory();
+        coverage = history?.coverage || null;
+        nodes = Array.isArray(history?.nodes) ? history.nodes.length : 0;
+        chatId = String(history?.chat?.id || '');
+      } catch (_) {}
+      return {
+        available: true, chatId, nodes, coverage,
+        history: pick('baibai_book_memory_history', 9999),
+        state: pick('baibai_book_memory_state', 1),
+        timeTag: pick('baibai_book_time_tag', 0),
+      };
+    },
+    // 柏宝书原生模式：直接读取它已写入 ST 的三个 setExtensionPrompt 槽位。
+    // 这三个 value/depth 由柏宝书自己决策；小微博不计算 keepRecent/getHistory 截止楼层。
+    getBaiBaiNativeContext: () => {
+      const api = JWR2_HOST.STBaiBaiBook;
+      const ctx = jwr2Context();
+      const slots = ctx?.extensionPrompts;
+      if (!api || typeof api.getInjectedHistory !== 'function' || !slots) {
+        return { available: false, reason: !api ? '柏宝书尚未加载' : '酒馆未开放扩展注入槽读取' };
+      }
+      const pick = (key, fallbackDepth) => {
+        const value = slots[key];
+        return {
+          text: typeof value?.value === 'string' ? value.value : '',
+          depth: Number.isFinite(Number(value?.depth)) ? Number(value.depth) : fallbackDepth,
+          position: Number.isFinite(Number(value?.position)) ? Number(value.position) : 1,
+        };
+      };
+      // 检查当前聊天的摘要覆盖状况只用于预览/诊断，不更改柏宝书自己的注入内容。
+      let coverage = null, nodes = 0, chatId = '';
+      try {
+        const history = api.getInjectedHistory();
+        coverage = history?.coverage || null;
+        nodes = Array.isArray(history?.nodes) ? history.nodes.length : 0;
+        chatId = String(history?.chat?.id || '');
+      } catch (_) {}
+      return {
+        available: true, chatId, nodes, coverage,
+        history: pick('baibai_book_memory_history', 9999),
+        state: pick('baibai_book_memory_state', 1),
+        timeTag: pick('baibai_book_time_tag', 0),
+      };
+    },
     getSettings: () => jwr2PublicSettings(),
     getEmbeddedPreset: () => jwr2Clone(JWR2_EMBEDDED_PRESET, null),
     saveSettings: (value) => jwr2WriteSettings(value),
@@ -557,7 +621,7 @@ function jwr2Mount() {
 }
 
 function jwr2Cleanup() {
-  // Clear persistent SillyTavern prompt after stopping the script.
+  // 脚本关闭后也不能留下过期的主对话注入。
   if (JWR2_HOST[JWR2_INSTANCE_KEY] === jwr2Cleanup) jwr2SetMainInjection('', false);
   try { jwr2DragCleanup?.(); } catch (_) {}
   jwr2DragCleanup = null;
@@ -578,7 +642,7 @@ function jwr2Cleanup() {
     jwr2Mount();
     if (typeof eventOn === 'function' && typeof tavern_events !== 'undefined' && tavern_events.CHAT_CHANGED) {
       jwr2ChatListener = eventOn(tavern_events.CHAT_CHANGED, () => {
-        // Avoid injecting the previous chat's wb_lore into the new chat.
+        // ST 的 setExtensionPrompt 是持久槽；必须清除上一聊天的 wb_lore。
         jwr2SetMainInjection('', false);
         if (jwr2Frame) jwr2Frame.srcdoc = '';
         jwr2RemotePromise = null;
