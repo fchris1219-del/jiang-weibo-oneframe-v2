@@ -664,7 +664,7 @@ body{display:grid;place-items:center;overflow:hidden}
         <div class="template-box">
           <div class="template-title">预设模板 <span>系统默认不可覆盖</span></div>
           <div class="set-row" style="margin-top:8px"><select id="setPresetTemplate" aria-label="预设模板"></select></div>
-          <div class="template-actions"><button type="button" class="mini-action primary" id="settingsNewGlobalTemplate">新建全局模板</button><button type="button" class="mini-action primary" id="settingsNewRoleTemplate">新建角色模板</button><button type="button" class="mini-action" id="settingsSaveTemplate">保存到模板</button><button type="button" class="mini-action" id="settingsDeleteTemplate">删除模板</button></div>
+          <div class="template-actions"><button type="button" class="mini-action primary" id="settingsNewGlobalTemplate">新建全局模板</button><button type="button" class="mini-action primary" id="settingsNewRoleTemplate">新建角色模板</button><button type="button" class="mini-action" id="settingsSaveTemplate">保存到模板</button><button type="button" class="mini-action" id="settingsRenameTemplate">重命名模板</button><button type="button" class="mini-action" id="settingsDeleteTemplate">删除模板</button></div>
           <div class="settings-grid" style="margin-top:8px"><div class="set-row" style="margin-top:0"><label for="setPresetCopyScope">复制到</label><select id="setPresetCopyScope" aria-label="模板复制目标"></select></div><button type="button" class="mini-action" id="settingsCopyTemplate" style="align-self:end">复制所选模板</button></div>
           <div class="settings-inline"><button type="button" class="mini-action primary" id="settingsExportRoleScript">导出角色酒馆脚本 JSON</button></div>
           <div class="field-note" id="presetTemplateHint">下拉选择后会立即热切换并保存到当前档位。系统默认是不可覆盖、不可删除的内置基准，但载入后仍可编辑，编辑只影响当前档位。全局模板对所有角色、聊天和档位可见；角色模板只对当前角色可见。选择系统默认导出时，仍只导出原始酱微博脚本。</div>
@@ -5511,6 +5511,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     select.value = [...select.options].some((opt) => opt.value === wanted) ? wanted : 'system';
     const isSystem = select.value === 'system';
     document.getElementById('settingsDeleteTemplate').disabled = isSystem;
+    document.getElementById('settingsRenameTemplate').disabled = isSystem;
     document.getElementById('settingsSaveTemplate').textContent = '保存到模板';
     renderPresetCopyScope();
   }
@@ -5847,6 +5848,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     const select = event.target;
     const isSystem = select.value === 'system';
     document.getElementById('settingsDeleteTemplate').disabled = isSystem;
+    document.getElementById('settingsRenameTemplate').disabled = isSystem;
     document.getElementById('settingsSaveTemplate').textContent = '保存到模板';
     const template = selectedPresetTemplate();
     if (!template) return showBubble('模板不存在');
@@ -5911,6 +5913,19 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     }
     saveTemplateCollection(list, template.id);
     showBubble(`模板「${template.name}」已保存为 v${template.version}`);
+  };
+  document.getElementById('settingsRenameTemplate').onclick = ()=>{
+    const template = selectedPresetTemplate();
+    if (!template || template.id === 'system') return showBubble('系统默认模板不能重命名');
+    const name = String(prompt('请输入新模板名称', template.name) || '').trim();
+    if (!name || name === template.name) return;
+    const renamed = { ...template, name, version:template.version + 1 };
+    const list = presetTemplates();
+    const index = list.findIndex((item) => item.id === template.id);
+    if (index < 0) return showBubble('模板不存在');
+    list[index] = renamed;
+    saveTemplateCollection(list, renamed.id);
+    showBubble(`已将模板「${template.name}」重命名为「${renamed.name}」`);
   };
   document.getElementById('settingsDeleteTemplate').onclick = async ()=>{
     const template = selectedPresetTemplate();
