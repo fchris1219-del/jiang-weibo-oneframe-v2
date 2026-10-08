@@ -1218,32 +1218,69 @@ body{display:grid;place-items:center;overflow:hidden}
     // 同一楼层若出现多个 content，前面的通常是草稿/中间产物；只取最后一个正式定稿容器。
     return sections.length ? sections[sections.length - 1] : '';
   }
+  function chatFloorNumber(message, fallbackIndex = 0){
+    const value = Number(message?.message_id);
+    return Number.isFinite(value) && value >= 0 ? Math.floor(value) : fallbackIndex;
+  }
+  function chatMessageIsHidden(message){
+    return message?.is_hidden === true || message?.is_system === true;
+  }
+  function chatMessageIsNativeSystem(message){
+    if (!message) return false;
+    if (message.role === 'system') return true;
+    return message.is_system === true && !!message.extra?.type && message.extra?.bbs_hidden !== true;
+  }
+  function chatMessageContent(message){
+    if (!message) return '';
+    // 酒馆助手公开接口使用 message；SillyTavern 原生 context 使用 mes。
+    // 两种来源都只读取当前选中的消息页，不读取未选中的 swipe。
+    return extractContentOnly(message.message ?? message.mes ?? message.content ?? '');
+  }
   function nativeBaiBaiFloorAudit(context = null, allHistory = false, includeOpening = false){
     const ctx = context || getSillyContextSafe();
-    const chat = Array.isArray(ctx?.chat) ? ctx.chat : readFullChatMessageList(ctx);
-    const visible = [], hidden = [], noContent = [], openingExcluded = [];
-    chat.forEach((m,index) => {
+    // 始终走完整聊天读取器。ctx.chat 在部分酒馆助手版本/iframe 生命周期中可能只是单楼快照。
+    const chat = readFullChatMessageList(ctx);
+    const visible = [], hidden = [], omitted = [], noContent = [], openingExcluded = [];
+    chat.forEach((m,arrayIndex) => {
+      const index = chatFloorNumber(m, arrayIndex);
       if (!m) { noContent.push(index); return; }
+      if (m?.extra?.bbs_omit === true) { omitted.push(index); return; }
+      if (chatMessageIsNativeSystem(m)) { omitted.push(index); return; }
       if (index === 0 && !includeOpening) { openingExcluded.push(index); return; }
-      if (!allHistory && m.is_system === true) { hidden.push(index); return; }
-      const content = extractContentOnly(m.mes ?? m.message ?? m.content);
+      if (!allHistory && chatMessageIsHidden(m)) { hidden.push(index); return; }
+      const content = chatMessageContent(m);
       if (!content) { noContent.push(index); return; }
       const isUser = m.is_user === true || m.role === 'user' || m.is_name === 'User';
       visible.push({role:isUser ? 'user' : 'assistant', content, index});
     });
-    return {visible,hidden,noContent,openingExcluded,total:chat.length,allHistory,includeOpening,policy:allHistory ? '全部前文：所有包含 <content> 的楼层，包括隐藏楼层' : '当前前文：未隐藏且包含 <content> 的楼层'};
+    visible.sort((a,b)=>a.index-b.index);
+    return {visible,hidden,omitted,noContent,openingExcluded,total:chat.length,allHistory,includeOpening,policy:allHistory ? '全部前文：所有包含 <content> 的剧情楼层，包括隐藏旧楼层' : '当前前文：最近 N 条未隐藏且包含 <content> 的剧情楼层'};
   }
   function buildBaiBaiNativeRequestParts(context = null){
     const history=readBaiBaiStoryHistory();
     const focus=readBaiBaiSceneFocus();
     const situation=formatBaiBaiSceneFocus(focus);
     const audit=nativeBaiBaiFloorAudit(context,phoneSettings.includeAllContentHistory===true,phoneSettings.includeOpeningContext===true);
-    const includeBody = phoneSettings.includeAllContentHistory === true || phoneSettings.includeRecentContext !== false || phoneSettings.includeOpeningContext === true;
-    const visible = includeBody
-      ? audit.visible.filter((item) => phoneSettings.includeRecentContext !== false || phoneSettings.includeAllContentHistory === true || item.index === 0)
-      : [];
+    const includeAll = phoneSettings.includeAllContentHistory === true;
+    const includeRecent = phoneSettings.includeRecentContext !== false;
+    const includeOpening = phoneSettings.includeOpeningContext === true;
+    const recentCount = Math.max(0, Math.min(60, Number(phoneSettings.recentMessages ?? 3) || 0));
+    let visible = [];
+    if (includeAll) {
+      visible = audit.visible.slice();
+    } else {
+      if (includeRecent && recentCount > 0) {
+        const recent = audit.visible.filter((item)=>item.index !== 0).slice(-recentCount);
+        visible.push(...recent);
+      }
+      if (includeOpening) {
+        const opening = audit.visible.find((item)=>item.index === 0);
+        if (opening && !visible.some((item)=>item.index === opening.index)) visible.push(opening);
+      }
+      visible.sort((a,b)=>a.index-b.index);
+    }
     const body=visible.map(({role,content})=>({role,content}));
-    return {history,focus,situation,body,visible,audit};
+    return {history,focus,situation,body,visible,audit,recentCount};
   }
   function nativeBaiBaiAuditText(parts){
     const {audit:a}=parts;
@@ -1251,6 +1288,7 @@ body{display:grid;place-items:center;overflow:hidden}
       '总楼层：'+a.total,
       '注入楼层：'+parts.visible.map(x=>x.index).join(','),
       '未注入隐藏楼层：'+a.hidden.join(','),
+      '排除的番外/原生系统楼层：'+a.omitted.join(','),
       '按开关排除开场楼层：'+a.openingExcluded.join(','),
       '无 <content> 正文：'+a.noContent.join(','),
       '正文字符数：'+parts.visible.reduce((n,x)=>n+x.content.length,0),
@@ -1263,16 +1301,24 @@ body{display:grid;place-items:center;overflow:hidden}
   function readFullChatMessageList(context = null){
     const ctx = context || getSillyContextSafe();
     const candidates = [];
-    if (Array.isArray(ctx?.chat)) candidates.push(ctx.chat);
+    if (Array.isArray(ctx?.chat)) candidates.push({source:'SillyTavern context',priority:1,list:ctx.chat});
+    try {
+      const all = WB_HOST?.getAllChatMessages?.();
+      if (Array.isArray(all)) candidates.push({source:'酒馆助手完整楼层接口',priority:3,list:all});
+    } catch (_) {}
     try {
       if (typeof getChatMessages === 'function') {
-        const all = getChatMessages();
-        if (Array.isArray(all)) candidates.push(all);
+        const all = getChatMessages('0-{{lastMessageId}}', { role:'all', hide_state:'all', include_swipes:false });
+        if (Array.isArray(all)) candidates.push({source:'酒馆助手完整楼层接口',priority:2,list:all});
       }
     } catch (_) {}
-    // 不使用 getChatMessages(-99999)：不同助手版本会把它解释成单楼/特殊索引，
-    // 非空但不完整的结果会误挡住 ctx.chat。优先采用消息数量最多的完整来源。
-    return candidates.reduce((best, list) => list.length > best.length ? list : best, []);
+    // 楼层数优先；数量相同时优先酒馆助手显式全范围结果，它带 message_id / is_hidden。
+    const best = candidates.reduce((picked,item)=>{
+      if (!picked) return item;
+      if (item.list.length !== picked.list.length) return item.list.length > picked.list.length ? item : picked;
+      return item.priority > picked.priority ? item : picked;
+    }, null);
+    return best?.list || [];
   }
   function currentChatId(){
     try {
@@ -2595,7 +2641,7 @@ body{display:grid;place-items:center;overflow:hidden}
       if (parts.situation) push('眼下局势', parts.situation);
       if (parts.visible.length) push('聊天正文（仅 content｜' + parts.visible.length + ' 楼）',parts.visible.map(({index,role,content})=>`[#${index}] ${role}:\n${content}`).join('\n\n'));
       if (historyContext.includeSummaryContext) push('用户手动前文总结', phoneSettings.manualSummary || '（未填写总结）');
-      openingHaystack = extractContentOnly(readFullChatMessageList(ctx)[0]?.mes || '').slice(0,10000);
+      openingHaystack = chatMessageContent(readFullChatMessageList(ctx)[0]).slice(0,10000);
     } else {
     // 同一批最近楼层用于历史截止点和完整正文；保持前后口径完全一致。
     const chatList = readFullChatMessageList(ctx);
@@ -2604,11 +2650,10 @@ body{display:grid;place-items:center;overflow:hidden}
       for (let abs = chatList.length - 1; abs >= 1; abs--) {
         if (recentEntries.length >= maxMsgs) break;
         const m = chatList[abs];
-        if (m?.extra?.bbs_omit === true || m?.is_system === true) continue;
-        const mes = extractContentOnly(m?.mes ?? m?.message ?? m?.content);
+        if (m?.extra?.bbs_omit === true || chatMessageIsNativeSystem(m) || chatMessageIsHidden(m)) continue;
+        const mes = chatMessageContent(m);
         if (!mes) continue;
-        recentEntries.unshift({ m, abs, mes });
-        const isUser = m?.is_user === true || m?.role === 'user' || m?.is_name === 'User';
+        recentEntries.unshift({ m, abs:chatFloorNumber(m, abs), mes });
       }
     }
 
@@ -2624,10 +2669,10 @@ body{display:grid;place-items:center;overflow:hidden}
 
       if (Array.isArray(list) && list.length) {
         const first = list[0];
-        const firstMes = extractContentOnly(first?.mes ?? first?.message ?? first?.content);
+        const firstMes = chatMessageContent(first);
         if (firstMes) {
           // 从 HTML 注释里抠本局标题，便于核对
-          const raw0 = String(first?.mes || first?.message || first?.content || '');
+          const raw0 = String(first?.message ?? first?.mes ?? first?.content ?? '');
           const titleM = raw0.match(/<!--\s*title:\s*([^\n*]+?)\s*-->/i);
           const descM = raw0.match(/<!--\s*desc:\s*([^\n*]+?)\s*-->/i);
           const meta = [
@@ -6819,7 +6864,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
         ...(nativePreview ? [
           { title:'柏宝书历史剧情摘要', depth:'背景', text:nativePreview.history.text || '（柏宝书尚未生成有效摘要）' },
           { title:'眼下局势', depth:'参考', text:nativePreview.situation || '（柏宝书尚未记录当前局势）' },
-          { title:phoneSettings.includeAllContentHistory ? '全部前文正文' : '当前可见正文', depth:'按聊天顺序', text:nativePreview.visible.map(x=>`[#${x.index}] ${x.role}:\n${x.content}`).join('\n\n') || '（没有符合条件的 content 正文）' },
+          { title:phoneSettings.includeAllContentHistory ? `全部前文正文（实取 ${nativePreview.visible.length} 条）` : `当前可见正文（最近 ${nativePreview.recentCount} 条｜实取 ${nativePreview.visible.length} 条）`, depth:'真实楼层号：' + (nativePreview.visible.map(x=>x.index).join('、') || '无'), text:nativePreview.visible.map(x=>`[#${x.index}] ${x.role}:\n${x.content}`).join('\n\n') || '（没有符合条件的 content 正文）' },
         ] : [
           { title:'手动总结与开场白', depth:depths.history, text:groups.history.join('\n\n') || '（当前未注入历史摘要、手动总结或开场白）' },
           { title:'最近聊天完整正文', depth:depths.recent, text:groups.recent.join('\n\n') || '（当前未注入最近聊天正文）' },

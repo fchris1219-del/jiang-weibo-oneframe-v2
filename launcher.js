@@ -373,6 +373,11 @@ function jwr2InstallBridge() {
     getContext: () => jwr2SafeContext(),
     getCurrentChatId: () => jwr2ChatId(),
     getChatMessages: (...args) => typeof getChatMessages === 'function' ? getChatMessages(...args) : [],
+    // 酒馆助手的 getChatMessages 必须传楼层范围；空参数在部分版本中只会返回单楼。
+    // 这里固定读取当前聊天的全部楼层，并保留隐藏状态，交给前端按“当前可见 / 全部前文”筛选。
+    getAllChatMessages: () => typeof getChatMessages === 'function'
+      ? getChatMessages('0-{{lastMessageId}}', { role: 'all', hide_state: 'all', include_swipes: false })
+      : [],
     // 柏宝书仅通过公开只读 API 获取；桥接由酒馆主窗口执行，避免 iframe 作用域差异。
     // 柏宝书只读 API：不设 before，包含最近已生成有效摘要的楼层。
     getBaiBaiHistory: () => {
