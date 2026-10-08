@@ -686,7 +686,7 @@ body{display:grid;place-items:center;overflow:hidden}
           </article>
           <article class="preset-entry" data-preset-entry="npcAccounts">
             <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">账</div><div class="preset-entry-copy"><div class="preset-entry-title">NPC 微博账号</div><div class="preset-entry-note" id="npcAccountsPresetSummary">模板可携带 · 尚未注册账号</div></div><span class="preset-entry-state on">模板可携带</span><span class="preset-entry-chev">⌄</span></div>
-            <div class="preset-entry-editor"><div class="field-note">每个账号默认折叠，只显示正文姓名与微博 ID。展开后可编辑简介、粉丝/关注、设定、发帖要求与绑定世界书。保存模板或导出角色脚本时会一起携带。</div><div class="settings-inline"><button type="button" class="mini-action primary" id="settingsAddNpc">+ 增加 NPC 账号</button><button type="button" class="mini-action" id="settingsRefreshNpcLore">刷新世界书选项</button></div><div class="generator-box"><div class="generator-title">从世界书自动生成 NPC 账号</div><div class="settings-grid"><div class="set-row"><label for="setNpcGenerateCount">生成数量</label><input type="number" id="setNpcGenerateCount" min="1" max="30" step="1" value="6"></div><div class="set-row"><label for="setNpcGenerateExtra">额外生成要求</label><input type="text" id="setNpcGenerateExtra" placeholder="例如：优先生成战队相关人物"></div></div><label class="settings-switch"><input type="checkbox" id="setNpcGenerateAllLore" checked><span>默认读取当前挂载且启用的全部世界书条目</span></label><div class="field-note">取消后可按“世界书 → 条目”逐层勾选；条目不会一次性全部展开。</div><div id="npcGenerateLoreList" class="generator-lore-list"><div class="lore-empty">点“刷新世界书选项”后载入…</div></div><div class="settings-inline"><button type="button" class="mini-action primary utility-loading" id="settingsGenerateNpc">使用当前 API 一键生成 NPC 账号</button></div></div><div class="npc-editor-list" id="npcAccountList"><div class="custom-entry-empty">还没有注册 NPC 账号</div></div></div>
+            <div class="preset-entry-editor"><div class="field-note">每个账号默认折叠，只显示正文姓名、微博 ID 与世界书绑定状态。展开后可编辑简介、粉丝/关注、设定、发帖要求与绑定世界书。保存模板或导出角色脚本时会一起携带。</div><div class="settings-inline"><button type="button" class="mini-action primary" id="settingsAddNpc">+ 增加 NPC 账号</button><button type="button" class="mini-action" id="settingsRefreshNpcLore">刷新世界书选项</button></div><div class="generator-box"><div class="generator-title">从世界书自动生成 NPC 账号</div><div class="settings-grid"><div class="set-row"><label for="setNpcGenerateCount">生成数量</label><input type="number" id="setNpcGenerateCount" min="1" max="30" step="1" value="6"></div><div class="set-row"><label for="setNpcGenerateExtra">额外生成要求</label><input type="text" id="setNpcGenerateExtra" placeholder="例如：优先生成战队相关人物"></div></div><label class="settings-switch"><input type="checkbox" id="setNpcGenerateIncludeChar" checked><span>生成时注入当前 Character Card</span></label><label class="settings-switch"><input type="checkbox" id="setNpcGenerateIncludePersona" checked><span>生成时注入当前 User Personality</span></label><label class="settings-switch"><input type="checkbox" id="setNpcGenerateAllLore" checked><span>默认读取当前挂载且启用的全部世界书条目</span></label><div class="field-note">取消后可按“世界书 → 条目”逐层勾选；条目不会一次性全部展开。无论是否注入角色描述，都禁止生成 user 或 char 本人的账号。</div><div id="npcGenerateLoreList" class="generator-lore-list"><div class="lore-empty">点“刷新世界书选项”后载入…</div></div><div class="settings-inline"><button type="button" class="mini-action primary utility-loading" id="settingsGenerateNpc">使用当前 API 一键生成 NPC 账号</button></div></div><div class="npc-editor-list" id="npcAccountList"><div class="custom-entry-empty">还没有注册 NPC 账号</div></div></div>
           </article>
           <article class="preset-entry" data-preset-entry="character">
             <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">角</div><div class="preset-entry-copy"><div class="preset-entry-title">Character Card</div><div class="preset-entry-note">可选择是否注入，内容只读取自当前角色卡</div></div><span class="preset-entry-state on" id="characterPresetState">已启用</span><span class="preset-entry-chev">⌄</span></div>
@@ -714,7 +714,7 @@ body{display:grid;place-items:center;overflow:hidden}
           </article>
           <article class="preset-entry" data-preset-entry="idPool">
             <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">ID</div><div class="preset-entry-copy"><div class="preset-entry-title">自定义 ID 池</div><div class="preset-entry-note" id="idPoolPresetSummary">高权重候选；仍允许自然生成</div></div><span class="preset-entry-state on">模板可携带</span><span class="preset-entry-chev">⌄</span></div>
-            <div class="preset-entry-editor"><div class="set-row"><label>ID 候选池</label><div id="customIdPoolList" class="id-pool-list"></div><div class="settings-inline"><button type="button" class="mini-action primary" id="settingsAddCustomId">+ 新建 ID</button></div><div class="id-pool-help">每个 ID 分开填写昵称、权重和可选账号属性。自定义 ID 的选用优先级高于自然生成；同一次输出仍须避免重复昵称。</div></div><div class="generator-box"><div class="generator-title">批量复制导入</div><div class="set-row"><label for="setIdPoolBatch">一行一个账号：昵称，权重，账号属性</label><textarea id="setIdPoolBatch" rows="5" placeholder="王五，1，贱人&#10;李四，5，好人"></textarea></div><div class="settings-inline"><button type="button" class="mini-action" id="settingsParseIdPoolBatch">解析并追加</button></div></div><div class="generator-box"><div class="generator-title">使用当前 API 自动生成 ID 池</div><div class="settings-grid"><div class="set-row"><label for="setIdGenerateCount">生成数量</label><input type="number" id="setIdGenerateCount" min="1" max="60" step="1" value="20"></div><div class="set-row"><label for="setIdGenerateExtra">额外生成要求</label><input type="text" id="setIdGenerateExtra" placeholder="例如：竞圈账号多一些"></div></div><label class="settings-switch"><input type="checkbox" id="setIdGenerateAllLore" checked><span>默认读取当前挂载且启用的全部世界书条目</span></label><div class="field-note">取消后可按“世界书 → 条目”逐层勾选；生成结果会追加到上方规整输入框。</div><div id="idGenerateLoreList" class="generator-lore-list"><div class="lore-empty">打开设置后读取世界书…</div></div><div class="settings-inline"><button type="button" class="mini-action primary utility-loading" id="settingsGenerateIdPool">使用当前 API 一键生成 ID 池</button></div></div></div>
+            <div class="preset-entry-editor"><div class="set-row"><label>ID 候选池</label><div id="customIdPoolList" class="id-pool-list"></div><div class="settings-inline"><button type="button" class="mini-action primary" id="settingsAddCustomId">+ 新建 ID</button></div><div class="id-pool-help">每个 ID 分开填写昵称、权重和可选账号属性。自定义 ID 的选用优先级高于自然生成；同一次输出仍须避免重复昵称。</div></div><div class="generator-box"><div class="generator-title">批量复制导入</div><div class="set-row"><label for="setIdPoolBatch">一行一个账号：昵称，权重，账号属性</label><textarea id="setIdPoolBatch" rows="5" placeholder="王五，1，贱人&#10;李四，5，好人"></textarea></div><div class="settings-inline"><button type="button" class="mini-action" id="settingsParseIdPoolBatch">解析并追加</button></div></div><div class="generator-box"><div class="generator-title">使用当前 API 自动生成 ID 池</div><div class="settings-grid"><div class="set-row"><label for="setIdGenerateCount">生成数量</label><input type="number" id="setIdGenerateCount" min="1" max="60" step="1" value="20"></div><div class="set-row"><label for="setIdGenerateExtra">额外生成要求</label><input type="text" id="setIdGenerateExtra" placeholder="例如：竞圈账号多一些"></div></div><label class="settings-switch"><input type="checkbox" id="setIdGenerateIncludeChar" checked><span>生成时注入当前 Character Card</span></label><label class="settings-switch"><input type="checkbox" id="setIdGenerateIncludePersona" checked><span>生成时注入当前 User Personality</span></label><label class="settings-switch"><input type="checkbox" id="setIdGenerateAllLore" checked><span>默认读取当前挂载且启用的全部世界书条目</span></label><div class="field-note">取消后可按“世界书 → 条目”逐层勾选；生成结果会追加到上方规整输入框。候选池只能生成路人、粉丝等外部账号，不能生成 user 或 char 本人的账号。</div><div id="idGenerateLoreList" class="generator-lore-list"><div class="lore-empty">打开设置后读取世界书…</div></div><div class="settings-inline"><button type="button" class="mini-action primary utility-loading" id="settingsGenerateIdPool">使用当前 API 一键生成 ID 池</button></div></div></div>
           </article>
           <article class="preset-entry" data-preset-entry="npcDm">
             <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">信</div><div class="preset-entry-copy"><div class="preset-entry-title">正文 NPC 私信</div><div class="preset-entry-note">允许剧情中的 NPC 按身份主动私信 user</div></div><label class="preset-entry-switch"><input type="checkbox" id="setNpcDmEnabled"><span class="preset-entry-state" id="npcDmPresetState">已停用</span></label><span class="preset-entry-chev">⌄</span></div>
@@ -722,7 +722,7 @@ body{display:grid;place-items:center;overflow:hidden}
           </article>
           <article class="preset-entry" data-preset-entry="worldbook">
             <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">书</div><div class="preset-entry-copy"><div class="preset-entry-title">世界书</div><div class="preset-entry-note" id="worldbookPresetSummary">尚未扫描</div></div><label class="preset-entry-switch"><input type="checkbox" id="setIncludeBg" checked><span class="preset-entry-state on" id="worldbookPresetState">已启用</span></label><span class="preset-entry-chev">⌄</span></div>
-            <div class="preset-entry-editor"><div class="settings-grid"><div class="set-row"><label for="setLoreBookNames">世界书名称扫描</label><textarea id="setLoreBookNames" rows="3" placeholder="命中后整本勾选；可用逗号或换行输入"></textarea><div class="scan-term-tools"><button type="button" class="mini-action" data-scan-split="setLoreBookNames">拆分词条</button><div class="scan-term-chips" data-scan-chips="setLoreBookNames"></div></div></div><div class="set-row"><label for="setLoreScanKeyword">条目名称扫描</label><textarea id="setLoreScanKeyword" rows="3" placeholder="🩶，微博关系"></textarea><div class="scan-term-tools"><button type="button" class="mini-action" data-scan-split="setLoreScanKeyword">拆分词条</button><div class="scan-term-chips" data-scan-chips="setLoreScanKeyword"></div></div></div></div><div class="field-note">世界书名称命中后只勾选其中原本未禁用的条目；条目名称命中任意扫描词即勾选。热梗或 NPC 已绑定的条目会在这里默认勾选，同一条世界书正文在一次请求中只注入一次。输入多个名词后点“拆分词条”，会分别显示并可单独删除。</div><div class="settings-inline"><button type="button" class="mini-action" id="settingsRefreshLore">刷新并自动扫描</button><button type="button" class="mini-action" id="settingsClearLorePick">清空勾选</button></div><div id="lorePickList" class="lore-pick-list"><div class="lore-empty">打开设置时自动加载…</div></div></div>
+            <div class="preset-entry-editor"><div class="settings-grid"><div class="set-row"><label for="setLoreBookNames">世界书名称扫描</label><textarea id="setLoreBookNames" rows="3" placeholder="命中后整本勾选；可用逗号或换行输入"></textarea><div class="scan-term-tools"><button type="button" class="mini-action" data-scan-split="setLoreBookNames">拆分词条</button><div class="scan-term-chips" data-scan-chips="setLoreBookNames"></div></div></div><div class="set-row"><label for="setLoreScanKeyword">条目名称扫描</label><textarea id="setLoreScanKeyword" rows="3" placeholder="🩶，微博关系"></textarea><div class="scan-term-tools"><button type="button" class="mini-action" data-scan-split="setLoreScanKeyword">拆分词条</button><div class="scan-term-chips" data-scan-chips="setLoreScanKeyword"></div></div></div></div><div class="field-note">自动扫描和整本勾选只选择原本启用的条目；原本关闭的条目仍会显示为“（原本未开启）”，需要时可以手动勾选。热梗或 NPC 已绑定的条目会在这里默认勾选，同一条世界书正文在一次请求中只注入一次。</div><div class="settings-inline"><button type="button" class="mini-action" id="settingsRefreshLore">刷新并自动扫描</button><button type="button" class="mini-action" id="settingsClearLorePick">清空勾选</button></div><div id="lorePickList" class="lore-pick-list"><div class="lore-empty">打开设置时自动加载…</div></div></div>
           </article>
           <article class="preset-entry" data-preset-entry="boundary"><div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">隔</div><div class="preset-entry-copy"><div class="preset-entry-title">信息隔离</div><div class="preset-entry-note">非公开信息不得被路人、粉丝、媒体或其它账号随意得知</div></div><span class="preset-entry-state on">必定注入</span><span class="preset-entry-chev">⌄</span></div><div class="preset-entry-editor"><div class="preset-readonly" id="presetBoundaryPreview"></div></div></article>
           <div id="customPresetEntries"></div>
@@ -794,7 +794,7 @@ body{display:grid;place-items:center;overflow:hidden}
     return {
       version: 6,
       api: { mode:'main', source:'custom', url:'', model:'', models:[], temperature:0.8, maxTokens:4096 },
-      context: { mode:'recent', includeRecentContext:true, includeSummaryContext:false, recentMessages:3, manualSummary:'', includeChar:true, includePersona:true, includeScenario:true, includeWorldInfo:true, systemAddon:'', loreScanKeyword:'🩶', loreBookNames:'', lorePortableBindings:[], nativePrompt:'detailed', nativePromptText:'', hotMemeEnabled:true, hotMemePrompt:'', hotMemeManualText:'', hotMemeBookNames:'', hotMemeEntryNames:'', hotMemePortableBindings:[], hotMemeLoreIds:[], hotMemeLoreSnap:[], customIdPool:'', idGenerateCount:20, idGenerateExtra:'', idGenerateAllLore:true, idGenerateLorePortableBindings:[], npcGenerateCount:6, npcGenerateExtra:'', npcGenerateAllLore:true, npcGenerateLorePortableBindings:[], npcDmEnabled:false, npcDmPrompt:'', npcAccounts:[], generationCounts:{ feed:5, feedComments:5, comments:5, dm:10, dmThread:5, allFeed:5, allChar:1, allDm:10 }, presetDepths:{ ...DEFAULT_PRESET_DEPTHS }, customEntries:[], injectMain:false },
+      context: { mode:'recent', includeRecentContext:true, includeSummaryContext:false, recentMessages:3, manualSummary:'', includeChar:true, includePersona:true, includeScenario:true, includeWorldInfo:true, systemAddon:'', loreScanKeyword:'🩶', loreBookNames:'', lorePortableBindings:[], nativePrompt:'detailed', nativePromptText:'', hotMemeEnabled:true, hotMemePrompt:'', hotMemeManualText:'', hotMemeBookNames:'', hotMemeEntryNames:'', hotMemePortableBindings:[], hotMemeLoreIds:[], hotMemeLoreSnap:[], customIdPool:'', idGenerateCount:20, idGenerateExtra:'', idGenerateAllLore:true, idGenerateIncludeChar:true, idGenerateIncludePersona:true, idGenerateLorePortableBindings:[], npcGenerateCount:6, npcGenerateExtra:'', npcGenerateAllLore:true, npcGenerateIncludeChar:true, npcGenerateIncludePersona:true, npcGenerateLorePortableBindings:[], npcDmEnabled:false, npcDmPrompt:'', npcAccounts:[], generationCounts:{ feed:5, feedComments:5, comments:5, dm:10, dmThread:5, allFeed:5, allChar:1, allDm:10 }, presetDepths:{ ...DEFAULT_PRESET_DEPTHS }, customEntries:[], injectMain:false },
       presetTemplates: [],
       rolePresetTemplates: {},
       activePresetTemplateId: 'system',
@@ -836,7 +836,8 @@ body{display:grid;place-items:center;overflow:hidden}
         ...normalizeHistoryContext(slot?.context || out.context),
         charAccount: normalizePortableCharAccount(slot?.context?.charAccount || out.context.charAccount),
         presetDepths: normalizePresetDepths(slot?.context?.presetDepths || out.context.presetDepths),
-        npcAccounts: Array.isArray(slot?.context?.npcAccounts) ? slot.context.npcAccounts : out.context.npcAccounts,
+        // NPC 账号必须由当前聊天档位或当前应用的模板明确提供，绝不回退到旧全局 context。
+        npcAccounts: Array.isArray(slot?.context?.npcAccounts) ? slot.context.npcAccounts : [],
         lorePortableBindings: Array.isArray(slot?.context?.lorePortableBindings) ? slot.context.lorePortableBindings : out.context.lorePortableBindings,
         hotMemePortableBindings: Array.isArray(slot?.context?.hotMemePortableBindings) ? slot.context.hotMemePortableBindings : out.context.hotMemePortableBindings,
         idGenerateLorePortableBindings: normalizePortableLoreBindings(slot?.context?.idGenerateLorePortableBindings || out.context.idGenerateLorePortableBindings),
@@ -962,10 +963,14 @@ body{display:grid;place-items:center;overflow:hidden}
       idGenerateCount: Math.max(1, Math.min(60, Number(ctxSet.idGenerateCount) || 20)),
       idGenerateExtra: String(ctxSet.idGenerateExtra || ''),
       idGenerateAllLore: ctxSet.idGenerateAllLore !== false,
+      idGenerateIncludeChar: ctxSet.idGenerateIncludeChar !== false,
+      idGenerateIncludePersona: ctxSet.idGenerateIncludePersona !== false,
       idGenerateLorePortableBindings: normalizePortableLoreBindings(ctxSet.idGenerateLorePortableBindings),
       npcGenerateCount: Math.max(1, Math.min(30, Number(ctxSet.npcGenerateCount) || 6)),
       npcGenerateExtra: String(ctxSet.npcGenerateExtra || ''),
       npcGenerateAllLore: ctxSet.npcGenerateAllLore !== false,
+      npcGenerateIncludeChar: ctxSet.npcGenerateIncludeChar !== false,
+      npcGenerateIncludePersona: ctxSet.npcGenerateIncludePersona !== false,
       npcGenerateLorePortableBindings: normalizePortableLoreBindings(ctxSet.npcGenerateLorePortableBindings),
       generationCounts: { ...defaultGlobalConfig().context.generationCounts, ...(ctxSet.generationCounts || {}) },
       presetDepths: normalizePresetDepths(ctxSet.presetDepths),
@@ -1040,10 +1045,14 @@ body{display:grid;place-items:center;overflow:hidden}
         idGenerateCount: Math.max(1, Math.min(60, Number(cur.idGenerateCount) || 20)),
         idGenerateExtra: String(cur.idGenerateExtra || ''),
         idGenerateAllLore: cur.idGenerateAllLore !== false,
+        idGenerateIncludeChar: cur.idGenerateIncludeChar !== false,
+        idGenerateIncludePersona: cur.idGenerateIncludePersona !== false,
         idGenerateLorePortableBindings: normalizePortableLoreBindings(cur.idGenerateLorePortableBindings),
         npcGenerateCount: Math.max(1, Math.min(30, Number(cur.npcGenerateCount) || 6)),
         npcGenerateExtra: String(cur.npcGenerateExtra || ''),
         npcGenerateAllLore: cur.npcGenerateAllLore !== false,
+        npcGenerateIncludeChar: cur.npcGenerateIncludeChar !== false,
+        npcGenerateIncludePersona: cur.npcGenerateIncludePersona !== false,
         npcGenerateLorePortableBindings: normalizePortableLoreBindings(cur.npcGenerateLorePortableBindings),
         generationCounts: { ...defaultGlobalConfig().context.generationCounts, ...(cur.generationCounts || {}) },
         presetDepths: normalizePresetDepths(cur.presetDepths),
@@ -1494,7 +1503,7 @@ body{display:grid;place-items:center;overflow:hidden}
         const rawName = e.comment || e.name || '';
         const content = neutralizeEjs(e.content || '').trim();
         const disabled = !!(e.disable || e.enabled === false);
-        const name = (disabled ? '［禁用］' : '') + (rawName || keys.join(',') || ('条目' + (index + 1)));
+        const name = rawName || keys.join(',') || ('条目' + (index + 1));
         const id = loreEntryId(bookKey, e, index);
         if (seen.has(id)) return;
         seen.add(id);
@@ -1551,6 +1560,9 @@ body{display:grid;place-items:center;overflow:hidden}
   let _loreCatalogCache = null; // { books, flat }
   let _lorePickBookKey = null;  // null=世界书列表；非空=某本书条目页
   let _lorePickPending = new Set();
+  function loreDisplayName(item){
+    return String(item?.name || item?.id || '') + (item?.disabled ? '（原本未开启）' : '');
+  }
 
   function splitScanTerms(value){
     return [...new Set(String(value || '').split(/[，,\n\r]+/).map((item) => item.trim()).filter(Boolean))];
@@ -1591,7 +1603,7 @@ body{display:grid;place-items:center;overflow:hidden}
       const bookName = String(book.label || book.key || '').replace(/^(世界书:|角色书:)/, '').trim().toLowerCase();
       const entryNames = new Set(wanted.filter((item) => item.book.toLowerCase() === bookName).map((item) => item.entry.toLowerCase()));
       if (!entryNames.size) return;
-      (book.entries || []).forEach((item) => { if (!item.disabled && entryNames.has(String(item.name || '').trim().toLowerCase())) ids.add(String(item.id)); });
+      (book.entries || []).forEach((item) => { if (entryNames.has(String(item.name || '').trim().toLowerCase())) ids.add(String(item.id)); });
     });
     return ids;
   }
@@ -1740,7 +1752,7 @@ body{display:grid;place-items:center;overflow:hidden}
             点进某一本再勾选条目
           </div>` + books.map((b) => {
           const enabledEntries = b.entries.filter((e) => !e.disabled);
-          const nSel = enabledEntries.filter((e) => _lorePickPending.has(e.id)).length;
+          const nSel = b.entries.filter((e) => _lorePickPending.has(e.id)).length;
           return `<div class="lore-book-row" data-lore-book="${esc(b.key)}">
             <div class="meta">
               <div class="nm">${esc(b.label)}</div>
@@ -1768,10 +1780,10 @@ body{display:grid;place-items:center;overflow:hidden}
         </div>
         <div class="lore-empty" style="padding:4px 2px 8px;text-align:left">${entries.length} 条 · 按 order 降序</div>
         ${entries.map((item) => `
-          <label class="lore-pick-item"${item.disabled ? ' style="opacity:.65"' : ''}>
-            <input type="checkbox" data-lore-id="${esc(item.id)}" ${_lorePickPending.has(item.id) ? 'checked' : ''} ${item.disabled ? 'disabled' : ''} />
+          <label class="lore-pick-item"${item.disabled ? ' style="opacity:.78"' : ''}>
+            <input type="checkbox" data-lore-id="${esc(item.id)}" ${_lorePickPending.has(item.id) ? 'checked' : ''} />
             <div class="meta">
-              <div class="nm">${esc(item.name)}</div>
+              <div class="nm">${esc(loreDisplayName(item))}</div>
               <div class="bk">order ${esc(String(item.order))}${item.keys?.length ? ' · ' + esc(item.keys.slice(0, 4).join(', ')) : ''}</div>
               <div class="pv">${esc(item.preview)}${(item.content || '').length > 120 ? '…' : ''}</div>
             </div>
@@ -4495,7 +4507,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     box.innerHTML = books.map((book) => {
       const usable = (book.entries || []).filter((item) => !item.disabled);
       const selectedCount = usable.filter((item) => selected.has(String(item.id))).length;
-      return `<details class="generator-lore-book"><summary><strong>${esc(book.label)}</strong><span>${selectedCount}/${usable.length} 已选　⌄</span></summary><div class="generator-lore-entries">${(book.entries || []).map((item) => `<label class="lore-pick-item"${item.disabled ? ' style="opacity:.6"' : ''}><input type="checkbox" data-generator-lore="${prefix}" data-generator-lore-id="${esc(item.id)}" ${selected.has(String(item.id)) ? 'checked' : ''} ${item.disabled || useAll ? 'disabled' : ''}><div class="meta"><div class="nm">${esc(item.name)}</div><div class="pv">${esc(item.preview || '')}</div></div></label>`).join('')}</div></details>`;
+      return `<details class="generator-lore-book"><summary><strong>${esc(book.label)}</strong><span>${selectedCount}/${usable.length} 默认启用　⌄</span></summary><div class="generator-lore-entries">${(book.entries || []).map((item) => `<label class="lore-pick-item"${item.disabled ? ' style="opacity:.78"' : ''}><input type="checkbox" data-generator-lore="${prefix}" data-generator-lore-id="${esc(item.id)}" ${selected.has(String(item.id)) ? 'checked' : ''} ${useAll ? 'disabled' : ''}><div class="meta"><div class="nm">${esc(loreDisplayName(item))}</div><div class="pv">${esc(item.preview || '')}</div></div></label>`).join('')}</div></details>`;
     }).join('');
   }
   function refreshGeneratorLorePickers(){
@@ -4506,7 +4518,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
   }
   function generatorLoreText(prefix){
     const wanted = new Set(generatorLoreIds(prefix));
-    const blocks = (_loreCatalogCache?.flat || []).filter((item) => wanted.has(String(item.id)) && !item.disabled && String(item.content || '').trim()).map((item) => `【${item.book}｜${item.name}】\n${item.content}`);
+    const blocks = (_loreCatalogCache?.flat || []).filter((item) => wanted.has(String(item.id)) && String(item.content || '').trim()).map((item) => `【${item.book}｜${loreDisplayName(item)}】\n${item.content}`);
     const maxChars = 50000;
     const text = blocks.join('\n\n');
     return text.length > maxChars ? text.slice(0, maxChars) + '\n\n…[世界书内容已截断]' : text;
@@ -5244,7 +5256,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     const map = new Map([...snap, ...live].map((item) => [String(item.id), item]));
     const items = [...map.values()];
     if (!items.length) return '<div class="lore-empty">尚未读取到世界书条目。点“刷新世界书选项”后再绑定。</div>';
-    return items.map((item) => `<label class="lore-pick-item"${item.disabled ? ' style="opacity:.65"' : ''}><input type="checkbox" data-hot-meme-lore-id="${esc(item.id)}" ${selected.has(String(item.id)) ? 'checked' : ''} ${item.disabled ? 'disabled' : ''}><div class="meta"><div class="nm">${esc(item.name || item.id)}</div><div class="bk">${esc(item.book || '')}</div><div class="pv">${esc(String(item.preview || item.content || '').slice(0, 100))}</div></div></label>`).join('');
+    return items.map((item) => `<label class="lore-pick-item"${item.disabled ? ' style="opacity:.78"' : ''}><input type="checkbox" data-hot-meme-lore-id="${esc(item.id)}" ${selected.has(String(item.id)) ? 'checked' : ''}><div class="meta"><div class="nm">${esc(loreDisplayName(item))}</div><div class="bk">${esc(item.book || '')}</div><div class="pv">${esc(String(item.preview || item.content || '').slice(0, 100))}</div></div></label>`).join('');
   }
   function renderHotMemeLoreOptions(selectedIds, applyScan=true){
     const box = document.getElementById('hotMemeLoreList');
@@ -5307,7 +5319,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     const selected = new Set((selectedIds || []).map(String));
     const flat = _loreCatalogCache?.flat || [];
     if (!flat.length) return '<div class="lore-empty">先点「刷新世界书选项」，再绑定条目。</div>';
-    return flat.map((item) => `<label class="lore-pick-item"><input type="checkbox" data-npc-lore-id="${esc(item.id)}" ${selected.has(String(item.id)) ? 'checked' : ''}><div class="meta"><div class="nm">${esc(item.name)}</div><div class="bk">${esc(item.book || '')}</div></div></label>`).join('');
+    return flat.map((item) => `<label class="lore-pick-item"${item.disabled ? ' style="opacity:.78"' : ''}><input type="checkbox" data-npc-lore-id="${esc(item.id)}" ${selected.has(String(item.id)) ? 'checked' : ''}><div class="meta"><div class="nm">${esc(loreDisplayName(item))}</div><div class="bk">${esc(item.book || '')}</div></div></label>`).join('');
   }
   function renderNpcAccountEditor(entries){
     const box = document.getElementById('npcAccountList');
@@ -5318,7 +5330,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       const portableIds = portableLoreIds(_loreCatalogCache?.books || [], npc.lorePortableBindings);
       const selectedIds = [...new Set([...(npc.loreIds || []), ...portableIds])];
       return `<div class="npc-editor-card" data-npc-key="${esc(npc.key)}">
-      <div class="npc-editor-head" data-npc-toggle><strong>${esc(npc.name || ('NPC ' + (index + 1)))}</strong><span class="npc-editor-ident">${esc(npc.id || '未填写 ID')}</span><span class="npc-editor-chev">⌄</span></div><div class="npc-editor-body">
+      <div class="npc-editor-head" data-npc-toggle><strong>${esc(npc.name || ('NPC ' + (index + 1)))}</strong><span class="npc-editor-ident">${esc(npc.id || '未填写 ID')} · ${selectedIds.length ? `已绑定 ${selectedIds.length} 条世界书` : '未绑定世界书'}</span><span class="npc-editor-chev">⌄</span></div><div class="npc-editor-body">
       <div class="settings-grid"><div class="set-row"><label>微博 ID（必填）</label><input type="text" data-npc-id value="${esc(npc.id)}" placeholder="@前的昵称"></div><div class="set-row"><label>正文姓名/称呼</label><input type="text" data-npc-name value="${esc(npc.name)}"></div></div>
       <div class="set-row"><label>简介</label><input type="text" data-npc-bio value="${esc(npc.bio)}"></div>
       <div class="settings-grid"><div class="set-row"><label>粉丝数</label><input type="text" data-npc-fans value="${esc(formatFanNumber(npc.fans))}"></div><div class="set-row"><label>关注数</label><input type="number" data-npc-following value="${npc.following}" min="0"></div></div>
@@ -5327,6 +5339,16 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       <div class="set-row"><label>绑定世界书条目（可多选）</label><div class="lore-pick-list" data-npc-lore-list>${npcLoreOptionsHtml(selectedIds)}</div></div>
       <div class="npc-editor-actions"><button type="button" data-npc-delete>删除这个 NPC 账号</button></div></div></div>`;
     }).join('');
+    const updateNpcCardHeader = (card) => {
+      if (!card) return;
+      const name = String(card.querySelector('[data-npc-name]')?.value || '').trim();
+      const id = String(card.querySelector('[data-npc-id]')?.value || '').trim();
+      const count = card.querySelectorAll('[data-npc-lore-id]:checked').length;
+      const title = card.querySelector('.npc-editor-head strong');
+      const ident = card.querySelector('.npc-editor-ident');
+      if (title) title.textContent = name || '未命名 NPC';
+      if (ident) ident.textContent = `${id || '未填写 ID'} · ${count ? `已绑定 ${count} 条世界书` : '未绑定世界书'}`;
+    };
     box.querySelectorAll('[data-npc-toggle]').forEach((head) => head.onclick = () => head.closest('[data-npc-key]')?.classList.toggle('open'));
     box.querySelectorAll('[data-npc-delete]').forEach((button) => button.onclick = () => {
       if (!confirm('删除这个 NPC 账号？')) return;
@@ -5336,17 +5358,10 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     });
     box.oninput = (event) => {
       const card = event.target.closest('[data-npc-key]');
-      if (card && (event.target.matches('[data-npc-id]') || event.target.matches('[data-npc-name]'))) {
-        const name = String(card.querySelector('[data-npc-name]')?.value || '').trim();
-        const id = String(card.querySelector('[data-npc-id]')?.value || '').trim();
-        const title = card.querySelector('.npc-editor-head strong');
-        const ident = card.querySelector('.npc-editor-ident');
-        if (title) title.textContent = name || '未命名 NPC';
-        if (ident) ident.textContent = id || '未填写 ID';
-      }
+      if (card) updateNpcCardHeader(card);
       refreshPresetUiSummaries();
     };
-    box.onchange = refreshPresetUiSummaries;
+    box.onchange = (event) => { updateNpcCardHeader(event.target.closest('[data-npc-key]')); refreshPresetUiSummaries(); };
   }
   function readNpcAccountsFromForm(){
     const catalog = new Map((_loreCatalogCache?.flat || []).map((item) => [String(item.id), item]));
@@ -5389,7 +5404,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       if (cleanBook && liveBook.toLowerCase() !== cleanBook && !liveBook.toLowerCase().includes(cleanBook) && !cleanBook.includes(liveBook.toLowerCase())) return;
       (book.entries || []).forEach((entry) => {
         const liveName = String(entry.name || '').replace(/^［禁用］/, '').trim();
-        if (entry.disabled || (wantedEntries.length && !wantedEntries.some((name) => liveName.toLowerCase() === name || liveName.toLowerCase().includes(name)))) return;
+        if (wantedEntries.length && !wantedEntries.some((name) => liveName.toLowerCase() === name || liveName.toLowerCase().includes(name))) return;
         matches.push({ book:liveBook, entry:liveName });
       });
     });
@@ -5450,23 +5465,35 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       const count = Math.max(1, Math.min(30, Number(document.getElementById('setNpcGenerateCount')?.value) || 6));
       const extra = String(document.getElementById('setNpcGenerateExtra')?.value || '').trim();
       const existing = readNpcAccountsFromForm();
-      const system = '你是微博 NPC 账号配置生成器。只依据用户提供的世界书正文识别有明确身份的 NPC，并为其建立可编辑的微博账号资料。不得把 {{user}}、{{char}}、当前角色或无名路人重复注册为 NPC；不得凭空创造世界书没有的人物。严格遵守信息隔离，账号公开简介与发帖要求不能泄漏人物无权公开的信息。只输出指定协议，不解释。';
+      const fixedIds = configuredWeiboIds();
+      const identityContext = [
+        document.getElementById('setNpcGenerateIncludeChar')?.checked ? `【当前 Character Card｜仅用于识别并排除 char 本人】\n${readCharacterPresetSource()}` : '',
+        document.getElementById('setNpcGenerateIncludePersona')?.checked ? `【当前 User Personality｜仅用于识别并排除 user 本人】\n${readPersonaPresetSource()}` : '',
+      ].filter(Boolean).join('\n\n');
+      const system = '你是微博 NPC 账号配置生成器。只依据用户提供的世界书正文识别有明确身份的 NPC，并为其建立可编辑的微博账号资料。绝对不得生成 {{user}}、{{char}}、当前角色本人或用户本人的微博账号，也不得把他们改名伪装成 NPC；不得把无名路人注册为 NPC；不得凭空创造世界书没有的人物。严格遵守信息隔离，账号公开简介与发帖要求不能泄漏人物无权公开的信息。多次生成时必须避开已经存在和本次已经输出的账号，不得重复。只输出指定协议，不解释。';
       const user = [
         `请最多生成 ${count} 个 NPC 微博账号；若世界书里合格 NPC 不足，可以少于该数量，不要凑数。`,
-        existing.length ? `已经存在的账号（禁止重复）：${existing.map((item) => `${item.name}/${item.id}`).join('、')}` : '当前尚无已注册 NPC。',
+        `禁止生成的本人账号：user=${displayName || rawUserName || '{{user}}'}${fixedIds.user ? ` / ${fixedIds.user}` : ''}；char=${displayChar || rawCharName || '{{char}}'}${fixedIds.char ? ` / ${fixedIds.char}` : ''}。`,
+        existing.length ? `历次已经存在的 NPC 账号（本次严禁重复名字、ID 或换壳生成）：${existing.map((item) => `${item.name}/${item.id}`).join('、')}` : '当前尚无已注册 NPC。',
         extra ? `用户额外要求：${extra}` : '',
         '每个 NPC 只输出一行，严格格式：',
         '[NPC|微博ID|正文姓名/称呼|公开简介|粉丝数纯数字|关注数纯数字|身份关系与说话方式设定|NPC发帖要求|来源世界书名称|来源条目名称]',
         '字段内禁止出现英文竖线、方括号或换行。微博 ID 不带 @；ID 要像真人网名并贴合人物。身份设定写清与 user/char 的关系、性格、口吻和知情边界；发帖要求写可公开主题、表达习惯与禁忌。来源条目有多个时用中文分号隔开。',
         '用 <npc_accounts> 包住所有行，标签外不要输出任何文字。',
+        identityContext,
         '', '【当前选择的世界书正文】', lore,
       ].filter(Boolean).join('\n');
       const out = await requestUtilityAi('npc-account-build', system, user, button);
       const generated = parseNpcGenerationOutput(out);
       if (!generated.length) throw new Error('API 已返回，但没有解析到 [NPC|…] 行');
       const merged = [...existing];
-      const seen = new Set(existing.map((item) => String(item.id || item.name).toLowerCase()));
-      generated.forEach((npc) => { const key = String(npc.id || npc.name).toLowerCase(); if (!seen.has(key)) { seen.add(key); merged.push(npc); } });
+      const seen = new Set(existing.flatMap((item) => [item.id, item.name]).map((value) => String(value || '').trim().toLowerCase()).filter(Boolean));
+      generated.forEach((npc) => {
+        const keys = [npc.id, npc.name].map((value) => String(value || '').trim().toLowerCase()).filter(Boolean);
+        if (keys.some((key) => seen.has(key))) return;
+        keys.forEach((key) => seen.add(key));
+        merged.push(npc);
+      });
       renderNpcAccountEditor(merged);
       refreshPresetUiSummaries();
       showBubble(`已生成并追加 ${merged.length - existing.length} 个 NPC 账号`);
@@ -5481,15 +5508,22 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       const count = Math.max(1, Math.min(60, Number(document.getElementById('setIdGenerateCount')?.value) || 20));
       const extra = String(document.getElementById('setIdGenerateExtra')?.value || '').trim();
       const existing = parseCustomIdPool(customIdPoolTextFromForm());
-      const system = '你是微博 ID 候选池生成器。根据人物、战队、城市、圈层和事件设定，生成像真人会使用的微博昵称。只输出指定协议，不解释。';
+      const fixedIds = configuredWeiboIds();
+      const identityContext = [
+        document.getElementById('setIdGenerateIncludeChar')?.checked ? `【当前 Character Card｜只用于理解圈层并排除 char 本人】\n${readCharacterPresetSource()}` : '',
+        document.getElementById('setIdGenerateIncludePersona')?.checked ? `【当前 User Personality｜只用于理解圈层并排除 user 本人】\n${readPersonaPresetSource()}` : '',
+      ].filter(Boolean).join('\n\n');
+      const system = '你是微博 ID 候选池生成器。根据人物、战队、城市、圈层和事件设定，生成像真人会使用的外部网友昵称。候选池只允许路人、粉丝、黑粉、乐子人等外部账号；绝对不得生成 user 或 char 本人的账号，不得复刻、变体或伪装他们已经设置的微博 ID。多次生成必须避开已有候选和本次已输出 ID，不得重复或仅做轻微改写。只输出指定协议，不解释。';
       const user = [
         ID_POOL_GENERATION_GUIDE,
         `请生成恰好 ${count} 个互不重复的微博 ID。`,
-        existing.length ? `已有 ID（禁止重复）：${existing.map((item) => item.id).join('、')}` : '',
+        `绝对禁止生成的本人账号：user=${displayName || rawUserName || '{{user}}'}${fixedIds.user ? ` / ${fixedIds.user}` : ''}；char=${displayChar || rawCharName || '{{char}}'}${fixedIds.char ? ` / ${fixedIds.char}` : ''}。这些名字及近似变体都不得进入候选池。`,
+        existing.length ? `历次已有 ID（严禁重复、近似改写或换后缀复用）：${existing.map((item) => item.id).join('、')}` : '',
         extra ? `用户额外要求：${extra}` : '',
         '每行严格格式：[ID|昵称|权重1-10|账号属性]。',
         '昵称不能含英文竖线、方括号或换行。权重表示该账号在相关场景中被优先选中的程度。账号属性用一句短语描述其圈层、立场、语气或与人物/战队的隐约关联；不能直接机械写“梦女/嬷嬷/公公/串子/竞丝/唯粉/黑粉”等分类标签。不同昵称的句式、长度和构成必须分散。',
         '用 <id_pool> 包住所有行，标签外不要输出任何文字。',
+        identityContext,
         '', '【当前选择的世界书正文】', lore,
       ].filter(Boolean).join('\n');
       const out = await requestUtilityAi('id-pool-build', system, user, button);
@@ -5692,8 +5726,8 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       nativePrompt:base.nativePrompt, nativePromptText:'',
       hotMemeEnabled:base.hotMemeEnabled, hotMemePrompt:'', hotMemeManualText:'', hotMemeBookNames:'', hotMemeEntryNames:'', hotMemePortableBindings:[],
       npcDmEnabled:base.npcDmEnabled, npcDmPrompt:'', npcAccounts:[], customIdPool:'',
-      idGenerateCount:20, idGenerateExtra:'', idGenerateAllLore:true, idGenerateLorePortableBindings:[],
-      npcGenerateCount:6, npcGenerateExtra:'', npcGenerateAllLore:true, npcGenerateLorePortableBindings:[],
+      idGenerateCount:20, idGenerateExtra:'', idGenerateAllLore:true, idGenerateIncludeChar:true, idGenerateIncludePersona:true, idGenerateLorePortableBindings:[],
+      npcGenerateCount:6, npcGenerateExtra:'', npcGenerateAllLore:true, npcGenerateIncludeChar:true, npcGenerateIncludePersona:true, npcGenerateLorePortableBindings:[],
       charAccount:normalizePortableCharAccount(),
       generationCounts:{ ...base.generationCounts }, presetDepths:{ ...DEFAULT_PRESET_DEPTHS }, customEntries:[],
     };
@@ -5728,6 +5762,8 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       npcGenerateCount:Math.max(1,Math.min(30,Number(document.getElementById('setNpcGenerateCount').value)||6)),
       npcGenerateExtra:document.getElementById('setNpcGenerateExtra').value.trim(),
       npcGenerateAllLore:!!document.getElementById('setNpcGenerateAllLore').checked,
+      npcGenerateIncludeChar:!!document.getElementById('setNpcGenerateIncludeChar').checked,
+      npcGenerateIncludePersona:!!document.getElementById('setNpcGenerateIncludePersona').checked,
       npcGenerateLorePortableBindings:generatorLorePortableBindings('npc'),
       charAccount:normalizePortableCharAccount({
         weiboId:document.getElementById('setCharId').value,
@@ -5739,6 +5775,8 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       idGenerateCount:Math.max(1,Math.min(60,Number(document.getElementById('setIdGenerateCount').value)||20)),
       idGenerateExtra:document.getElementById('setIdGenerateExtra').value.trim(),
       idGenerateAllLore:!!document.getElementById('setIdGenerateAllLore').checked,
+      idGenerateIncludeChar:!!document.getElementById('setIdGenerateIncludeChar').checked,
+      idGenerateIncludePersona:!!document.getElementById('setIdGenerateIncludePersona').checked,
       idGenerateLorePortableBindings:generatorLorePortableBindings('id'),
       generationCounts:{
         feed:Number(document.getElementById('setFeedCount').value)||5, feedComments:Number(document.getElementById('setFeedCommentCount').value)||0,
@@ -5813,9 +5851,13 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     document.getElementById('setNpcGenerateCount').value = Math.max(1, Math.min(30, Number(config.npcGenerateCount) || 6));
     document.getElementById('setNpcGenerateExtra').value = String(config.npcGenerateExtra || '');
     document.getElementById('setNpcGenerateAllLore').checked = config.npcGenerateAllLore !== false;
+    document.getElementById('setNpcGenerateIncludeChar').checked = config.npcGenerateIncludeChar !== false;
+    document.getElementById('setNpcGenerateIncludePersona').checked = config.npcGenerateIncludePersona !== false;
     document.getElementById('setIdGenerateCount').value = Math.max(1, Math.min(60, Number(config.idGenerateCount) || 20));
     document.getElementById('setIdGenerateExtra').value = String(config.idGenerateExtra || '');
     document.getElementById('setIdGenerateAllLore').checked = config.idGenerateAllLore !== false;
+    document.getElementById('setIdGenerateIncludeChar').checked = config.idGenerateIncludeChar !== false;
+    document.getElementById('setIdGenerateIncludePersona').checked = config.idGenerateIncludePersona !== false;
     const portableChar = normalizePortableCharAccount(config.charAccount);
     document.getElementById('setCharId').value = portableChar.weiboId;
     document.getElementById('setCharBio').value = portableChar.bio;
@@ -5926,10 +5968,14 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     document.getElementById('setNpcGenerateCount').value = Math.max(1, Math.min(30, Number(context.npcGenerateCount) || 6));
     document.getElementById('setNpcGenerateExtra').value = String(context.npcGenerateExtra || '');
     document.getElementById('setNpcGenerateAllLore').checked = context.npcGenerateAllLore !== false;
+    document.getElementById('setNpcGenerateIncludeChar').checked = context.npcGenerateIncludeChar !== false;
+    document.getElementById('setNpcGenerateIncludePersona').checked = context.npcGenerateIncludePersona !== false;
     phoneSettings.npcGenerateLorePortableBindings = normalizePortableLoreBindings(context.npcGenerateLorePortableBindings);
     document.getElementById('setIdGenerateCount').value = Math.max(1, Math.min(60, Number(context.idGenerateCount) || 20));
     document.getElementById('setIdGenerateExtra').value = String(context.idGenerateExtra || '');
     document.getElementById('setIdGenerateAllLore').checked = context.idGenerateAllLore !== false;
+    document.getElementById('setIdGenerateIncludeChar').checked = context.idGenerateIncludeChar !== false;
+    document.getElementById('setIdGenerateIncludePersona').checked = context.idGenerateIncludePersona !== false;
     phoneSettings.idGenerateLorePortableBindings = normalizePortableLoreBindings(context.idGenerateLorePortableBindings);
     phoneSettings.lorePortableBindings = normalizePortableLoreBindings(context.lorePortableBindings);
     renderCustomIdPoolEditor(String(context.customIdPool || ''));
@@ -6044,11 +6090,15 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       npcGenerateCount: Math.max(1, Math.min(30, Number(document.getElementById('setNpcGenerateCount').value) || 6)),
       npcGenerateExtra: document.getElementById('setNpcGenerateExtra').value.trim(),
       npcGenerateAllLore: !!document.getElementById('setNpcGenerateAllLore').checked,
+      npcGenerateIncludeChar: !!document.getElementById('setNpcGenerateIncludeChar').checked,
+      npcGenerateIncludePersona: !!document.getElementById('setNpcGenerateIncludePersona').checked,
       npcGenerateLorePortableBindings: generatorLorePortableBindings('npc'),
       customIdPool: customIdPoolTextFromForm(),
       idGenerateCount: Math.max(1, Math.min(60, Number(document.getElementById('setIdGenerateCount').value) || 20)),
       idGenerateExtra: document.getElementById('setIdGenerateExtra').value.trim(),
       idGenerateAllLore: !!document.getElementById('setIdGenerateAllLore').checked,
+      idGenerateIncludeChar: !!document.getElementById('setIdGenerateIncludeChar').checked,
+      idGenerateIncludePersona: !!document.getElementById('setIdGenerateIncludePersona').checked,
       idGenerateLorePortableBindings: generatorLorePortableBindings('id'),
       generationCounts: {
         feed:Math.max(1,Math.min(20,Number(document.getElementById('setFeedCount').value)||5)),
@@ -6098,12 +6148,16 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
         npcGenerateCount: settingsPatch.npcGenerateCount,
         npcGenerateExtra: settingsPatch.npcGenerateExtra,
         npcGenerateAllLore: settingsPatch.npcGenerateAllLore,
+        npcGenerateIncludeChar: settingsPatch.npcGenerateIncludeChar,
+        npcGenerateIncludePersona: settingsPatch.npcGenerateIncludePersona,
         npcGenerateLorePortableBindings: settingsPatch.npcGenerateLorePortableBindings,
         charAccount: normalizePortableCharAccount({ weiboId:settingsPatch.charWeiboId, bio:settingsPatch.charBio, fans:settingsPatch.charFans, following:settingsPatch.charFollowing }),
         customIdPool: settingsPatch.customIdPool,
         idGenerateCount: settingsPatch.idGenerateCount,
         idGenerateExtra: settingsPatch.idGenerateExtra,
         idGenerateAllLore: settingsPatch.idGenerateAllLore,
+        idGenerateIncludeChar: settingsPatch.idGenerateIncludeChar,
+        idGenerateIncludePersona: settingsPatch.idGenerateIncludePersona,
         idGenerateLorePortableBindings: settingsPatch.idGenerateLorePortableBindings,
         generationCounts: settingsPatch.generationCounts,
         presetDepths: settingsPatch.presetDepths,
