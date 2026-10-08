@@ -664,9 +664,9 @@ body{display:grid;place-items:center;overflow:hidden}
         <div class="template-box">
           <div class="template-title">预设模板 <span>系统默认永远保留</span></div>
           <div class="set-row" style="margin-top:8px"><select id="setPresetTemplate" aria-label="预设模板"></select></div>
-          <div class="template-actions"><button type="button" class="mini-action" id="settingsApplyTemplate">应用所选模板</button><button type="button" class="mini-action primary" id="settingsNewGlobalTemplate">新建全局模板</button><button type="button" class="mini-action primary" id="settingsNewRoleTemplate">新建角色模板</button><button type="button" class="mini-action" id="settingsSaveTemplate">保存到模板</button><button type="button" class="mini-action" id="settingsDeleteTemplate">删除模板</button></div>
+          <div class="template-actions"><button type="button" class="mini-action primary" id="settingsNewGlobalTemplate">新建全局模板</button><button type="button" class="mini-action primary" id="settingsNewRoleTemplate">新建角色模板</button><button type="button" class="mini-action" id="settingsSaveTemplate">保存到模板</button><button type="button" class="mini-action" id="settingsDeleteTemplate">删除模板</button></div>
           <div class="settings-inline"><button type="button" class="mini-action primary" id="settingsExportRoleScript">导出角色酒馆脚本 JSON</button></div>
-          <div class="field-note" id="presetTemplateHint">全局模板对所有角色、聊天和档位可见；角色模板只对当前角色可见，但在该角色的不同聊天与档位中都能使用。模板应用后的 NPC、ID 池、世界书与提示词配置只写入当前档位。选择“系统默认预设”导出时仍只导出原始酱微博脚本。</div>
+          <div class="field-note" id="presetTemplateHint">下拉选择后会立即热切换并保存到当前档位。全局模板对所有角色、聊天和档位可见；角色模板只对当前角色可见，但在该角色的不同聊天与档位中都能使用。选择“系统默认预设”导出时仍只导出原始酱微博脚本。</div>
         </div>
         <div class="preset-toolbar"><button type="button" class="mini-action primary" id="settingsPreviewContext">生成分组注入预览</button><button type="button" class="mini-action" id="settingsAddPresetEntry">+新增自定义条目</button></div>
         <div class="preset-stack" id="presetStack">
@@ -5443,6 +5443,8 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     document.getElementById('setCharFollowing').value = String(portableChar.following);
     phoneSettings.lorePortableBindings = normalizePortableLoreBindings(config.lorePortableBindings);
     phoneSettings.hotMemePortableBindings = normalizePortableLoreBindings(config.hotMemePortableBindings);
+    phoneSettings.hotMemeLoreIds = [];
+    phoneSettings.hotMemeLoreSnap = [];
     phoneSettings.npcAccounts = (config.npcAccounts || []).map(normalizeNpcAccount);
     renderNpcAccountEditor(config.npcAccounts || []);
     renderCustomIdPoolEditor(config.customIdPool || '');
@@ -5585,7 +5587,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
   }
   document.getElementById('openSettingsBtn').onclick = openSettingsPanel;
   document.getElementById('settingsBack').onclick = closeSettingsPanel;
-  async function persistSettingsForm(closeAfter = true){
+  async function persistSettingsForm(closeAfter = true, options = {}){
     const prevUser = collectUserNameCandidates();
     const prevChar = collectCharNameCandidates();
     const picks = collectCheckedLorePicks();
@@ -5715,30 +5717,40 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     if (closeAfter) closeSettingsPanel();
     const total = renamedUser + renamedChar;
     const pickTip = picks.ids.length ? `，已钉住 ${picks.ids.length} 条世界书` : '，未勾选世界书';
-    showBubble((total ? `设置已保存，已回溯 ${total} 处昵称` : '设置已保存') + pickTip);
+    if (!options.quiet) showBubble((total ? `设置已保存，已回溯 ${total} 处昵称` : '设置已保存') + pickTip);
     return slot;
   }
   document.getElementById('settingsSave').onclick = ()=>persistSettingsForm(true);
-  document.getElementById('setPresetTemplate').onchange = (event)=>{
-    const isSystem = event.target.value === 'system';
+  document.getElementById('setPresetTemplate').onchange = async (event)=>{
+    const select = event.target;
+    const isSystem = select.value === 'system';
     document.getElementById('settingsDeleteTemplate').disabled = isSystem;
     document.getElementById('settingsSaveTemplate').textContent = '保存到模板';
-  };
-  document.getElementById('settingsApplyTemplate').onclick = ()=>{
     const template = selectedPresetTemplate();
     if (!template) return showBubble('模板不存在');
-    const slot = currentSlot();
-    if (slot) { slot.presetTemplateId = template.id; void saveChatBinding({ slots:chatSlots() }); }
-    applyPresetTemplateToForm(template);
-    showBubble(`已载入模板「${template.name}」，点底部保存后应用到本档位`);
+    select.disabled = true;
+    try {
+      const slot = currentSlot();
+      if (slot) slot.presetTemplateId = template.id;
+      applyPresetTemplateToForm(template);
+      await renderLorePickList(false, { hydrateStored:false });
+      await persistSettingsForm(false, { quiet:true });
+      showBubble(`已热切换到模板「${template.name}」`);
+    } catch (error) {
+      alertBox('模板切换失败', String(error?.message || error));
+    } finally {
+      select.disabled = false;
+    }
   };
-  function createPresetTemplate(scope){
+  async function createPresetTemplate(scope){
     const isRole = scope === 'role';
     const name = String(prompt(isRole ? '新角色模板名称' : '新全局模板名称', '{{char}}微博模板') || '').trim();
     if (!name) return;
     const template = normalizePresetTemplate({ id:'tpl_' + Date.now().toString(36), name, scope:isRole ? 'role' : 'global', roleKey:isRole ? CURRENT_CHARACTER_TEMPLATE_KEY : '', version:1, config:systemPresetConfig() });
     const list = presetTemplates(); list.push(template); saveTemplateCollection(list, template.id);
     applyPresetTemplateToForm(template);
+    await renderLorePickList(false, { hydrateStored:false });
+    await persistSettingsForm(false, { quiet:true });
     showBubble(`已新建${isRole ? '当前角色' : '全局'}模板，可修改后点“保存到模板”`);
   }
   document.getElementById('settingsNewGlobalTemplate').onclick = ()=>createPresetTemplate('global');
@@ -5756,13 +5768,15 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     saveTemplateCollection(list, template.id);
     showBubble(`模板「${template.name}」已保存为 v${template.version}`);
   };
-  document.getElementById('settingsDeleteTemplate').onclick = ()=>{
+  document.getElementById('settingsDeleteTemplate').onclick = async ()=>{
     const template = selectedPresetTemplate();
     if (!template || template.id === 'system') return showBubble('系统默认模板不能删除');
     if (!confirm(`删除预设模板「${template.name}」？不会删除系统默认模板。`)) return;
     chatSlots().forEach((slot) => { if (String(slot.presetTemplateId || '') === String(template.id)) slot.presetTemplateId = 'system'; });
     saveTemplateCollection(presetTemplates().filter((item) => item.id !== template.id), 'system');
     applyPresetTemplateToForm({ id:'system', name:'系统默认预设', config:systemPresetConfig() });
+    await renderLorePickList(false, { hydrateStored:false });
+    await persistSettingsForm(false, { quiet:true });
     showBubble('模板已删除，已切回系统默认');
   };
   document.getElementById('settingsExportRoleScript').onclick = async ()=>{
