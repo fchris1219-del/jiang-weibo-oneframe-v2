@@ -392,6 +392,12 @@ function jwr2InstallBridge() {
       if (!api || typeof api.getInjectedHistory !== 'function' || !slots) {
         return { available: false, reason: !api ? '柏宝书尚未加载' : '酒馆未开放扩展注入槽读取' };
       }
+      const required = ['baibai_book_memory_history', 'baibai_book_memory_state', 'baibai_book_time_tag'];
+      const missing = required.filter(key => !Object.prototype.hasOwnProperty.call(slots, key) || typeof slots[key]?.value !== 'string');
+      if (missing.length) return { available:false, reason:'未读到柏宝书原生注入槽：' + missing.join(', ') + '。请先在该聊天启动柏宝书并刷新注入。' };
+      if (required.every(key => slots[key].value.length === 0)) {
+        return { available:false, reason:'柏宝书三个注入槽均为空；请检查记忆引擎是否启用、当前角色是否被排除，以及是否已在此聊天刷新注入。' };
+      }
       const pick = (key, fallbackDepth) => {
         const value = slots[key];
         return {
