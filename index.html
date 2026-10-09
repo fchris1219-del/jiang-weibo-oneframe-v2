@@ -1829,6 +1829,7 @@ body{display:grid;place-items:center;overflow:hidden}
         if (!input || disabled) return;
         if (input.checked) selected.add(String(input.dataset.nestedLoreId));
         else selected.delete(String(input.dataset.nestedLoreId));
+        box.__jwr2LoreTouched = true;
         notify();
       };
     };
@@ -5621,7 +5622,10 @@ ${WEIBO_PUNCTUATION_STYLE_RULES}
     const oldSnap = new Map((phoneSettings.hotMemeLoreSnap || currentSlotContext().hotMemeLoreSnap || []).map((item) => [String(item.id), item]));
     const catalog = new Map((_loreCatalogCache?.flat || []).map((item) => [String(item.id), item]));
     const snap = ids.map((id) => catalog.get(id) || oldSnap.get(id)).filter(Boolean).map((item) => ({ id:item.id, book:item.book, name:item.name, content:String(item.content || '').slice(0, 12000) }));
-    return { ids:[...new Set(ids.filter(Boolean))], snap };
+    const preserved = normalizePortableLoreBindings(box?.__jwr2PortableBindings || phoneSettings.hotMemePortableBindings || currentSlotContext().hotMemePortableBindings || []);
+    const derived = portableBindingsFromIds(ids, snap);
+    const portableBindings = box?.__jwr2LoreTouched ? derived : normalizePortableLoreBindings([...preserved, ...derived]);
+    return { ids:[...new Set(ids.filter(Boolean))], snap, portableBindings };
   }
   function hotMemeLoreFromForm(){
     const selection = hotMemeLoreSelectionFromForm();
@@ -5634,14 +5638,23 @@ ${WEIBO_PUNCTUATION_STYLE_RULES}
   function renderHotMemeLoreOptions(selectedIds, applyScan=true){
     const box = document.getElementById('hotMemeLoreList');
     if (!box) return;
+    const portableBindings = normalizePortableLoreBindings(phoneSettings.hotMemePortableBindings || currentSlotContext().hotMemePortableBindings || box.__jwr2PortableBindings || []);
     const ids = new Set(selectedIds == null ? hotMemeLoreSelectionFromForm().ids : selectedIds);
     if (applyScan && _loreCatalogCache?.books) {
       const bookNames = document.getElementById('setHotMemeBookNames')?.value || phoneSettings.hotMemeBookNames || '';
       const entryNames = document.getElementById('setHotMemeEntryNames')?.value || phoneSettings.hotMemeEntryNames || '';
       scannedLoreIds(_loreCatalogCache.books, bookNames, entryNames).forEach((id) => ids.add(id));
-      portableLoreIds(_loreCatalogCache.books, phoneSettings.hotMemePortableBindings || currentSlotContext().hotMemePortableBindings || []).forEach((id) => ids.add(id));
+      portableLoreIds(_loreCatalogCache.books, portableBindings).forEach((id) => ids.add(id));
     }
-    renderNestedLorePicker(box, { selectedIds:[...ids], resetBook:true, onChange:refreshBoundLoreDisplay });
+    renderNestedLorePicker(box, {
+      selectedIds:[...ids], resetBook:true,
+      onChange:(nextIds) => {
+        box.__jwr2PortableBindings = portableBindingsFromIds(nextIds, hotMemeLoreSelectionFromForm().snap);
+        refreshBoundLoreDisplay();
+      },
+    });
+    box.__jwr2PortableBindings = portableBindings;
+    box.__jwr2LoreTouched = false;
   }
   function presetContentForToken(key){
     if (key === 'systemAddon') return String(document.getElementById('setSystemAddon')?.value || '');
@@ -5693,10 +5706,12 @@ ${WEIBO_PUNCTUATION_STYLE_RULES}
     const list = (Array.isArray(entries) ? entries : []).map(normalizeNpcAccount);
     if (!list.length) { box.innerHTML = '<div class="custom-entry-empty">还没有注册 NPC 账号</div>'; return; }
     const selectedByKey = new Map();
+    const portableByKey = new Map();
     box.innerHTML = list.map((npc, index) => {
       const portableIds = portableLoreIds(_loreCatalogCache?.books || [], npc.lorePortableBindings);
       const selectedIds = [...new Set([...(npc.loreIds || []), ...portableIds])];
       selectedByKey.set(npc.key, selectedIds);
+      portableByKey.set(npc.key, normalizePortableLoreBindings(npc.lorePortableBindings));
       return `<div class="npc-editor-card" data-npc-key="${esc(npc.key)}">
       <div class="npc-editor-head" data-npc-toggle><strong>${esc(npc.name || ('NPC ' + (index + 1)))}</strong><span class="npc-editor-ident">${esc(npc.id || '未填写 ID')} · ${selectedIds.length ? `已绑定 ${selectedIds.length} 条世界书` : '未绑定世界书'}</span><span class="npc-editor-chev">⌄</span></div><div class="npc-editor-body">
       <div class="settings-grid"><div class="set-row"><label>微博 ID（必填）</label><input type="text" data-npc-id value="${esc(npc.id)}" placeholder="@前的昵称"></div><div class="set-row"><label>正文姓名/称呼</label><input type="text" data-npc-name value="${esc(npc.name)}"></div></div>
@@ -5722,8 +5737,13 @@ ${WEIBO_PUNCTUATION_STYLE_RULES}
       renderNestedLorePicker(picker, {
         selectedIds:selectedByKey.get(card.dataset.npcKey) || [],
         resetBook:true,
-        onChange:() => { updateNpcCardHeader(card); refreshBoundLoreDisplay(); },
+        onChange:(nextIds) => {
+          picker.__jwr2PortableBindings = portableBindingsFromIds(nextIds);
+          updateNpcCardHeader(card); refreshBoundLoreDisplay();
+        },
       });
+      picker.__jwr2PortableBindings = portableByKey.get(card.dataset.npcKey) || [];
+      picker.__jwr2LoreTouched = false;
     });
     box.querySelectorAll('[data-npc-toggle]').forEach((head) => head.onclick = () => head.closest('[data-npc-key]')?.classList.toggle('open'));
     box.querySelectorAll('[data-npc-delete]').forEach((button) => button.onclick = () => {
@@ -5743,8 +5763,12 @@ ${WEIBO_PUNCTUATION_STYLE_RULES}
     const catalog = new Map((_loreCatalogCache?.flat || []).map((item) => [String(item.id), item]));
     return [...document.querySelectorAll('#npcAccountList [data-npc-key]')].map((card, index) => {
       const old = npcAccounts().find((item) => item.key === card.dataset.npcKey);
-      const loreIds = nestedLorePickerIds(card.querySelector('[data-npc-lore-list]'));
+      const picker = card.querySelector('[data-npc-lore-list]');
+      const loreIds = nestedLorePickerIds(picker);
       const oldSnap = new Map((old?.loreSnap || []).map((item) => [String(item.id), item]));
+      const preservedBindings = normalizePortableLoreBindings(picker?.__jwr2PortableBindings || old?.lorePortableBindings || []);
+      const derivedBindings = portableBindingsFromIds(loreIds, [...oldSnap.values()]);
+      const lorePortableBindings = picker?.__jwr2LoreTouched ? derivedBindings : normalizePortableLoreBindings([...preservedBindings, ...derivedBindings]);
       return normalizeNpcAccount({
       key: card.dataset.npcKey || ('npc_' + index),
       id: card.querySelector('[data-npc-id]')?.value,
@@ -5755,7 +5779,7 @@ ${WEIBO_PUNCTUATION_STYLE_RULES}
       manualLore: card.querySelector('[data-npc-manual]')?.value,
       postPrompt: card.querySelector('[data-npc-post-prompt]')?.value,
       loreIds,
-      lorePortableBindings: portableBindingsFromIds(loreIds, [...oldSnap.values()]),
+      lorePortableBindings,
       loreSnap: loreIds.map((id) => catalog.get(String(id)) || oldSnap.get(String(id))).filter(Boolean).map((item) => ({ id:item.id, book:item.book, name:item.name, content:String(item.content || '').slice(0, 8000) })),
     }, index);
     }).filter((npc) => npc.id || npc.name);
@@ -6144,7 +6168,7 @@ ${WEIBO_PUNCTUATION_STYLE_RULES}
       hotMemeManualText:document.getElementById('setHotMemeManualText').value.trim(),
       hotMemeBookNames:document.getElementById('setHotMemeBookNames').value.trim(),
       hotMemeEntryNames:document.getElementById('setHotMemeEntryNames').value.trim(),
-      hotMemePortableBindings:(() => { const pick = hotMemeLoreSelectionFromForm(); return portableBindingsFromIds(pick.ids, pick.snap); })(),
+      hotMemePortableBindings:hotMemeLoreSelectionFromForm().portableBindings,
       npcDmEnabled:!!document.getElementById('setNpcDmEnabled').checked,
       npcDmPrompt:document.getElementById('setNpcDmPrompt').value.trim(),
       npcAccounts:portableNpcAccountsFromForm(),
@@ -6473,7 +6497,7 @@ ${WEIBO_PUNCTUATION_STYLE_RULES}
       hotMemeManualText: document.getElementById('setHotMemeManualText').value.trim(),
       hotMemeBookNames: document.getElementById('setHotMemeBookNames').value.trim(),
       hotMemeEntryNames: document.getElementById('setHotMemeEntryNames').value.trim(),
-      hotMemePortableBindings: portableBindingsFromIds(hotMemeLore.ids, hotMemeLore.snap),
+      hotMemePortableBindings: hotMemeLore.portableBindings,
       hotMemeLoreIds: hotMemeLore.ids,
       hotMemeLoreSnap: hotMemeLore.snap,
       npcDmEnabled: !!document.getElementById('setNpcDmEnabled').checked,
