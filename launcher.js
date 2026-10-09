@@ -1,7 +1,7 @@
 /** 酱微博：单轮廓远程前端启动器 */
 const JWR2_TAG = '[酱微博]';
-const JWR2_BUILD = '20261009-linked-lore-v8';
-const JWR2_FRONTEND_URL = 'https://fchris1219-del.github.io/jiang-weibo-oneframe-v2/weibo.html?v=ee68adb';
+const JWR2_BUILD = '20261009-fully-remote-v9';
+const JWR2_FRONTEND_URL = 'https://fchris1219-del.github.io/jiang-weibo-oneframe-v2/weibo.html';
 const JWR2_ROOT_ID = 'jwr2-root';
 const JWR2_BRIDGE_KEY = '__JWR2_BRIDGE__';
 const JWR2_INSTANCE_KEY = '__JWR2_CLEANUP__';
@@ -9,6 +9,24 @@ const JWR2_SETTINGS_KEY = 'jiang_weibo_oneframe_v2';
 const JWR2_CHAT_KEY = 'jiang_weibo_oneframe_v2';
 // 导出角色酒馆脚本时只替换这一行；null 表示使用远程 HTML 的系统默认预设。
 const JWR2_EMBEDDED_PRESET = null;
+const JWR2_RUNTIME_PRESET = (() => {
+  const key = '__JWR2_PRESET_OVERRIDE__';
+  const take = (host) => {
+    if (!host || !Object.prototype.hasOwnProperty.call(host, key)) return null;
+    const value = host[key];
+    try { delete host[key]; } catch (_) {}
+    return value && typeof value === 'object' ? value : null;
+  };
+  try {
+    const local = take(window);
+    if (local) return local;
+  } catch (_) {}
+  try {
+    const parentValue = take(window.parent);
+    if (parentValue) return parentValue;
+  } catch (_) {}
+  return JWR2_EMBEDDED_PRESET;
+})();
 
 const JWR2_DOC = (() => {
   try { return window.parent && window.parent.document ? window.parent.document : document; }
@@ -116,7 +134,7 @@ function jwr2SafeContext() {
 }
 
 function jwr2DefaultStore() {
-  const embedded = jwr2Clone(JWR2_EMBEDDED_PRESET, null);
+  const embedded = jwr2Clone(JWR2_RUNTIME_PRESET, null);
   const embeddedId = embedded?.id ? String(embedded.id) : '';
   return {
     version: 6,
@@ -137,7 +155,7 @@ function jwr2ReadSettings() {
   const out = { ...base, ...jwr2Clone(raw, {}) };
   out.api = { ...base.api, ...(raw.api || {}) };
   out.context = { ...base.context, ...(raw.context || {}) };
-  const embedded = jwr2Clone(JWR2_EMBEDDED_PRESET, null);
+  const embedded = jwr2Clone(JWR2_RUNTIME_PRESET, null);
   const embeddedChanged = !!(embedded?.id && String(raw.embeddedPresetId || '') !== String(embedded.id));
   if (embeddedChanged) {
     out.context = { ...base.context, ...(embedded.config || {}) };
@@ -428,7 +446,7 @@ function jwr2InstallBridge() {
       }catch(error){return {available:false,reason:String(error?.message||error)};}
     },
     getSettings: () => jwr2PublicSettings(),
-    getEmbeddedPreset: () => jwr2Clone(JWR2_EMBEDDED_PRESET, null),
+    getEmbeddedPreset: () => jwr2Clone(JWR2_RUNTIME_PRESET, null),
     saveSettings: (value) => jwr2WriteSettings(value),
     getChatStore: () => jwr2ReadChatStore(),
     saveChatStore: (value) => jwr2WriteChatStore(value),
