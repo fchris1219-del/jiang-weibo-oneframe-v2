@@ -33,6 +33,24 @@ function jwr2Context() {
   return null;
 }
 
+function jwr2LastMessageId() {
+  try {
+    if (typeof getLastMessageId === 'function') {
+      const id = Number(getLastMessageId());
+      if (Number.isFinite(id) && id >= 0) return Math.floor(id);
+    }
+  } catch (_) {}
+  const chat = jwr2Context()?.chat;
+  return Array.isArray(chat) && chat.length ? chat.length - 1 : -1;
+}
+
+function jwr2AllChatMessages() {
+  if (typeof getChatMessages !== 'function') return [];
+  const last = jwr2LastMessageId();
+  if (last < 0) return [];
+  return getChatMessages('0-' + last, { role: 'all', hide_state: 'all', include_swipes: false });
+}
+
 function jwr2Clone(value, fallback = null) {
   try { return JSON.parse(JSON.stringify(value)); } catch (_) { return fallback; }
 }
@@ -372,12 +390,11 @@ function jwr2InstallBridge() {
     owner: jwr2ScriptId(),
     getContext: () => jwr2SafeContext(),
     getCurrentChatId: () => jwr2ChatId(),
+    getLastMessageId: () => jwr2LastMessageId(),
     getChatMessages: (...args) => typeof getChatMessages === 'function' ? getChatMessages(...args) : [],
-    // 酒馆助手的 getChatMessages 必须传楼层范围；空参数在部分版本中只会返回单楼。
-    // 这里固定读取当前聊天的全部楼层，并保留隐藏状态，交给前端按“当前可见 / 全部前文”筛选。
-    getAllChatMessages: () => typeof getChatMessages === 'function'
-      ? getChatMessages('0-{{lastMessageId}}', { role: 'all', hide_state: 'all', include_swipes: false })
-      : [],
+    // 不在脚本源码里写 lastMessageId 宏：酒馆助手导入时会把宏冻结成当时的楼层号。
+    // 每次调用都动态取得最新楼层，再读取当前聊天全部消息。
+    getAllChatMessages: () => jwr2AllChatMessages(),
     // 柏宝书仅通过公开只读 API 获取；桥接由酒馆主窗口执行，避免 iframe 作用域差异。
     // 柏宝书只读 API：不设 before，包含最近已生成有效摘要的楼层。
     getBaiBaiHistory: () => {

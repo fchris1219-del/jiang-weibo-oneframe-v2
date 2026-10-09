@@ -1308,8 +1308,13 @@ body{display:grid;place-items:center;overflow:hidden}
     } catch (_) {}
     try {
       if (typeof getChatMessages === 'function') {
-        const all = getChatMessages('0-{{lastMessageId}}', { role:'all', hide_state:'all', include_swipes:false });
-        if (Array.isArray(all)) candidates.push({source:'酒馆助手完整楼层接口',priority:2,list:all});
+        const hostLast = Number(WB_HOST?.getLastMessageId?.());
+        const contextLast = Array.isArray(ctx?.chat) ? ctx.chat.length - 1 : -1;
+        const last = Number.isFinite(hostLast) && hostLast >= 0 ? Math.floor(hostLast) : contextLast;
+        if (last >= 0) {
+          const all = getChatMessages('0-' + last, { role:'all', hide_state:'all', include_swipes:false });
+          if (Array.isArray(all)) candidates.push({source:'酒馆助手完整楼层接口',priority:2,list:all});
+        }
       }
     } catch (_) {}
     // 楼层数优先；数量相同时优先酒馆助手显式全范围结果，它带 message_id / is_hidden。
