@@ -1856,13 +1856,28 @@ body{display:grid;place-items:center;overflow:hidden}
   function renderAllScanTermChips(){
     ['setLoreBookNames','setLoreScanKeyword','setHotMemeBookNames','setHotMemeEntryNames'].forEach(renderScanTermChips);
   }
+  function portableLoreMatchKey(value, kind='entry'){
+    let text = String(value || '');
+    try { text = text.normalize('NFKC'); } catch (_) {}
+    text = text
+      .replace(/[\u200B-\u200D\u2060\uFEFF\uFE0E\uFE0F]/g, '')
+      .replace(/^(?:世界书|角色书)\s*[:：]\s*/i, '')
+      .trim()
+      .toLowerCase();
+    if (kind === 'book') text = text.replace(/^[-–—•·*＊]+\s*/, '');
+    return text.replace(/[\s\u00A0]+/g, '');
+  }
+  function portableLoreLooseKey(value, kind='entry'){
+    return portableLoreMatchKey(value, kind)
+      .replace(/[\-–—•·*＊_.,，。!！?？:：;；'"“”‘’《》〈〉【】\[\]()（）{}]/g, '');
+  }
   function normalizePortableLoreBindings(value){
     const seen = new Set();
     return (Array.isArray(value) ? value : []).map((item) => ({
-      book:String(item?.book || '').replace(/^(世界书:|角色书:)/, '').trim(),
+      book:String(item?.book || '').replace(/^(?:世界书|角色书)\s*[:：]\s*/i, '').trim(),
       entry:String(item?.entry || item?.name || '').trim(),
     })).filter((item) => {
-      const key = item.book.toLowerCase() + '\u0000' + item.entry.toLowerCase();
+      const key = portableLoreMatchKey(item.book, 'book') + '\u0000' + portableLoreMatchKey(item.entry);
       if (!item.book || !item.entry || seen.has(key)) return false;
       seen.add(key); return true;
     });
@@ -1870,11 +1885,27 @@ body{display:grid;place-items:center;overflow:hidden}
   function portableLoreIds(books, bindings){
     const wanted = normalizePortableLoreBindings(bindings);
     const ids = new Set();
-    (books || []).forEach((book) => {
-      const bookName = String(book.label || book.key || '').replace(/^(世界书:|角色书:)/, '').trim().toLowerCase();
-      const entryNames = new Set(wanted.filter((item) => item.book.toLowerCase() === bookName).map((item) => item.entry.toLowerCase()));
-      if (!entryNames.size) return;
-      (book.entries || []).forEach((item) => { if (entryNames.has(String(item.name || '').trim().toLowerCase())) ids.add(String(item.id)); });
+    const catalog = (books || []).flatMap((book) => (book.entries || []).map((item) => ({
+      id:String(item.id),
+      book:book.label || book.key || '',
+      entry:item.name || '',
+    })));
+    wanted.forEach((binding) => {
+      const exactBook = portableLoreMatchKey(binding.book, 'book');
+      const exactEntry = portableLoreMatchKey(binding.entry);
+      let matches = catalog.filter((item) => portableLoreMatchKey(item.book, 'book') === exactBook && portableLoreMatchKey(item.entry) === exactEntry);
+      if (!matches.length) {
+        const looseBook = portableLoreLooseKey(binding.book, 'book');
+        const looseEntry = portableLoreLooseKey(binding.entry);
+        matches = catalog.filter((item) => portableLoreLooseKey(item.book, 'book') === looseBook && portableLoreLooseKey(item.entry) === looseEntry);
+      }
+      // 同一张卡在不同酒馆中，角色书/挂载世界书的显示名可能不同；仅当条目名全局唯一时才跨书名回退。
+      if (!matches.length) {
+        const looseEntry = portableLoreLooseKey(binding.entry);
+        const byEntry = catalog.filter((item) => portableLoreLooseKey(item.entry) === looseEntry);
+        if (byEntry.length === 1) matches = byEntry;
+      }
+      matches.forEach((item) => ids.add(item.id));
     });
     return ids;
   }
@@ -2017,14 +2048,23 @@ body{display:grid;place-items:center;overflow:hidden}
 
       const books = _loreCatalogCache?.books || [];
       const flat = _loreCatalogCache?.flat || [];
-      if (!_lorePickPending.size && !state.loreAutoSuppressed) {
+      // 世界书内部 id 并不具备跨酒馆可移植性；先清掉当前目录中已不存在的旧 id，
+      // 再用模板携带的“书名 + 条目名”重新定位。
+      const liveIds = new Set(flat.map((item) => String(item.id)));
+      _lorePickPending = new Set([..._lorePickPending].filter((id) => liveIds.has(String(id))));
+      const portableIds = portableLoreIds(books, phoneSettings.lorePortableBindings || currentSlotContext().lorePortableBindings || []);
+      const shouldAutoHydrate = !_lorePickPending.size && !state.loreAutoSuppressed;
+      if (shouldAutoHydrate) {
         const autoIds = scannedLoreIds(
           books,
           document.getElementById('setLoreBookNames')?.value ?? phoneSettings.loreBookNames ?? currentSlotContext().loreBookNames ?? '',
           document.getElementById('setLoreScanKeyword')?.value ?? phoneSettings.loreScanKeyword ?? currentSlotContext().loreScanKeyword ?? '🩶'
         );
         autoIds.forEach((id) => _lorePickPending.add(id));
-        portableLoreIds(books, phoneSettings.lorePortableBindings || currentSlotContext().lorePortableBindings || []).forEach((id) => _lorePickPending.add(id));
+      }
+      // 明确模板绑定不属于“自动扫描”，热切换模板时必须重新回填；手动清空后则尊重当前档位的选择。
+      if (options.applyPortableBindings === true || shouldAutoHydrate) {
+        portableIds.forEach((id) => _lorePickPending.add(id));
       }
       const boundSources = presetBoundLoreSources();
       const displayIds = mainLoreDisplayIds();
@@ -6231,7 +6271,7 @@ ${WEIBO_PUNCTUATION_STYLE_RULES}
     document.querySelectorAll('[data-preset-depth]').forEach((input) => { input.value = depths[input.dataset.presetDepth] ?? 4; });
     renderCustomPresetEntries(config.customEntries || []);
     _lorePickPending.clear(); state.loreAutoSuppressed = false; _lorePickBookKey = null;
-    if (_loreCatalogCache) { renderLorePickList(false, { hydrateStored:false }); renderHotMemeLoreOptions([], true); refreshGeneratorLorePickers(); }
+    if (_loreCatalogCache) { renderLorePickList(false, { hydrateStored:false, applyPortableBindings:true }); renderHotMemeLoreOptions([], true); refreshGeneratorLorePickers(); }
     renderAllScanTermChips();
     updateContextModeVisibility(); refreshPresetUiSummaries();
   }
