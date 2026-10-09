@@ -1524,15 +1524,18 @@ body{display:grid;place-items:center;overflow:hidden}
   function readPhoneBundleFromMetadata(){
     try {
       const hostStore = WB_HOST?.getChatStore?.() || {};
-      const hostBundle = hostStore?.slotRecords?.[activeSlotId];
+      const hostRecords = hostStore.slotRecords;
+      const hostBundle = hostRecords?.[activeSlotId];
       if (hostBundle && typeof hostBundle === 'object') return hostBundle;
-      if (!hostStore.slotRecords && hostStore.phoneBundle && typeof hostStore.phoneBundle === 'object') return hostStore.phoneBundle;
       const cm = getSillyContextSafe()?.chatMetadata || {};
-      const slots = cm.weibo_slot_records;
-      if (slots?.[activeSlotId] && typeof slots[activeSlotId] === 'object') return slots[activeSlotId];
+      const chatRecords = cm.weibo_slot_records;
+      const chatBundle = chatRecords?.[activeSlotId];
+      if (chatBundle && typeof chatBundle === 'object') return chatBundle;
+      // 未分档的旧存储只允许首次迁移。已有任何分档记录时，不得回退到旧 wb_lore / phoneBundle。
+      if ((hostRecords && typeof hostRecords === 'object') || (chatRecords && typeof chatRecords === 'object')) return null;
+      if (hostStore.phoneBundle && typeof hostStore.phoneBundle === 'object') return hostStore.phoneBundle;
       const bundle = cm.weibo_phone_bundle;
       if (bundle && typeof bundle === 'object') return bundle;
-      // 兼容旧字段
       const legacy = {};
       if (cm.weibo_wb_lore) legacy.wbLore = cm.weibo_wb_lore;
       if (Array.isArray(cm.weibo_selected_lore)) legacy.selectedLoreIds = cm.weibo_selected_lore;
