@@ -1,5 +1,6 @@
 /** 酱微博：单轮廓远程前端启动器 */
 const JWR2_TAG = '[酱微博]';
+const JWR2_BUILD = '20261009-chat-runtime-v3';
 const JWR2_FRONTEND_URL = 'https://fchris1219-del.github.io/jiang-weibo-oneframe-v2/weibo.html?v=ee68adb';
 const JWR2_ROOT_ID = 'jwr2-root';
 const JWR2_BRIDGE_KEY = '__JWR2_BRIDGE__';
@@ -388,6 +389,7 @@ async function jwr2Reload() {
 function jwr2InstallBridge() {
   JWR2_HOST[JWR2_BRIDGE_KEY] = {
     owner: jwr2ScriptId(),
+    getBuildVersion: () => JWR2_BUILD,
     getContext: () => jwr2SafeContext(),
     getCurrentChatId: () => jwr2ChatId(),
     getLastMessageId: () => jwr2LastMessageId(),

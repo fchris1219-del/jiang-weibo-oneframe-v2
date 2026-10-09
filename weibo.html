@@ -1298,6 +1298,7 @@ body{display:grid;place-items:center;overflow:hidden}
       '裁剪：不裁剪。无 <content> 的楼层不回退到原始消息',
     ].join('\n');
   }
+  let lastChatReadAudit = { source:'尚未读取', count:0, lastFloor:-1, hostLast:-1, build:'' };
   function readFullChatMessageList(context = null){
     const ctx = context || getSillyContextSafe();
     const candidates = [];
@@ -1323,7 +1324,17 @@ body{display:grid;place-items:center;overflow:hidden}
       if (item.list.length !== picked.list.length) return item.list.length > picked.list.length ? item : picked;
       return item.priority > picked.priority ? item : picked;
     }, null);
-    return best?.list || [];
+    const list = best?.list || [];
+    let hostLast = -1;
+    try {
+      const value = Number(WB_HOST?.getLastMessageId?.());
+      if (Number.isFinite(value) && value >= 0) hostLast = Math.floor(value);
+    } catch (_) {}
+    const lastFloor = list.reduce((max,item,index)=>Math.max(max,chatFloorNumber(item,index)),-1);
+    let build = '';
+    try { build = String(WB_HOST?.getBuildVersion?.() || ''); } catch (_) {}
+    lastChatReadAudit = { source:best?.source || '无可用来源', count:list.length, lastFloor, hostLast, build };
+    return list;
   }
   function currentChatId(){
     try {
@@ -6869,7 +6880,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
         ...(nativePreview ? [
           { title:'柏宝书历史剧情摘要', depth:'背景', text:nativePreview.history.text || '（柏宝书尚未生成有效摘要）' },
           { title:'眼下局势', depth:'参考', text:nativePreview.situation || '（柏宝书尚未记录当前局势）' },
-          { title:phoneSettings.includeAllContentHistory ? `全部前文正文（实取 ${nativePreview.visible.length} 条）` : `当前可见正文（最近 ${nativePreview.recentCount} 条｜实取 ${nativePreview.visible.length} 条）`, depth:'真实楼层号：' + (nativePreview.visible.map(x=>x.index).join('、') || '无'), text:nativePreview.visible.map(x=>`[#${x.index}] ${x.role}:\n${x.content}`).join('\n\n') || '（没有符合条件的 content 正文）' },
+          { title:phoneSettings.includeAllContentHistory ? `全部前文正文（实取 ${nativePreview.visible.length} 条｜扫描至 #${lastChatReadAudit.lastFloor}）` : `当前可见正文（最近 ${nativePreview.recentCount} 条｜实取 ${nativePreview.visible.length} 条｜扫描至 #${lastChatReadAudit.lastFloor}）`, depth:'真实楼层号：' + (nativePreview.visible.map(x=>x.index).join('、') || '无') + ' · 来源：' + lastChatReadAudit.source + (lastChatReadAudit.build ? ' · build ' + lastChatReadAudit.build : ''), text:nativePreview.visible.map(x=>`[#${x.index}] ${x.role}:\n${x.content}`).join('\n\n') || '（没有符合条件的 content 正文）' },
         ] : [
           { title:'手动总结与开场白', depth:depths.history, text:groups.history.join('\n\n') || '（当前未注入历史摘要、手动总结或开场白）' },
           { title:'最近聊天完整正文', depth:depths.recent, text:groups.recent.join('\n\n') || '（当前未注入最近聊天正文）' },
