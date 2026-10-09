@@ -429,8 +429,8 @@ body{display:grid;place-items:center;overflow:hidden}
 .preset-depth-help{grid-column:1/-1;margin-top:-4px;color:#a17859;font-size:9px;line-height:1.45}
 .preset-preview-list{display:none;margin-top:11px;padding-top:3px}.preset-preview-list.show{display:flex;flex-direction:column;gap:7px}
 .preset-preview-card{border:1px solid #2b3039;border-radius:11px;background:#191c22;color:#dce3ed;overflow:hidden}
-.preset-preview-card button{all:unset;box-sizing:border-box;width:100%;display:flex;align-items:center;gap:8px;padding:10px 11px;cursor:pointer}
-.preset-preview-card button:hover{background:#20242c}.preset-preview-card .pv-title{flex:1;font-size:11px;font-weight:700}.preset-preview-card .pv-meta{font-size:9px;color:#8f99a8}
+.preset-preview-card button{all:unset;box-sizing:border-box;width:100%;min-width:0;display:flex;align-items:center;gap:8px;padding:10px 11px;cursor:pointer}
+.preset-preview-card button:hover{background:#20242c}.preset-preview-card .pv-title{flex:1;min-width:0;font-size:11px;font-weight:700}.preset-preview-card .pv-meta{flex:0 1 auto;max-width:58%;font-size:9px;color:#8f99a8;text-align:right;overflow-wrap:anywhere}
 .preset-preview-card pre{display:none;margin:0;padding:10px 11px;border-top:1px solid #2b3039;white-space:pre-wrap;word-break:break-word;font-size:9px;line-height:1.6;color:#cbd3df;max-height:220px;overflow:auto}.preset-preview-card.open pre{display:block}.preset-preview-card.open .pv-chev{transform:rotate(180deg)}
 .custom-entry-empty{padding:11px;text-align:center;color:#aaa;font-size:11px;border:1px dashed #ddd;border-radius:10px}
 .custom-entry-actions{display:flex;gap:7px;margin-top:9px}.custom-entry-actions button{flex:1}
@@ -698,7 +698,7 @@ body{display:grid;place-items:center;overflow:hidden}
           </article>
           <article class="preset-entry" data-preset-entry="history" data-preset-pinned="true">
             <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">前</div><div class="preset-entry-copy"><div class="preset-entry-title">聊天前文</div><div class="preset-entry-note" id="historyPresetSummary">最近 3 条</div></div><span class="preset-entry-state on">可配置</span><span class="preset-entry-chev">⌄</span></div>
-            <div class="preset-entry-editor"><div class="field-note">勾选柏宝书时注入其真实历史剧情摘要与眼下局势，并读取酒馆当前可见的正式正文；勾选全部前文时可连同隐藏楼层的正式正文一起注入。未勾选柏宝书时使用普通最近 N 条、手动总结与开场白设置。</div><div class="preset-depth-row"><label>历史摘要 / 开场白深度</label><input type="number" data-preset-depth="history" min="0" max="20" step="1" inputmode="numeric" value="3" aria-label="历史摘要与开场白注入深度"><div class="preset-depth-help">仅普通模式使用，控制手动总结和开场白；柏宝书摘要作为早期背景注入，请求中不携带其系统提示词。</div></div><div class="preset-depth-row"><label>最近聊天正文深度</label><input type="number" data-preset-depth="recent" min="0" max="20" step="1" inputmode="numeric" value="0" aria-label="最近聊天正文注入深度"><div class="preset-depth-help">仅普通模式使用。柏宝书适配开启后，聊天消息保持原生角色与顺序。</div></div><label class="settings-switch"><input type="checkbox" id="setIncludeRecentContext"><span>注入最近聊天完整正文</span></label><div class="settings-subbox" id="recentContextBox"><div class="set-row" style="margin-top:0"><label for="setRecentMessages">最近聊天条数（默认 3）</label><input type="number" id="setRecentMessages" min="0" max="60" step="1" /></div></div><label class="settings-switch"><input type="checkbox" id="setIncludeBaiBaiHistory"><span>注入柏宝书「历史剧情摘要＋眼下局势」</span></label><div class="field-note">读取当前聊天柏宝书所有有效历史剧情摘要（包括近期已有摘要但未隐藏的楼层），以及「眼下局势」。不发送柏宝书私密简报、系统要求或时间标签。聊天正文仅取 &lt;content&gt; 内已定稿文字，自动剔除其中的 draft、审批和进度锚定注释。</div><label class="settings-switch"><input type="checkbox" id="setIncludeAllContentHistory"><span>一键注入所有前文（仅 &lt;content&gt;）</span></label><div class="field-note">开启后无视楼层隐藏状态，从本聊天第 0 楼到最新楼逐条提取 &lt;content&gt; 内文；没有该标签的楼层直接跳过，不设条数或字数限制。开启时取代最近 N 条正文，不影响其他设定。</div><label class="settings-switch"><input type="checkbox" id="setIncludeOpeningContext"><span>单独注入本聊天开场白</span></label><div class="field-note">关闭后仍可使用最近聊天与柏宝书摘要；开场白不会再作为独立上下文挤占当前状态。</div><label class="settings-switch"><input type="checkbox" id="setIncludeSummaryContext"><span>注入手动前文总结</span></label><div class="settings-subbox" id="summaryContextBox"><div class="set-row" style="margin-top:0"><label for="setManualSummary">粘贴前文总结</label><textarea id="setManualSummary" rows="6" placeholder="可与最近聊天记录和柏宝书摘要一起注入……"></textarea></div></div></div>
+            <div class="preset-entry-editor"><div class="field-note">勾选柏宝书时注入其真实历史剧情摘要与眼下局势，并从当前聊天全部实际楼层中读取最近 N 条正式正文；即使楼层已被柏宝书标记为 hidden，也不会漏掉。未勾选柏宝书时使用普通最近 N 条、手动总结与开场白设置。</div><div class="preset-depth-row"><label>历史摘要 / 开场白深度</label><input type="number" data-preset-depth="history" min="0" max="20" step="1" inputmode="numeric" value="3" aria-label="历史摘要与开场白注入深度"><div class="preset-depth-help">仅普通模式使用，控制手动总结和开场白；柏宝书摘要作为早期背景注入，请求中不携带其系统提示词。</div></div><div class="preset-depth-row"><label>最近聊天正文深度</label><input type="number" data-preset-depth="recent" min="0" max="20" step="1" inputmode="numeric" value="0" aria-label="最近聊天正文注入深度"><div class="preset-depth-help">仅普通模式使用。柏宝书适配开启后，聊天消息保持原生角色与顺序。</div></div><label class="settings-switch"><input type="checkbox" id="setIncludeRecentContext"><span>注入最近聊天完整正文</span></label><div class="settings-subbox" id="recentContextBox"><div class="set-row" style="margin-top:0"><label for="setRecentMessages">最近聊天条数（默认 3）</label><input type="number" id="setRecentMessages" min="0" max="60" step="1" /></div></div><label class="settings-switch"><input type="checkbox" id="setIncludeBaiBaiHistory"><span>注入柏宝书「历史剧情摘要＋眼下局势」</span></label><div class="field-note">读取当前聊天柏宝书所有有效历史剧情摘要（包括近期已有摘要但未隐藏的楼层），以及「眼下局势」。不发送柏宝书私密简报、系统要求或时间标签。聊天正文仅取 &lt;content&gt; 内已定稿文字，自动剔除其中的 draft、审批和进度锚定注释。</div><label class="settings-switch"><input type="checkbox" id="setIncludeAllContentHistory"><span>一键注入所有前文（仅 &lt;content&gt;）</span></label><div class="field-note">开启后从本聊天第 0 楼到最新楼逐条提取 &lt;content&gt; 内文；没有该标签的楼层直接跳过，不设条数或字数限制。开启时取代最近 N 条正文，不影响其他设定。</div><label class="settings-switch"><input type="checkbox" id="setIncludeOpeningContext"><span>单独注入本聊天开场白</span></label><div class="field-note">关闭后仍可使用最近聊天与柏宝书摘要；开场白不会再作为独立上下文挤占当前状态。</div><label class="settings-switch"><input type="checkbox" id="setIncludeSummaryContext"><span>注入手动前文总结</span></label><div class="settings-subbox" id="summaryContextBox"><div class="set-row" style="margin-top:0"><label for="setManualSummary">粘贴前文总结</label><textarea id="setManualSummary" rows="6" placeholder="可与最近聊天记录和柏宝书摘要一起注入……"></textarea></div></div></div>
           </article>
           <article class="preset-entry" data-preset-entry="generationCounts" data-preset-static="true">
             <div class="preset-entry-head" data-preset-toggle><div class="preset-entry-icon">数</div><div class="preset-entry-copy"><div class="preset-entry-title">拉取数量</div><div class="preset-entry-note" id="generationCountsPresetSummary">推荐、评论、私信与全部拉取数量</div></div><span class="preset-entry-state on">模板可携带</span><span class="preset-entry-chev">⌄</span></div>
@@ -1223,12 +1223,13 @@ body{display:grid;place-items:center;overflow:hidden}
     return Number.isFinite(value) && value >= 0 ? Math.floor(value) : fallbackIndex;
   }
   function chatMessageIsHidden(message){
-    return message?.is_hidden === true || message?.is_system === true;
+    // is_system 在部分酒馆/柏宝书组合中也会出现在页面仍可见的剧情楼层上，
+    // 不能把它当成隐藏标记；只有明确的 is_hidden 才排除。
+    return message?.is_hidden === true || message?.extra?.is_hidden === true;
   }
   function chatMessageIsNativeSystem(message){
     if (!message) return false;
-    if (message.role === 'system') return true;
-    return message.is_system === true && !!message.extra?.type && message.extra?.bbs_hidden !== true;
+    return message.role === 'system';
   }
   function chatMessageContent(message){
     if (!message) return '';
@@ -1247,14 +1248,16 @@ body{display:grid;place-items:center;overflow:hidden}
       if (m?.extra?.bbs_omit === true) { omitted.push(index); return; }
       if (chatMessageIsNativeSystem(m)) { omitted.push(index); return; }
       if (index === 0 && !includeOpening) { openingExcluded.push(index); return; }
-      if (!allHistory && chatMessageIsHidden(m)) { hidden.push(index); return; }
+      // 酒馆的 hidden 表示该楼层不进入酒馆主请求，并不代表玩家在聊天页看不见。
+      // 微博最近正文必须仍能读取这些由柏宝书隐藏/压缩过的真实剧情楼层。
+      if (chatMessageIsHidden(m)) hidden.push(index);
       const content = chatMessageContent(m);
       if (!content) { noContent.push(index); return; }
       const isUser = m.is_user === true || m.role === 'user' || m.is_name === 'User';
       visible.push({role:isUser ? 'user' : 'assistant', content, index});
     });
     visible.sort((a,b)=>a.index-b.index);
-    return {visible,hidden,omitted,noContent,openingExcluded,total:chat.length,allHistory,includeOpening,policy:allHistory ? '全部前文：所有包含 <content> 的剧情楼层，包括隐藏旧楼层' : '当前前文：最近 N 条未隐藏且包含 <content> 的剧情楼层'};
+    return {visible,hidden,omitted,noContent,openingExcluded,total:chat.length,allHistory,includeOpening,policy:allHistory ? '全部前文：所有包含 <content> 的剧情楼层' : '最近前文：从全部真实楼层中取最后 N 条包含 <content> 的剧情正文'};
   }
   function buildBaiBaiNativeRequestParts(context = null){
     const history=readBaiBaiStoryHistory();
@@ -1287,7 +1290,7 @@ body{display:grid;place-items:center;overflow:hidden}
     return ['正文范围：'+a.policy,
       '总楼层：'+a.total,
       '注入楼层：'+parts.visible.map(x=>x.index).join(','),
-      '未注入隐藏楼层：'+a.hidden.join(','),
+      '带 hidden 标记但仍按真实剧情读取的楼层：'+a.hidden.join(','),
       '排除的番外/原生系统楼层：'+a.omitted.join(','),
       '按开关排除开场楼层：'+a.openingExcluded.join(','),
       '无 <content> 正文：'+a.noContent.join(','),
@@ -5896,7 +5899,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
       if (document.getElementById('setIncludeAllContentHistory')?.checked) sources.push('全部前文 content');
       if (includeSummary) sources.push('手动总结');
       if (includeOpening) sources.push('开场白');
-      if (includeRecent && !document.getElementById('setIncludeAllContentHistory')?.checked) sources.push(includeBaiBai ? '当前未隐藏 content 正文' : `最近 ${document.getElementById('setRecentMessages')?.value || 3} 条 content 正文`);
+      if (includeRecent && !document.getElementById('setIncludeAllContentHistory')?.checked) sources.push(`最近 ${document.getElementById('setRecentMessages')?.value || 3} 条 content 正文`);
       history.textContent = sources.join(' + ') || '不注入聊天前文';
     }
     const charEnabled = !!(document.getElementById('setIncludeChar')?.checked || document.getElementById('setIncludeScenario')?.checked);
@@ -6880,7 +6883,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
         ...(nativePreview ? [
           { title:'柏宝书历史剧情摘要', depth:'背景', text:nativePreview.history.text || '（柏宝书尚未生成有效摘要）' },
           { title:'眼下局势', depth:'参考', text:nativePreview.situation || '（柏宝书尚未记录当前局势）' },
-          { title:phoneSettings.includeAllContentHistory ? `全部前文正文（实取 ${nativePreview.visible.length} 条｜扫描至 #${lastChatReadAudit.lastFloor}）` : `当前可见正文（最近 ${nativePreview.recentCount} 条｜实取 ${nativePreview.visible.length} 条｜扫描至 #${lastChatReadAudit.lastFloor}）`, depth:'真实楼层号：' + (nativePreview.visible.map(x=>x.index).join('、') || '无') + ' · 来源：' + lastChatReadAudit.source + (lastChatReadAudit.build ? ' · build ' + lastChatReadAudit.build : ''), text:nativePreview.visible.map(x=>`[#${x.index}] ${x.role}:\n${x.content}`).join('\n\n') || '（没有符合条件的 content 正文）' },
+          { title:phoneSettings.includeAllContentHistory ? '全部前文正文' : '最近聊天正文', depth:(phoneSettings.includeAllContentHistory ? '' : `最近 ${nativePreview.recentCount} 条 · `) + `实取 ${nativePreview.visible.length} 条 · #${nativePreview.visible.map(x=>x.index).join('、#') || '无'} · 扫描至 #${lastChatReadAudit.lastFloor}`, text:nativePreview.visible.map(x=>`[#${x.index}] ${x.role}:\n${x.content}`).join('\n\n') || '（没有符合条件的 content 正文）' },
         ] : [
           { title:'手动总结与开场白', depth:depths.history, text:groups.history.join('\n\n') || '（当前未注入历史摘要、手动总结或开场白）' },
           { title:'最近聊天完整正文', depth:depths.recent, text:groups.recent.join('\n\n') || '（当前未注入最近聊天正文）' },
