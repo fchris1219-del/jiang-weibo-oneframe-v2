@@ -1,6 +1,6 @@
 /** 酱微博：单轮廓远程前端启动器 */
 const JWR2_TAG = '[酱微博]';
-const JWR2_BUILD = '20261009-remote-frontend-v10';
+const JWR2_BUILD = '20261009-remote-frontend-v11';
 const JWR2_FRONTEND_URL = 'https://fchris1219-del.github.io/jiang-weibo-oneframe-v2/weibo.html';
 const JWR2_ROOT_ID = 'jwr2-root';
 const JWR2_BRIDGE_KEY = '__JWR2_BRIDGE__';
@@ -54,6 +54,16 @@ function jwr2AllChatMessages() {
 
 function jwr2Clone(value, fallback = null) {
   try { return JSON.parse(JSON.stringify(value)); } catch (_) { return fallback; }
+}
+
+function jwr2PortableEmbeddedPreset(value) {
+  const preset = jwr2Clone(value, null);
+  if (!preset || typeof preset !== 'object') return null;
+  if (preset.config && typeof preset.config === 'object') {
+    delete preset.config.initPrompt;
+    delete preset.config.wbLore;
+  }
+  return preset;
 }
 
 function jwr2ChatId() {
@@ -116,7 +126,7 @@ function jwr2SafeContext() {
 }
 
 function jwr2DefaultStore() {
-  const embedded = jwr2Clone(JWR2_EMBEDDED_PRESET, null);
+  const embedded = jwr2PortableEmbeddedPreset(JWR2_EMBEDDED_PRESET);
   const embeddedId = embedded?.id ? String(embedded.id) : '';
   return {
     version: 6,
@@ -137,7 +147,7 @@ function jwr2ReadSettings() {
   const out = { ...base, ...jwr2Clone(raw, {}) };
   out.api = { ...base.api, ...(raw.api || {}) };
   out.context = { ...base.context, ...(raw.context || {}) };
-  const embedded = jwr2Clone(JWR2_EMBEDDED_PRESET, null);
+  const embedded = jwr2PortableEmbeddedPreset(JWR2_EMBEDDED_PRESET);
   const embeddedChanged = !!(embedded?.id && String(raw.embeddedPresetId || '') !== String(embedded.id));
   if (embeddedChanged) {
     out.context = { ...base.context, ...(embedded.config || {}) };
@@ -428,7 +438,7 @@ function jwr2InstallBridge() {
       }catch(error){return {available:false,reason:String(error?.message||error)};}
     },
     getSettings: () => jwr2PublicSettings(),
-    getEmbeddedPreset: () => jwr2Clone(JWR2_EMBEDDED_PRESET, null),
+    getEmbeddedPreset: () => jwr2PortableEmbeddedPreset(JWR2_EMBEDDED_PRESET),
     saveSettings: (value) => jwr2WriteSettings(value),
     getChatStore: () => jwr2ReadChatStore(),
     saveChatStore: (value) => jwr2WriteChatStore(value),
