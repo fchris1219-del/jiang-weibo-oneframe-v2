@@ -6251,11 +6251,12 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
     const templateName = pristine ? '酱微博' : (String(value.name || '').trim() || '{{char}}微博模板');
     const exportName = pristine ? '酱微博' : (/微博\s*$/.test(templateName) ? templateName : templateName + '微博');
     const fileName = exportName.replace(/[\\/:*?"<>|\r\n]+/g, '-').trim() || '微博';
-    const remoteLauncherUrl = 'https://testingcf.jsdelivr.net/gh/fchris1219-del/jiang-weibo-oneframe-v2/launcher.js';
+    const url = 'https://fchris1219-del.github.io/jiang-weibo-oneframe-v2/launcher.js?v=' + Date.now();
+    const source = await fetch(url, { cache:'reload' }).then((res) => { if (!res.ok) throw new Error('启动器 HTTP ' + res.status); return res.text(); });
+    if (!/const JWR2_EMBEDDED_PRESET\s*=\s*[^;]+;/.test(source)) throw new Error('线上启动器尚未支持模板导出，请刷新前端后重试');
     const literal = pristine ? 'null' : JSON.stringify(value).replace(/</g, '\\u003c');
-    const presetBootstrap = pristine ? '' : `window.__JWR2_PRESET_OVERRIDE__ = ${literal};\ntry { window.parent.__JWR2_PRESET_OVERRIDE__ = window.__JWR2_PRESET_OVERRIDE__; } catch (_) {}`;
-    const content = `${presetBootstrap}${presetBootstrap ? '\n' : ''}const __JWR2_REMOTE_LAUNCHER__ = ${JSON.stringify(remoteLauncherUrl)};\nimport(__JWR2_REMOTE_LAUNCHER__ + '?v=' + Date.now()).catch((error) => {\n  console.error('[酱微博] 远程启动器加载失败', error);\n  alert('酱微博加载失败：' + String(error?.message || error));\n});`;
-    const info = pristine ? '酱微博轻量远程版；使用线上系统默认预设，不携带角色、NPC 或世界书选择配置。' : `酱微博轻量远程版；携带预设模板：${value.name} v${value.version}`;
+    const content = source.replace(/const JWR2_EMBEDDED_PRESET\s*=\s*[^;]+;/, 'const JWR2_EMBEDDED_PRESET = ' + literal + ';');
+    const info = pristine ? '酱微博前端远程版；使用系统默认预设，不携带角色、NPC 或世界书选择配置。' : `酱微博前端远程版；内置预设模板：${value.name} v${value.version}`;
     const script = { type:'script', enabled:true, name:exportName, id:crypto.randomUUID ? crypto.randomUUID() : ('jwr2-' + Date.now()), content, info, button:{ enabled:true, buttons:[] }, data:{}, export_with:{ data:true, button:true } };
     downloadTextFile(fileName + '.json', JSON.stringify(script, null, 2));
   }

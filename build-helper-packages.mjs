@@ -12,7 +12,6 @@ const launcher = fs.readFileSync(launcherPath, 'utf8');
 const html = fs.readFileSync(htmlPath, 'utf8');
 const remote = JSON.parse(fs.readFileSync(remotePath, 'utf8'));
 const embedded = JSON.parse(fs.readFileSync(embeddedPath, 'utf8'));
-const remoteLauncherUrl = 'https://testingcf.jsdelivr.net/gh/fchris1219-del/jiang-weibo-oneframe-v2/launcher.js';
 
 // 酒馆助手会把 content 放进真正的 <script> 元素中执行。仅 JSON.stringify
 // 不会转义 HTML 的闭合 script 标签，浏览器会在内嵌 HTML 中途提前结束启动器。
@@ -33,10 +32,12 @@ function buildEmbeddedSource() {
   return launcher.replace(anchor, () => replacement);
 }
 
-remote.content = `const __JWR2_REMOTE_LAUNCHER__ = ${JSON.stringify(remoteLauncherUrl)};\nimport(__JWR2_REMOTE_LAUNCHER__ + '?v=' + Date.now()).catch((error) => {\n  console.error('[酱微博] 远程启动器加载失败', error);\n  alert('酱微博加载失败：' + String(error?.message || error));\n});`;
-remote.info = '酱微博轻量远程版：启动器与前端均从线上加载，重新打开酒馆即可取得最新版本。构建：20261009-fully-remote-v9。';
+remote.name = '酱微博';
+remote.content = launcher;
+remote.info = '酱微博前端远程版：悬浮按钮与宿主桥接内嵌，微博前端从线上加载。构建：20261009-remote-frontend-v10。';
+embedded.name = '酱微博-完整内嵌版';
 embedded.content = buildEmbeddedSource();
-embedded.info = '完整内嵌测试版：同步显示热梗与 NPC 世界书绑定，按用途独立保存；安全转义内嵌 HTML。构建：20261009-fully-remote-v9。';
+embedded.info = '酱微博完整内嵌版：悬浮按钮、宿主桥接与微博前端全部内嵌，可离线启动。构建：20261009-remote-frontend-v10。';
 
 fs.writeFileSync(remotePath, `${JSON.stringify(remote, null, 2)}\n`);
 fs.writeFileSync(embeddedPath, `${JSON.stringify(embedded, null, 2)}\n`);
