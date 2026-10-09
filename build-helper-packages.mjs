@@ -33,9 +33,9 @@ function buildEmbeddedSource() {
 }
 
 remote.content = launcher;
-remote.info = '酱微博启动器；远程加载前端。构建：20261009-safe-embedded-v7。';
+remote.info = '酱微博启动器；远程加载前端。构建：20261009-linked-lore-v8。';
 embedded.content = buildEmbeddedSource();
-embedded.info = '完整内嵌测试版：HTML 已按真实 script 标签规则安全转义；修复悬浮按钮未挂载。构建：20261009-safe-embedded-v7。';
+embedded.info = '完整内嵌测试版：同步显示热梗与 NPC 世界书绑定，按用途独立保存；安全转义内嵌 HTML。构建：20261009-linked-lore-v8。';
 
 fs.writeFileSync(remotePath, `${JSON.stringify(remote, null, 2)}\n`);
 fs.writeFileSync(embeddedPath, `${JSON.stringify(embedded, null, 2)}\n`);
