@@ -1,6 +1,6 @@
 /** 酱微博：单轮廓远程前端启动器 */
 const JWR2_TAG = '[酱微博]';
-const JWR2_BUILD = '20261009-unclosed-content-v5';
+const JWR2_BUILD = '20261009-unclosed-content-v6';
 const JWR2_FRONTEND_URL = 'https://fchris1219-del.github.io/jiang-weibo-oneframe-v2/weibo.html?v=ee68adb';
 const JWR2_ROOT_ID = 'jwr2-root';
 const JWR2_BRIDGE_KEY = '__JWR2_BRIDGE__';
@@ -452,6 +452,10 @@ function jwr2Json(value) {
   return JSON.stringify(String(value || '')).replace(/<\//g, '<\\/').split(commentOpen).join('<' + '\\!--');
 }
 async function jwr2FetchRemote(force = false) {
+  // 完整内嵌测试包必须优先使用随脚本携带的 HTML；否则导入的是新脚本，打开的仍可能是 main/CDN 旧页面。
+  if (typeof JWR2_EMBEDDED_HTML === 'string' && JWR2_EMBEDDED_HTML.includes('<div id="app">')) {
+    return JWR2_EMBEDDED_HTML;
+  }
   if (force) jwr2RemotePromise = null;
   if (!jwr2RemotePromise) {
     jwr2RemotePromise = (async () => {
