@@ -4344,6 +4344,12 @@ body{display:grid;place-items:center;overflow:hidden}
   }
 
   // ---- AI ----
+  const WEIBO_PUNCTUATION_STYLE_RULES = String.raw`<weibo_punctuation_style>
+标点、断句和玩梗方式必须符合发言账号身份，不要把所有内容修成规范书面语。媒体、官博等账号可以相对规范；普通用户、粉丝、黑粉、串子、营销号和评论区应保留真实的随手感。
+允许按身份与情绪使用不规范标点：大营销号可用“！！！”制造夸张感；评论区可用“。。。”代替“……”；口语短句可以不打逗号，改用空格断句，甚至连空格也省略。不要机械地让每个账号都这样写，应随人物、圈层、场景和情绪变化。
+玩梗时不要用双引号、书名号或解释性括号郑重标记梗，也不要像在引用术语。例如不要写“今天是不是要‘花辞树’了”，串子应直接说“又花辞树了吧”。梗要像账号自然脱口而出，而不是被作者特别标注出来。
+</weibo_punctuation_style>`;
+
   const WEIBO_NATIVE_DETAILED = String.raw`<weibo_native_output>
 
 **微博原生表达模拟**
@@ -4377,6 +4383,8 @@ Different account types must sound distinct:
 媒体/官博: relatively standardized but still account-specific.
 明星/选手/公众人物本人: usually more restrained and often brief.
 站姐、超话主持人、数据站、反黑站、搬运号、路人号 should retain their own discourse habits.
+
+${WEIBO_PUNCTUATION_STYLE_RULES}
 
 夸人、骂人、阴阳怪气和起外号都必须符合发言账号的身份、立场与圈层语感，不得把所有攻击词混用。例如梦女可能抱怨“直男”、“不解风情”，却不会无缘无故用黑粉式的“超雄”；唯粉、黑粉、乐子人、官方号与本人账号的褒贬尺度应明显不同。
 
@@ -4591,6 +4599,7 @@ Do not wrap output in Markdown code fences.
 不同账号必须保留各自身份、立场、知情范围和说话习惯；普通用户、粉丝、黑粉、串子、营销号、媒体、官方与本人不能说成同一种口吻。
 夸人、骂人、玩梗与阴阳怪气必须符合发言账号身份。不要让所有评论持相同立场，也不要凭空制造尚未发生的重大公开事件。
 只使用当前剧情中已公开或该账号可合理得知的信息，并遵守额外注入的信息隔离规则。
+${WEIBO_PUNCTUATION_STYLE_RULES}
 </weibo_native_rules>`;
 
   const WEIBO_INFORMATION_BOUNDARY = String.raw`<weibo_information_boundary>
@@ -4616,6 +4625,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
 本条目与其绑定的世界书内容是「本档位允许使用的梗库」。请主动留意适合玩梗的位置，在账号身份、语境、时机、表达节奏和知情范围都合适时优先使用这些梗，让微博更有真实圈层感。但“多使用”不等于每句都带梗：普通叙述、认真交流、情绪铺垫和不适合玩梗的内容应自然表达，不得句句抖机灵；不得为了显得“冲浪”而生硬堆叠、机械复读或强塞无关热词。
 热梗、黑梗、圈内梗应从本梗库、当前前文、wb_lore、已有微博或可合理推断的圈层文化中生长。绑定条目只说明梗可以用，不代表其中所有信息已经公开，也不代表所有账号都知道。
 不同账号只使用其身份和立场会用的梗；本人、官方、梦女、唯粉、黑粉、串子、路人的玩梗方式必须有差别。夸人与骂人的用词也必须符合账号身份；例如梦女可以抱怨对方“直男”，但不会无来由地使用黑粉式的“超雄”。
+${WEIBO_PUNCTUATION_STYLE_RULES}
 已经玩过的梗除非出现新进展、新角度或二次创作价值，不得反复复读。对不确定是否适合当前圈层的现实热梗，宁可不用，不得硬造“全网都在玩”的假共识。
 </weibo_hot_meme>`;
 
@@ -4734,12 +4744,14 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
   }
   function selectedNativePrompt(){
     const mode = phoneSettings.nativePrompt === 'compact' ? 'compact' : 'detailed';
-    const custom = sanitizeEditableNativePrompt(phoneSettings.nativePromptText || currentSlotContext().nativePromptText || '', mode);
+    let custom = sanitizeEditableNativePrompt(phoneSettings.nativePromptText || currentSlotContext().nativePromptText || '', mode);
+    if (!custom.includes('<weibo_punctuation_style>')) custom += '\n\n' + WEIBO_PUNCTUATION_STYLE_RULES;
     return custom + '\n\n' + fixedNativeFormat() + '\n\n【动态数量覆盖】本次任务中明确写出的微博、评论、私信与角色微博数量，高于固定协议示例中的默认 5 条、10 条或 3–6 条；按本次任务数量连续编号并输出。';
   }
   function selectedHotMemePrompt(){
     const custom = String(phoneSettings.hotMemePrompt || currentSlotContext().hotMemePrompt || '').trim();
-    return custom || WEIBO_HOT_MEME_DEFAULT;
+    const prompt = custom || WEIBO_HOT_MEME_DEFAULT;
+    return prompt.includes('<weibo_punctuation_style>') ? prompt : prompt + '\n\n' + WEIBO_PUNCTUATION_STYLE_RULES;
   }
   function parseCustomIdPool(text){
     return String(text || '').split(/\r?\n/).map((line) => line.trim()).filter(Boolean).map((line) => {
