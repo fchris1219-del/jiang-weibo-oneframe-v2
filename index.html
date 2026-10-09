@@ -429,8 +429,9 @@ body{display:grid;place-items:center;overflow:hidden}
 .preset-depth-help{grid-column:1/-1;margin-top:-4px;color:#a17859;font-size:9px;line-height:1.45}
 .preset-preview-list{display:none;margin-top:11px;padding-top:3px}.preset-preview-list.show{display:flex;flex-direction:column;gap:7px}
 .preset-preview-card{border:1px solid #2b3039;border-radius:11px;background:#191c22;color:#dce3ed;overflow:hidden}
-.preset-preview-card button{all:unset;box-sizing:border-box;width:100%;min-width:0;display:flex;align-items:center;gap:8px;padding:10px 11px;cursor:pointer}
-.preset-preview-card button:hover{background:#20242c}.preset-preview-card .pv-title{flex:1;min-width:0;font-size:11px;font-weight:700}.preset-preview-card .pv-meta{flex:0 1 auto;max-width:58%;font-size:9px;color:#8f99a8;text-align:right;overflow-wrap:anywhere}
+.preset-preview-card button{all:unset;box-sizing:border-box;width:100%;min-width:0;display:grid;grid-template-columns:minmax(150px,1fr) minmax(0,58%) auto;align-items:center;gap:8px;padding:10px 11px;cursor:pointer}
+.preset-preview-card button:hover{background:#20242c}.preset-preview-card .pv-title{min-width:0;font-size:11px;font-weight:700;word-break:keep-all}.preset-preview-card .pv-meta{min-width:0;font-size:9px;color:#8f99a8;text-align:right;white-space:normal;overflow-wrap:break-word}
+@media(max-width:560px){.preset-preview-card button{grid-template-columns:minmax(0,1fr) auto}.preset-preview-card .pv-title{grid-column:1}.preset-preview-card .pv-meta{grid-column:1/-1;grid-row:2;text-align:left}.preset-preview-card .pv-chev{grid-column:2;grid-row:1}}
 .preset-preview-card pre{display:none;margin:0;padding:10px 11px;border-top:1px solid #2b3039;white-space:pre-wrap;word-break:break-word;font-size:9px;line-height:1.6;color:#cbd3df;max-height:220px;overflow:auto}.preset-preview-card.open pre{display:block}.preset-preview-card.open .pv-chev{transform:rotate(180deg)}
 .custom-entry-empty{padding:11px;text-align:center;color:#aaa;font-size:11px;border:1px dashed #ddd;border-radius:10px}
 .custom-entry-actions{display:flex;gap:7px;margin-top:9px}.custom-entry-actions button{flex:1}
@@ -1200,23 +1201,31 @@ body{display:grid;place-items:center;overflow:hidden}
       focus.updatedTime ? '记录时间：' + focus.updatedTime : '',
     ].filter(Boolean).join('\n');
   }
-  function extractContentOnly(raw){
-    // 先移除完整 CoT 注释，再从最后一个 content 容器取定稿；未闭合注释留到容器内部兜底清理。
-    const source=String(raw??'')
-      .replace(/<!--[\s\S]*?-->/g,'');
-    const re = /<content\b[^>]*>([\s\S]*?)<\/content\s*>/gi;
-    const sections=[]; let match;
-    while((match=re.exec(source))){
-      // COT 会将 draft、审批和多次进度锚定置于 HTML 注释；只保留注释之间的正式完稿。
-      const finalized=match[1]
+  function extractContentResult(raw){
+    const source=String(raw??'');
+    const openRe=/<\s*content\b[^>]*>/gi;
+    const sections=[]; let open;
+    while((open=openRe.exec(source))){
+      const closeRe=/<\s*\/\s*content\s*>/gi;
+      closeRe.lastIndex=openRe.lastIndex;
+      const close=closeRe.exec(source);
+      // 酒馆里长回复可能因模型输出上限停在正文中途，导致只有 <content> 而没有 </content>。
+      // 这种楼层仍是用户能看到的真实定稿正文：从开标签提取到消息末尾，并在预览中显式标记。
+      const inner=source.slice(openRe.lastIndex,close ? close.index : source.length);
+      const finalized=inner
         .replace(/<!--[\s\S]*?-->/g,'')
         .replace(/<!--[\s\S]*$/g,'')
         .replace(/\n[ \t]*\n[ \t]*\n+/g,'\n\n')
         .trim();
-      if(finalized)sections.push(finalized);
+      if(finalized)sections.push({text:finalized,unclosed:!close});
+      if(!close)break;
+      openRe.lastIndex=closeRe.lastIndex;
     }
     // 同一楼层若出现多个 content，前面的通常是草稿/中间产物；只取最后一个正式定稿容器。
-    return sections.length ? sections[sections.length - 1] : '';
+    return sections.length ? sections[sections.length-1] : {text:'',unclosed:false};
+  }
+  function extractContentOnly(raw){
+    return extractContentResult(raw).text;
   }
   function chatFloorNumber(message, fallbackIndex = 0){
     const value = Number(message?.message_id);
@@ -1237,11 +1246,15 @@ body{display:grid;place-items:center;overflow:hidden}
     // 两种来源都只读取当前选中的消息页，不读取未选中的 swipe。
     return extractContentOnly(message.message ?? message.mes ?? message.content ?? '');
   }
+  function chatMessageContentResult(message){
+    if (!message) return {text:'',unclosed:false};
+    return extractContentResult(message.message ?? message.mes ?? message.content ?? '');
+  }
   function nativeBaiBaiFloorAudit(context = null, allHistory = false, includeOpening = false){
     const ctx = context || getSillyContextSafe();
     // 始终走完整聊天读取器。ctx.chat 在部分酒馆助手版本/iframe 生命周期中可能只是单楼快照。
     const chat = readFullChatMessageList(ctx);
-    const visible = [], hidden = [], omitted = [], noContent = [], openingExcluded = [];
+    const visible = [], hidden = [], omitted = [], noContent = [], openingExcluded = [], unclosedContent = [];
     chat.forEach((m,arrayIndex) => {
       const index = chatFloorNumber(m, arrayIndex);
       if (!m) { noContent.push(index); return; }
@@ -1251,13 +1264,14 @@ body{display:grid;place-items:center;overflow:hidden}
       // 酒馆的 hidden 表示该楼层不进入酒馆主请求，并不代表玩家在聊天页看不见。
       // 微博最近正文必须仍能读取这些由柏宝书隐藏/压缩过的真实剧情楼层。
       if (chatMessageIsHidden(m)) hidden.push(index);
-      const content = chatMessageContent(m);
-      if (!content) { noContent.push(index); return; }
+      const extracted = chatMessageContentResult(m);
+      if (!extracted.text) { noContent.push(index); return; }
+      if (extracted.unclosed) unclosedContent.push(index);
       const isUser = m.is_user === true || m.role === 'user' || m.is_name === 'User';
-      visible.push({role:isUser ? 'user' : 'assistant', content, index});
+      visible.push({role:isUser ? 'user' : 'assistant', content:extracted.text, index, unclosed:extracted.unclosed});
     });
     visible.sort((a,b)=>a.index-b.index);
-    return {visible,hidden,omitted,noContent,openingExcluded,total:chat.length,allHistory,includeOpening,policy:allHistory ? '全部前文：所有包含 <content> 的剧情楼层' : '最近前文：从全部真实楼层中取最后 N 条包含 <content> 的剧情正文'};
+    return {visible,hidden,omitted,noContent,openingExcluded,unclosedContent,total:chat.length,allHistory,includeOpening,policy:allHistory ? '全部前文：所有包含 <content> 的剧情楼层' : '最近前文：从全部真实楼层中取最后 N 条包含 <content> 的剧情正文'};
   }
   function buildBaiBaiNativeRequestParts(context = null){
     const history=readBaiBaiStoryHistory();
@@ -1294,6 +1308,7 @@ body{display:grid;place-items:center;overflow:hidden}
       '排除的番外/原生系统楼层：'+a.omitted.join(','),
       '按开关排除开场楼层：'+a.openingExcluded.join(','),
       '无 <content> 正文：'+a.noContent.join(','),
+      '只有 <content> 开标签、已提取到消息末尾：'+a.unclosedContent.join(','),
       '正文字符数：'+parts.visible.reduce((n,x)=>n+x.content.length,0),
       '柏宝书历史摘要节点数：'+parts.history.nodes,
       '柏宝书历史摘要字符数：'+parts.history.text.length,
@@ -6883,7 +6898,7 @@ user 与 char 的微博账号 ID 是设置锁定值。不得自由生成、改�
         ...(nativePreview ? [
           { title:'柏宝书历史剧情摘要', depth:'背景', text:nativePreview.history.text || '（柏宝书尚未生成有效摘要）' },
           { title:'眼下局势', depth:'参考', text:nativePreview.situation || '（柏宝书尚未记录当前局势）' },
-          { title:phoneSettings.includeAllContentHistory ? '全部前文正文' : '最近聊天正文', depth:(phoneSettings.includeAllContentHistory ? '' : `最近 ${nativePreview.recentCount} 条 · `) + `实取 ${nativePreview.visible.length} 条 · #${nativePreview.visible.map(x=>x.index).join('、#') || '无'} · 扫描至 #${lastChatReadAudit.lastFloor}`, text:nativePreview.visible.map(x=>`[#${x.index}] ${x.role}:\n${x.content}`).join('\n\n') || '（没有符合条件的 content 正文）' },
+          { title:phoneSettings.includeAllContentHistory ? '全部前文正文' : '最近聊天正文', depth:(phoneSettings.includeAllContentHistory ? '' : `最近 ${nativePreview.recentCount} 条 · `) + `实取 ${nativePreview.visible.length} 条 · #${nativePreview.visible.map(x=>x.index).join('、#') || '无'} · 扫描至 #${lastChatReadAudit.lastFloor}` + (nativePreview.visible.some(x=>x.unclosed) ? ` · 未闭合恢复 #${nativePreview.visible.filter(x=>x.unclosed).map(x=>x.index).join('、#')}` : ''), text:nativePreview.visible.map(x=>`[#${x.index}] ${x.role}${x.unclosed?'（缺少 </content>，已读取到本楼末尾）':''}:\n${x.content}`).join('\n\n') || '（没有符合条件的 content 正文）' },
         ] : [
           { title:'手动总结与开场白', depth:depths.history, text:groups.history.join('\n\n') || '（当前未注入历史摘要、手动总结或开场白）' },
           { title:'最近聊天完整正文', depth:depths.recent, text:groups.recent.join('\n\n') || '（当前未注入最近聊天正文）' },
