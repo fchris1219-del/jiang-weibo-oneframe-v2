@@ -1,6 +1,7 @@
 /** 酱微博：单轮廓远程前端启动器 */
 const JWR2_TAG = '[酱微博]';
-const JWR2_FRONTEND_URL = 'https://fchris1219-del.github.io/jiang-weibo-oneframe-v2/weibo.html?v=ee68adb';
+const JWR2_BUILD = '20261009-remote-frontend-v10';
+const JWR2_FRONTEND_URL = 'https://fchris1219-del.github.io/jiang-weibo-oneframe-v2/weibo.html';
 const JWR2_ROOT_ID = 'jwr2-root';
 const JWR2_BRIDGE_KEY = '__JWR2_BRIDGE__';
 const JWR2_INSTANCE_KEY = '__JWR2_CLEANUP__';
@@ -31,6 +32,24 @@ function jwr2Context() {
   try { if (typeof SillyTavern?.getContext === 'function') return SillyTavern.getContext(); } catch (_) {}
   try { if (typeof JWR2_HOST.SillyTavern?.getContext === 'function') return JWR2_HOST.SillyTavern.getContext(); } catch (_) {}
   return null;
+}
+
+function jwr2LastMessageId() {
+  try {
+    if (typeof getLastMessageId === 'function') {
+      const id = Number(getLastMessageId());
+      if (Number.isFinite(id) && id >= 0) return Math.floor(id);
+    }
+  } catch (_) {}
+  const chat = jwr2Context()?.chat;
+  return Array.isArray(chat) && chat.length ? chat.length - 1 : -1;
+}
+
+function jwr2AllChatMessages() {
+  if (typeof getChatMessages !== 'function') return [];
+  const last = jwr2LastMessageId();
+  if (last < 0) return [];
+  return getChatMessages('0-' + last, { role: 'all', hide_state: 'all', include_swipes: false });
 }
 
 function jwr2Clone(value, fallback = null) {
@@ -370,9 +389,44 @@ async function jwr2Reload() {
 function jwr2InstallBridge() {
   JWR2_HOST[JWR2_BRIDGE_KEY] = {
     owner: jwr2ScriptId(),
+    getBuildVersion: () => JWR2_BUILD,
     getContext: () => jwr2SafeContext(),
     getCurrentChatId: () => jwr2ChatId(),
+    getLastMessageId: () => jwr2LastMessageId(),
     getChatMessages: (...args) => typeof getChatMessages === 'function' ? getChatMessages(...args) : [],
+    // 不在脚本源码里写 lastMessageId 宏：酒馆助手导入时会把宏冻结成当时的楼层号。
+    // 每次调用都动态取得最新楼层，再读取当前聊天全部消息。
+    getAllChatMessages: () => jwr2AllChatMessages(),
+    // 柏宝书仅通过公开只读 API 获取；桥接由酒馆主窗口执行，避免 iframe 作用域差异。
+    // 柏宝书只读 API：不设 before，包含最近已生成有效摘要的楼层。
+    getBaiBaiHistory: () => {
+      const api=JWR2_HOST.STBaiBaiBook;
+      if(!api || typeof api.getHistory!=='function')return {available:false,reason:'柏宝书 getHistory 公共接口未就绪'};
+      try{
+        const history=api.getHistory();
+        if(!history || typeof history!=='object')return {available:false,reason:'柏宝书未返回剧情摘要'};
+        return {available:true,chatId:String(history.chat?.id||''),text:String(history.relativeText||history.text||''),nodes:Array.isArray(history.nodes)?history.nodes.length:0,coverage:history.coverage||null};
+      }catch(error){return {available:false,reason:String(error?.message||error)};}
+    },
+    hasBaiBaiBook: () => !!(JWR2_HOST.STBaiBaiBook?.getHistory),
+    // 仅读取柏宝书公开快照中的「眼下局势」。
+    getBaiBaiSceneFocus: () => {
+      const api=JWR2_HOST.STBaiBaiBook;
+      if(!api||typeof api.getSnapshot!=='function')return {available:false,reason:'柏宝书公开 API 尚未加载'};
+      try{
+        const snap=api.getSnapshot();
+        if(!snap||typeof snap!=='object')return {available:false,reason:'柏宝书未返回当前聊天快照'};
+        const f=snap.state?.sceneFocus;
+        const sceneFocus=f&&typeof f==='object'?{
+          situation:String(f.situation||'').trim(),
+          participants:Array.isArray(f.participants)?f.participants.map(String):[],
+          tension:String(f.tension||'').trim(),
+          pendingBeat:String(f.pendingBeat||'').trim(),
+          updatedTime:String(f.updatedTime||'').trim()
+        }:null;
+        return {available:true,chatId:String(snap.chat?.id||''),sceneFocus};
+      }catch(error){return {available:false,reason:String(error?.message||error)};}
+    },
     getSettings: () => jwr2PublicSettings(),
     getEmbeddedPreset: () => jwr2Clone(JWR2_EMBEDDED_PRESET, null),
     saveSettings: (value) => jwr2WriteSettings(value),
@@ -398,6 +452,10 @@ function jwr2Json(value) {
   return JSON.stringify(String(value || '')).replace(/<\//g, '<\\/').split(commentOpen).join('<' + '\\!--');
 }
 async function jwr2FetchRemote(force = false) {
+  // 完整内嵌测试包必须优先使用随脚本携带的 HTML；否则导入的是新脚本，打开的仍可能是 main/CDN 旧页面。
+  if (typeof JWR2_EMBEDDED_HTML === 'string' && JWR2_EMBEDDED_HTML.includes('<div id="app">')) {
+    return JWR2_EMBEDDED_HTML;
+  }
   if (force) jwr2RemotePromise = null;
   if (!jwr2RemotePromise) {
     jwr2RemotePromise = (async () => {
@@ -547,6 +605,8 @@ function jwr2Mount() {
 }
 
 function jwr2Cleanup() {
+  // 脚本关闭后也不能留下过期的主对话注入。
+  if (JWR2_HOST[JWR2_INSTANCE_KEY] === jwr2Cleanup) jwr2SetMainInjection('', false);
   try { jwr2DragCleanup?.(); } catch (_) {}
   jwr2DragCleanup = null;
   try { jwr2ViewportCleanup?.(); } catch (_) {}
@@ -566,6 +626,8 @@ function jwr2Cleanup() {
     jwr2Mount();
     if (typeof eventOn === 'function' && typeof tavern_events !== 'undefined' && tavern_events.CHAT_CHANGED) {
       jwr2ChatListener = eventOn(tavern_events.CHAT_CHANGED, () => {
+        // ST 的 setExtensionPrompt 是持久槽；必须清除上一聊天的 wb_lore。
+        jwr2SetMainInjection('', false);
         if (jwr2Frame) jwr2Frame.srcdoc = '';
         jwr2RemotePromise = null;
         jwr2Close();
